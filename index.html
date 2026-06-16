@@ -4,36 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>台股選股 Mobile</title>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js">
-
-// ===== XQ API Detect =====
-function showDebug(msg){
-  let box=document.getElementById('xq-debug');
-  if(!box) return;
-  box.style.display='block';
-  box.innerHTML += msg+'\n';
-}
-
-function detectXQ(){
-  showDebug('===== XQ API Detect =====');
-  showDebug('window.external = '+(window.external?'YES':'NO'));
-  showDebug('window.chrome = '+(window.chrome?'YES':'NO'));
-  showDebug('chrome.webview = '+(window.chrome?.webview?'YES':'NO'));
-
-  try{
-    if(window.external){
-      let methods=Object.getOwnPropertyNames(window.external);
-      showDebug('external methods:');
-      showDebug(methods.join('\n'));
-    }
-  }catch(err){
-    showDebug(err);
-  }
-}
-
-window.addEventListener('load',detectXQ);
-
-</script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:#e6edf3;min-height:100vh;display:flex;flex-direction:column}
@@ -160,6 +131,17 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .gd-open{padding:12px;border-top:1px solid #30363d;text-align:center}
 .gd-open a{color:#58a6ff;font-size:13px;text-decoration:none}
 
+/* ── TRADINGVIEW CHART ── */
+.tv-wrap{display:none;margin-top:8px;border-radius:8px;overflow:hidden;border:1px solid #30363d}
+.tv-wrap.on{display:block}
+.tv-wrap iframe{width:100%;height:400px;border:none;display:block}
+.tv-bar{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#21262d;font-size:12px}
+.tv-title{color:#79c0ff;font-weight:700}
+.tv-close{color:#8b949e;cursor:pointer;font-size:16px;padding:0 4px}
+.tv-intervals{display:flex;gap:4px}
+.tv-int{background:none;border:1px solid #30363d;border-radius:4px;padding:3px 8px;font-size:11px;color:#8b949e;cursor:pointer}
+.tv-int.on{border-color:#58a6ff;color:#58a6ff;background:#1f6feb22}
+
 /* ── TOAST ── */
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) scale(0.9);background:#238636;color:#fff;padding:10px 20px;border-radius:8px;font-size:14px;display:none;z-index:500;white-space:nowrap;opacity:0;transition:opacity .18s,transform .18s}
 .toast.show{opacity:1;transform:translateX(-50%) scale(1)}
@@ -257,13 +239,6 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 </div>
 
 <div class="toast" id="toast"></div>
-
-<div id="xq-debug"
-style="position:fixed;right:10px;bottom:10px;width:380px;max-height:300px;
-overflow:auto;background:#161b22;border:1px solid #30363d;
-border-radius:8px;padding:10px;font-size:12px;font-family:Consolas;
-color:#58a6ff;z-index:9999;display:none;white-space:pre-wrap;"></div>
-
 
 <script>
 var D=[];
@@ -431,15 +406,81 @@ function render(){
         +'<div class="cg-item"><div class="cg-lbl">毛利率</div><div class="cg-val '+gmc+'">'+(s.grossmargin!==null?s.grossmargin.toFixed(1)+'%':'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">單季EPS</div><div class="cg-val '+epsc+'">'+(s.eps!==null?s.eps.toFixed(2):'--')+'</div></div>'
       +'</div>'
+      // TradingView chart (hidden by default)
+      +'<div class="tv-wrap" id="tv-'+s.code+'">'
+        +'<div class="tv-bar">'
+          +'<span class="tv-title">'+s.code+' '+s.name+'</span>'
+          +'<div class="tv-intervals">'
+            +'<button class="tv-int on" onclick="event.stopPropagation();tvInterval(\''+s.code+'\',\'60\',this)">60分</button>'
+            +'<button class="tv-int" onclick="event.stopPropagation();tvInterval(\''+s.code+'\',\'D\',this)">日</button>'
+            +'<button class="tv-int" onclick="event.stopPropagation();tvInterval(\''+s.code+'\',\'W\',this)">週</button>'
+          +'</div>'
+          +'<span class="tv-close" onclick="event.stopPropagation();closeChart(\''+s.code+'\')">✕</span>'
+        +'</div>'
+        +'<div id="tv-frame-'+s.code+'"></div>'
+      +'</div>'
     +'</div>';
   }).join('');
+}
+
+// ── TradingView Chart ──
+var currentChart = null;
+
+function openChart(code, name, interval) {
+  interval = interval || '60';
+  var wrap = document.getElementById('tv-' + code);
+  var frameDiv = document.getElementById('tv-frame-' + code);
+  if(!wrap || !frameDiv) return;
+
+  if(currentChart === code && wrap.classList.contains('on')) {
+    closeChart(code);
+    return;
+  }
+
+  if(currentChart && currentChart !== code) {
+    var prev = document.getElementById('tv-' + currentChart);
+    if(prev) prev.classList.remove('on');
+    var prevFrame = document.getElementById('tv-frame-' + currentChart);
+    if(prevFrame) prevFrame.innerHTML = '';
+  }
+
+  currentChart = code;
+  loadChart(code, interval);
+  wrap.classList.add('on');
+  wrap.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function loadChart(code, interval) {
+  var frameDiv = document.getElementById('tv-frame-' + code);
+  if(!frameDiv) return;
+  // 鉅亨網個股K線圖（支援台股，60分/日/週）
+  var period = interval === '60' ? '60' : interval === 'D' ? 'D' : 'W';
+  var url = 'https://invest.cnyes.com/twstock/TWS/' + code + '/chart?type=technical&period=' + period;
+  frameDiv.innerHTML = '<iframe src="'+url+'" style="width:100%;height:420px;border:none;background:#0d1117" scrolling="no"></iframe>';
+}
+
+function closeChart(code) {
+  var wrap = document.getElementById('tv-' + code);
+  var frameDiv = document.getElementById('tv-frame-' + code);
+  if(wrap) wrap.classList.remove('on');
+  if(frameDiv) frameDiv.innerHTML = '';
+  if(currentChart === code) currentChart = null;
+}
+
+function tvInterval(code, interval, btn) {
+  var wrap = document.getElementById('tv-' + code);
+  if(wrap) {
+    wrap.querySelectorAll('.tv-int').forEach(function(b){b.classList.remove('on');});
+    btn.classList.add('on');
+  }
+  loadChart(code, interval);
 }
 
 // ── XQ 複製代碼 ──
 var xqTimer=null;
 
 function openLinks(e,code,name){
-  // 複製代碼到剪貼簿
+  // 複製代碼到剪貼簿（給AHK用）
   var txt=code;
   if(navigator.clipboard && navigator.clipboard.writeText){
     navigator.clipboard.writeText(txt).then(function(){
@@ -450,6 +491,8 @@ function openLinks(e,code,name){
   } else {
     fallbackCopy(txt,code,name);
   }
+  // 展開K線圖
+  openChart(code, name);
 }
 
 function fallbackCopy(txt,code,name){
