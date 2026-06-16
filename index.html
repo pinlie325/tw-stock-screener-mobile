@@ -4,7 +4,36 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>台股選股 Mobile</title>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js">
+
+// ===== XQ API Detect =====
+function showDebug(msg){
+  let box=document.getElementById('xq-debug');
+  if(!box) return;
+  box.style.display='block';
+  box.innerHTML += msg+'\n';
+}
+
+function detectXQ(){
+  showDebug('===== XQ API Detect =====');
+  showDebug('window.external = '+(window.external?'YES':'NO'));
+  showDebug('window.chrome = '+(window.chrome?'YES':'NO'));
+  showDebug('chrome.webview = '+(window.chrome?.webview?'YES':'NO'));
+
+  try{
+    if(window.external){
+      let methods=Object.getOwnPropertyNames(window.external);
+      showDebug('external methods:');
+      showDebug(methods.join('\n'));
+    }
+  }catch(err){
+    showDebug(err);
+  }
+}
+
+window.addEventListener('load',detectXQ);
+
+</script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:#e6edf3;min-height:100vh;display:flex;flex-direction:column}
@@ -228,6 +257,13 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 </div>
 
 <div class="toast" id="toast"></div>
+
+<div id="xq-debug"
+style="position:fixed;right:10px;bottom:10px;width:380px;max-height:300px;
+overflow:auto;background:#161b22;border:1px solid #30363d;
+border-radius:8px;padding:10px;font-size:12px;font-family:Consolas;
+color:#58a6ff;z-index:9999;display:none;white-space:pre-wrap;"></div>
+
 
 <script>
 var D=[];
