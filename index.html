@@ -56,7 +56,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .card-avg span{color:#c9d1d9}
 
 /* Card stats grid */
-.card-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px}
+.card-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:10px}
 .cg-item{background:#0d1117;border-radius:6px;padding:6px 8px}
 .cg-lbl{font-size:10px;color:#6e7681;margin-bottom:2px}
 .cg-val{font-size:13px;font-weight:600;color:#c9d1d9}
@@ -69,7 +69,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 
 /* Card tags */
 .card-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
-.ctag{background:#21262d;border-radius:4px;padding:3px 8px;font-size:11px;color:#8b949e}
+.ctag{background:#21262d;border-radius:4px;padding:3px 8px;font-size:11px;color:#8b949e;text-align:center;white-space:nowrap}
 .ctag.hi{background:#1f6feb22;color:#58a6ff}
 
 /* Card position */
@@ -339,34 +339,37 @@ function render(){
     return '<div class="card" onclick="openLinks(event,\''+s.code+'\',\''+s.name.replace(/'/g,"\\'")+'\')">'
       // header
       +'<div class="card-hd">'
-        +'<span class="card-code">'+s.code+'</span>'
-        +'<span class="card-name">'+s.name+'</span>'
-        +'<span class="card-pct '+pc+'">'+ps+'</span>'
+        +'<div style="flex:1">'
+          +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'
+            +'<span class="card-code">'+s.code+'</span>'
+            +'<span class="card-name">'+s.name+'</span>'
+          +'</div>'
+          +(s.position?'<div class="card-pos">'+s.position+'</div>':'')
+        +'</div>'
+        +(showTags.length?'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;max-width:45%">'
+          +showTags.map(function(t){
+            var h=hiTags.indexOf(t)>=0;
+            return '<span class="ctag'+(h?' hi':'')+'" onclick="event.stopPropagation();tapTag(\''+t.replace(/'/g,"\\'")+'\')" data-t="'+t.replace(/"/g,'&quot;')+'">'+t+'</span>';
+          }).join('')
+          +'</div>':'')
       +'</div>'
       // price
       +'<div class="card-price">'
-        +'<span class="card-close">'+(s.close!==null?s.close.toFixed(1):'--')+'</span>'
-        +(s.avg!==null?'<span class="card-avg">均 <span>'+s.avg.toFixed(1)+'</span></span>':'')
+        +'<span class="card-close">'+(s.volume!==null?s.volume.toLocaleString():'--')+'</span>'
+        +'<span class="card-avg" style="color:'+(pct>0?'#f85149':pct<0?'#3fb950':'#8b949e')+'">'+ps+'</span>'
+        +(s.close!==null?'<span class="card-avg">昨收 <span>'+s.close.toFixed(1)+'</span></span>':'')
       +'</div>'
       // grid
       +'<div class="card-grid">'
-        +'<div class="cg-item"><div class="cg-lbl">成交(張)</div><div class="cg-val">'+(s.volume!==null?s.volume.toLocaleString():'--')+'</div></div>'
+        +'<div class="cg-item"><div class="cg-lbl">均價</div><div class="cg-val">'+(s.avg!==null?s.avg.toFixed(1):'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">換手率</div><div class="cg-val">'+(s.turnover!==null?s.turnover.toFixed(2)+'%':'--')+'</div></div>'
-        +'<div class="cg-item"><div class="cg-lbl">成交值</div><div class="cg-val">'+(s.turnval!==null?(s.turnval>=100000000?(s.turnval/100000000).toFixed(1)+'億':(s.turnval/10000).toFixed(0)+'萬'):'--')+'</div></div>'
+        +'<div class="cg-item"><div class="cg-lbl">成交值(億)</div><div class="cg-val">'+(s.turnval!==null?s.turnval.toFixed(2):'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">股本(億)</div><div class="cg-val">'+(s.capital!==null?s.capital.toFixed(1):'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">融資維持%</div><div class="cg-val '+mc+'">'+(s.margin!==null?s.margin.toFixed(1):'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">RS%</div><div class="cg-val '+rsc+'">'+(s.rs!==null?s.rs.toFixed(1):'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">毛利率</div><div class="cg-val '+gmc+'">'+(s.grossmargin!==null?s.grossmargin.toFixed(1)+'%':'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">單季EPS</div><div class="cg-val '+epsc+'">'+(s.eps!==null?s.eps.toFixed(2):'--')+'</div></div>'
-        +'<div class="cg-item"><div class="cg-lbl">股本</div><div class="cg-val">'+(s.capital!==null?s.capital.toFixed(1)+'億':'--')+'</div></div>'
       +'</div>'
-      // tags
-      +(showTags.length?'<div class="card-tags">'+showTags.map(function(t){
-        var h=hiTags.indexOf(t)>=0;
-        return '<span class="ctag'+(h?' hi':'')+'" onclick="event.stopPropagation();tapTag(\''+t.replace(/'/g,"\\'")+'\')" data-t="'+t.replace(/"/g,'&quot;')+'">'+t+'</span>';
-      }).join('')+'</div>':'')
-      // position
-      +(s.position?'<div class="card-pos">'+s.position+'</div>':'')
       // links
       +'<div class="card-links">'
         +'<a class="clink" href="https://tw.stock.yahoo.com/quote/'+s.code+'" target="_blank" onclick="event.stopPropagation()">📈 Yahoo</a>'
