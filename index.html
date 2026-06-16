@@ -426,6 +426,12 @@ function render(){
 // ── TradingView Chart ──
 var currentChart = null;
 
+function getTVSymbol(code) {
+  var num = parseInt(code);
+  if(num >= 1000 && num <= 3548) return 'TWSE:' + code;
+  return 'TPEX:' + code;
+}
+
 function openChart(code, name, interval) {
   interval = interval || '60';
   var wrap = document.getElementById('tv-' + code);
@@ -445,18 +451,35 @@ function openChart(code, name, interval) {
   }
 
   currentChart = code;
-  loadChart(code, interval);
+  loadTVWidget(code, interval);
   wrap.classList.add('on');
   wrap.scrollIntoView({behavior:'smooth', block:'nearest'});
 }
 
-function loadChart(code, interval) {
+function loadTVWidget(code, interval) {
   var frameDiv = document.getElementById('tv-frame-' + code);
   if(!frameDiv) return;
-  // 鉅亨網個股K線圖（支援台股，60分/日/週）
-  var period = interval === '60' ? '60' : interval === 'D' ? 'D' : 'W';
-  var url = 'https://invest.cnyes.com/twstock/TWS/' + code + '/chart?type=technical&period=' + period;
-  frameDiv.innerHTML = '<iframe src="'+url+'" style="width:100%;height:420px;border:none;background:#0d1117" scrolling="no"></iframe>';
+  var sym = getTVSymbol(code);
+  var containerId = 'tv_container_' + code;
+  frameDiv.innerHTML = '<div id="'+containerId+'" style="height:420px;width:100%"></div>';
+
+  var script = document.createElement('script');
+  script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+  script.async = true;
+  script.innerHTML = JSON.stringify({
+    "autosize": true,
+    "symbol": sym,
+    "interval": interval,
+    "timezone": "Asia/Taipei",
+    "theme": "dark",
+    "style": "1",
+    "locale": "zh_TW",
+    "hide_top_toolbar": false,
+    "hide_legend": false,
+    "save_image": false,
+    "container_id": containerId
+  });
+  document.getElementById(containerId).appendChild(script);
 }
 
 function closeChart(code) {
@@ -473,7 +496,7 @@ function tvInterval(code, interval, btn) {
     wrap.querySelectorAll('.tv-int').forEach(function(b){b.classList.remove('on');});
     btn.classList.add('on');
   }
-  loadChart(code, interval);
+  loadTVWidget(code, interval);
 }
 
 // ── XQ 複製代碼 ──
