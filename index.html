@@ -10,7 +10,7 @@
 body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:#e6edf3;min-height:100vh;display:flex;flex-direction:column}
 
 /* ── HEADER ── */
-.hdr{background:#161b22;border-bottom:1px solid #30363d;padding:9px 14px;display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:100}
+.hdr{background:#161b22;border-bottom:1px solid #30363d;padding:9px 14px;display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:100;}
 .hdr-t{font-size:17px;font-weight:700;color:#58a6ff;white-space:nowrap}
 .hdr-sub{font-size:12px;color:#8b949e;margin-left:4px}
 .hdr-r{margin-left:auto;display:flex;gap:6px}
@@ -112,7 +112,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .empty-icon{font-size:40px;margin-bottom:12px}
 
 /* ── GD MODAL ── */
-.mbg{display:none;position:fixed;inset:0;background:#00000088;z-index:400;align-items:flex-end;justify-content:center}
+.mbg{display:none;position:fixed;inset:0;background:#00000088;z-index:9999;align-items:flex-end;justify-content:center}
 .mbg.on{display:flex}
 .mbox{background:#161b22;border:1px solid #30363d;border-radius:16px 16px 0 0;width:100%;max-height:80vh;overflow-y:auto}
 .mhd{padding:14px 16px;border-bottom:1px solid #30363d;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#161b22}
@@ -131,13 +131,23 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .gd-open{padding:12px;border-top:1px solid #30363d;text-align:center}
 .gd-open a{color:#58a6ff;font-size:13px;text-decoration:none}
 
+/* ── TRADINGVIEW CHART ── */
+.yf-wrap{display:none;margin-top:10px;border-radius:8px;overflow:hidden;border:1px solid #30363d}
+.yf-wrap.on{display:block}
+.yf-bar{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:#21262d;font-size:12px;gap:6px}
+.yf-title{color:#79c0ff;font-weight:700;font-size:13px}
+.yf-intervals{display:flex;gap:4px}
+.yf-int{background:none;border:1px solid #30363d;border-radius:4px;padding:3px 8px;font-size:11px;color:#8b949e;cursor:pointer}
+.yf-int.on{border-color:#58a6ff;color:#58a6ff;background:#1f6feb22}
+.yf-close{color:#8b949e;cursor:pointer;font-size:18px;padding:0 4px;line-height:1}
+
 /* ── TOAST ── */
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) scale(0.9);background:#238636;color:#fff;padding:10px 20px;border-radius:8px;font-size:14px;display:none;z-index:500;white-space:nowrap;opacity:0;transition:opacity .18s,transform .18s}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) scale(0.9);background:#238636;color:#fff;padding:10px 20px;border-radius:8px;font-size:14px;display:none;z-index:1050;white-space:nowrap;opacity:0;transition:opacity .18s,transform .18s}
 .toast.show{opacity:1;transform:translateX(-50%) scale(1)}
 
 /* ── XQ COPY BANNER ── */
-.xq-banner{position:fixed;top:0;left:0;right:0;z-index:600;background:#1f6feb;color:#fff;padding:0 14px;display:flex;align-items:center;gap:10px;max-height:0;overflow:hidden;transition:max-height .25s,padding .25s}
-.xq-banner.show{max-height:72px;padding:12px 14px}
+.xq-banner{display:none;position:fixed;top:0;left:0;right:0;z-index:1100;background:#1f6feb;color:#fff;padding:12px 14px;align-items:center;gap:10px;transition:opacity .2s}
+.xq-banner.show{display:flex}
 .xq-code{font-size:22px;font-weight:700;font-family:monospace;letter-spacing:2px;background:#ffffff22;border-radius:6px;padding:2px 10px}
 .xq-name{font-size:14px;flex:1}
 .xq-hint{font-size:12px;color:#ffffffaa;white-space:nowrap}
@@ -146,7 +156,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 </head>
 <body>
 
-<!-- HEADER -->
+<!-- XQ BANNER -->
 <div class="xq-banner" id="xq-banner">
   <span class="xq-code" id="xq-code"></span>
   <span class="xq-name" id="xq-name"></span>
@@ -212,11 +222,11 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 </div>
 
 <!-- GD MODAL -->
-<div class="mbg" id="gd-modal" onclick="if(event.target===this)this.classList.remove('on')">
+<div class="mbg" id="gd-modal" onclick="if(event.target===this){this.classList.remove('on');document.body.classList.remove('modal-open')}">
   <div class="mbox">
     <div class="mhd">
       <h3>☁️ 從雲端載入</h3>
-      <span class="mx" onclick="document.getElementById('gd-modal').classList.remove('on')">✕</span>
+      <span class="mx" onclick="document.getElementById('gd-modal').classList.remove('on');document.body.classList.remove('modal-open')">✕</span>
     </div>
     <div class="mbdy">
       <div id="gd-list"><div class="gd-loading">🔄 載入中...</div></div>
@@ -251,10 +261,12 @@ function doSearch(v){
 
 // ── DRAWER ──
 function openDrawer(){
+  document.body.classList.add('modal-open');
   document.getElementById('dbg').classList.add('on');
   document.getElementById('drawer').classList.add('on');
 }
 function closeDrawer(){
+  document.body.classList.remove('modal-open');
   document.getElementById('dbg').classList.remove('on');
   document.getElementById('drawer').classList.remove('on');
 }
@@ -357,11 +369,7 @@ function render(){
     var epsc=s.eps!==null?(s.eps>0?'up':s.eps<0?'dn':''):'';
     var hiTags=s.tags.filter(function(t){return sel.indexOf(t)>=0;});
     var showTags=hiTags.length?hiTags:s.tags.slice(0,3);
-    var chips=showTags.map(function(t){
-      return '<span class="ctag'+(hiTags.indexOf(t)>=0?' hi':'')+'">'+t+'</span>';
-    }).join('');
-    return '<div class="card" onclick="openLinks(event,\''+s.code+'\',\''+s.name.replace(/'/g,"\\'")+'\')">'
-      // header
+    return '<div class="card" onclick="openChart(event,\''+s.code+'\',\''+s.name.replace(/'/g,"\\'")+'\')">'
       +'<div class="card-hd">'
         +'<div style="flex:1">'
           +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'
@@ -378,13 +386,11 @@ function render(){
           }).join('')
           +'</div>':'')
       +'</div>'
-      // price
       +'<div class="card-price">'
         +'<span class="card-close">'+(s.volume!==null?s.volume.toLocaleString():'--')+'</span>'
         +'<span class="card-avg" style="color:'+(pct>0?'#f85149':pct<0?'#3fb950':'#8b949e')+'">'+ps+'</span>'
         +(s.close!==null?'<span class="card-avg">昨收 <span>'+s.close.toFixed(1)+'</span></span>':'')
       +'</div>'
-      // grid
       +'<div class="card-grid">'
         +'<div class="cg-item"><div class="cg-lbl">均價</div><div class="cg-val">'+(s.avg!==null?s.avg.toFixed(1):'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">換手率</div><div class="cg-val">'+(s.turnover!==null?s.turnover.toFixed(2)+'%':'--')+'</div></div>'
@@ -395,45 +401,160 @@ function render(){
         +'<div class="cg-item"><div class="cg-lbl">毛利率</div><div class="cg-val '+gmc+'">'+(s.grossmargin!==null?s.grossmargin.toFixed(1)+'%':'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">單季EPS</div><div class="cg-val '+epsc+'">'+(s.eps!==null?s.eps.toFixed(2):'--')+'</div></div>'
       +'</div>'
+      // Yahoo K線圖區塊
+      +'<div class="yf-wrap" id="yf-'+s.code+'">'
+        +'<div class="yf-bar">'
+          +'<div>'
+            +'<div class="yf-title">'+s.code+' '+s.name+'</div>'
+            +'<div class="yf-price-row" id="yf-pr-'+s.code+'"></div>'
+          +'</div>'
+          +'<div style="display:flex;align-items:center;gap:6px">'
+            +'<div class="yf-intervals">'
+              +'<button class="yf-int" onclick="event.stopPropagation();yfSetRange(\''+s.code+'\',\'60\',this)">60分</button>'
+              +'<button class="yf-int on" onclick="event.stopPropagation();yfSetRange(\''+s.code+'\',\'D\',this)">日</button>'
+              +'<button class="yf-int" onclick="event.stopPropagation();yfSetRange(\''+s.code+'\',\'W\',this)">週</button>'
+            +'</div>'
+            +'<span class="yf-close" onclick="event.stopPropagation();closeChart(\''+s.code+'\')">✕</span>'
+          +'</div>'
+        +'</div>'
+        +'<div id="yf-frame-'+s.code+'" style="height:420px"></div>'
+      +'</div>'
     +'</div>';
   }).join('');
+}
+
+// ── TRADINGVIEW CHART ──
+var currentChart=null;
+var EXCHANGE_MAP={};  // 動態建立的 code→exchange map
+
+// 頁面載入時自動fetch官方清單
+(function(){
+  // 先試 localhost proxy (run.py)，再試直接fetch
+  var isLocal=location.hostname==='localhost'||location.hostname==='127.0.0.1';
+  var twseUrl=isLocal?'/api/twse':'https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL';
+  var tpexUrl=isLocal?'/api/tpex':'https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes';
+  var done=0;
+  function go(url, ex, codeKey){
+    fetch(url, {headers:{'Accept':'application/json'}})
+      .then(function(r){return r.json();})
+      .then(function(d){
+        if(Array.isArray(d)) d.forEach(function(item){
+          var c=String(item[codeKey]||item['Code']||item['SecuritiesCompanyCode']||'').trim();
+          if(c && c.length===4 && !isNaN(c)) EXCHANGE_MAP[c]=ex;
+        });
+        done++;
+        if(done===2) console.log('[台股選股] Exchange map:', Object.keys(EXCHANGE_MAP).length, 'stocks');
+      })
+      .catch(function(e){done++; console.log('[台股選股] fetch failed:', e.message);});
+  }
+  go(twseUrl,'TWSE','Code');
+  go(tpexUrl,'TPEX','SecuritiesCompanyCode');
+})();
+var tvCharts={};
+
+// ── 交易所判斷（靜態清單，2025/06 更新自官方上市/上櫃代碼表）──
+// 上櫃(TPEX) 3字頭代碼
+var TPEX3=new Set([3064,3066,3067,3071,3073,3078,3081,3083,3085,3086,3088,3093,3095,3105,3114,3115,3118,3122,3128,3131,3141,3147,3152,3158,3162,3163,3169,3171,3176,3178,3188,3191,3205,3206,3207,3211,3213,3217,3218,3219,3221,3224,3226,3227,3228,3230,3232,3234,3236,3252,3259,3260,3264,3265,3268,3272,3276,3284,3285,3287,3288,3289,3290,3293,3294,3297,3303,3306,3310,3313,3317,3322,3323,3324,3325,3332,3339,3349,3354,3357,3360,3362,3363,3372,3373,3374,3379,3388,3390,3402,3430,3434,3438,3441,3444,3455,3465,3466,3467,3479,3483,3484,3485,3489,3490,3491,3492,3498,3499,3508,3511,3512,3516,3520,3521,3522,3523,3526,3527,3529,3531,3537,3540,3541,3546,3548,3551,3552,3555,3556,3558,3564,3567,3570,3577,3580,3581,3587,3594,3597,3609,3611,3615,3623,3624,3625,3628,3629,3630,3631,3632,3646,3663,3664,3666,3672,3675,3680,3684,3685,3687,3689,3691,3693,3707,3709,3710,3713]);
+// 上市(TWSE) 4字頭
+var TWSE4=new Set([4104,4106,4108,4119,4133,4137,4142,4148,4155,4164,4169,4178,4190,4195,4306,4414,4426,4438,4439,4440,4441,4526,4532,4536,4540,4545,4551,4552,4555,4557,4560,4562,4564,4566,4569,4571,4572,4576,4581,4582,4583,4585,4588,4590,4720,4722,4736,4737,4739,4746,4755,4763,4764,4766,4770,4771,4807,4904,4906,4912,4915,4916,4919,4927,4930,4934,4935,4938,4942,4943,4949,4952,4956,4958,4960,4961,4967,4968,4976,4977,4989,4994,4999]);
+// 上市(TWSE) 5字頭
+var TWSE5=new Set([5007,5203,5215,5222,5225,5234,5243,5244,5258,5269,5283,5284,5285,5288,5292,5306,5388,5434,5469,5471,5484,5515,5519,5521,5522,5525,5531,5533,5534,5538,5546,5607,5608,5706,5871,5876,5880,5906,5907]);
+// 上市(TWSE) 6字頭
+var TWSE6=new Set([6005,6024,6108,6112,6115,6116,6117,6120,6128,6133,6136,6139,6141,6142,6152,6153,6155,6164,6165,6166,6168,6176,6177,6183,6184,6189,6191,6192,6196,6197,6201,6202,6205,6206,6209,6213,6214,6215,6216,6224,6225,6226,6230,6235,6239,6243,6257,6269,6271,6272,6277,6278,6281,6282,6283,6285,6405,6409,6412,6414,6415,6416,6426,6431,6438,6442,6443,6446,6449,6451,6456,6464,6472,6477,6491,6504,6505,6515,6525,6526,6531,6533,6534,6541,6550,6552,6558,6573,6579,6581,6582,6585,6589,6591,6592,6598,6605,6606,6614,6625,6641,6645,6655,6657,6658,6666,6668,6669,6670,6671,6672,6674,6689,6691,6695,6698,6706,6715,6719,6722,6742,6743,6753,6754,6756,6757,6768,6770,6771,6776,6781,6782,6789,6790,6792,6794,6796,6799,6805,6806,6807,6830,6831,6834,6835,6838,6854,6861,6862,6863,6869,6873,6885,6887,6890,6901,6902,6906,6908,6909,6914,6916,6918,6919,6921,6923,6924,6928,6931,6933,6934,6936,6937,6944,6949,6951,6952,6955,6957,6958,6962,6965,6969,6988,6994]);
+// 上市(TWSE) 7字頭
+var TWSE7=new Set([7610,7631,7705,7711,7721,7722,7730,7732,7736,7740,7749,7750,7760,7765,7768,7769,7780,7786,7788,7791,7795,7799,7803,7818,7821,7822,7823,7827]);
+// 上市(TWSE) 8字頭
+var TWSE8=new Set([8011,8016,8021,8028,8033,8039,8045,8046,8070,8072,8081,8101,8103,8104,8105,8110,8112,8114,8131,8150,8162,8163,8201,8210,8213,8215,8222,8249,8261,8271,8341,8367,8374,8404,8411,8422,8429,8438,8442,8443,8454,8462,8463,8464,8466,8467,8473,8476,8478,8481,8482,8487,8488,8499,8926,8940,8996]);
+
+function getTVSymbol(code){
+  // 防呆：清理代碼（去空白、去小數點）
+  var c=String(code).trim().replace(/\.0+$/,'');
+  if(!c||isNaN(parseInt(c,10))) return 'TWSE:'+c; // 非數字代碼直接回傳
+  // 優先使用官方 API 動態對照
+  if(EXCHANGE_MAP[c]) return EXCHANGE_MAP[c]+':'+c;
+  // Fallback：靜態 Set 查表（file:// 離線環境）
+  var n=parseInt(c,10); var p=Math.floor(n/1000);
+  if(p<=2) return 'TWSE:'+c;
+  if(p===3) return (TPEX3.has(n)?'TPEX':'TWSE')+':'+c;
+  if(p===4) return (TWSE4.has(n)?'TWSE':'TPEX')+':'+c;
+  if(p===5) return (TWSE5.has(n)?'TWSE':'TPEX')+':'+c;
+  if(p===6) return (TWSE6.has(n)?'TWSE':'TPEX')+':'+c;
+  if(p===7) return (TWSE7.has(n)?'TWSE':'TPEX')+':'+c;
+  if(p===8) return (TWSE8.has(n)?'TWSE':'TPEX')+':'+c;
+  return 'TWSE:'+c;
+}
+
+
+function openChart(e, code, name){
+  var txt=code;
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){showXqBanner(code,name);}).catch(function(){fallbackCopy(txt,code,name);});
+  } else { fallbackCopy(txt,code,name); }
+
+  var wrap=document.getElementById('yf-'+code);
+  if(!wrap) return;
+
+  if(currentChart===code && wrap.classList.contains('on')){
+    closeChart(code); return;
+  }
+  if(currentChart && currentChart!==code) closeChart(currentChart);
+
+  currentChart=code;
+  wrap.classList.add('on');
+  wrap.scrollIntoView({behavior:'smooth', block:'nearest'});
+  tvLoad(code, 'D');
+}
+
+function closeChart(code){
+  var wrap=document.getElementById('yf-'+code);
+  if(wrap) wrap.classList.remove('on');
+  var frame=document.getElementById('yf-frame-'+code);
+  if(frame) frame.innerHTML='';
+  if(currentChart===code) currentChart=null;
+}
+
+function yfSetRange(code, interval, btn){
+  var wrap=document.getElementById('yf-'+code);
+  if(wrap) wrap.querySelectorAll('.yf-int').forEach(function(b){b.classList.remove('on');});
+  btn.classList.add('on');
+  tvLoad(code, interval);
+}
+
+function tvLoad(code, interval){
+  var frameDiv=document.getElementById('yf-frame-'+code);
+  if(!frameDiv) return;
+  var sym=getTVSymbol(code);
+  // 用 iframe 方式嵌入：完全隔離、無 container_id 衝突、無 race condition
+  var params=new URLSearchParams({
+    autosize:'1', symbol:sym, interval:interval,
+    timezone:'Asia/Taipei', theme:'dark', style:'1', locale:'zh_TW',
+    hide_top_toolbar:'false', hide_legend:'false', save_image:'false',
+    allow_symbol_change:'false'
+  });
+  frameDiv.innerHTML='<iframe '
+    +'src="https://s.tradingview.com/widgetembed/?'+params.toString()+'" '
+    +'style="width:100%;height:420px;border:none;" '
+    +'allowtransparency="true" scrolling="no" '
+    +'allowfullscreen></iframe>';
 }
 
 // ── XQ 複製代碼 ──
 var xqTimer=null;
 
-function openLinks(e,code,name){
-  // 複製代碼到剪貼簿
-  var txt=code;
-  if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(txt).then(function(){
-      showXqBanner(code,name);
-    }).catch(function(){
-      fallbackCopy(txt,code,name);
-    });
-  } else {
-    fallbackCopy(txt,code,name);
-  }
-}
-
 function fallbackCopy(txt,code,name){
   var ta=document.createElement('textarea');
-  ta.value=txt;
-  ta.style.cssText='position:fixed;top:-9999px;left:-9999px;opacity:0';
-  document.body.appendChild(ta);
-  ta.focus();ta.select();
+  ta.value=txt; ta.style.cssText='position:fixed;top:-9999px;left:-9999px;opacity:0';
+  document.body.appendChild(ta); ta.focus(); ta.select();
   try{document.execCommand('copy');}catch(err){}
   document.body.removeChild(ta);
   showXqBanner(code,name);
 }
 
 function showXqBanner(code,name){
-  var banner=document.getElementById('xq-banner');
   document.getElementById('xq-code').textContent=code;
   document.getElementById('xq-name').textContent=name;
-  banner.classList.add('show');
-  // 自動3秒後收起
-  if(xqTimer)clearTimeout(xqTimer);
+  document.getElementById('xq-banner').classList.add('show');
+  if(xqTimer) clearTimeout(xqTimer);
   xqTimer=setTimeout(function(){closeXqBanner();},3000);
 }
 
@@ -444,12 +565,7 @@ function closeXqBanner(){
 
 function tapTag(tag){
   var i=sel.indexOf(tag);
-  if(i>=0){
-    sel.splice(i,1);
-  } else {
-    sel.push(tag);
-  }
-  // 同步抽屜裡的標籤狀態
+  if(i>=0){ sel.splice(i,1); } else { sel.push(tag); }
   document.querySelectorAll('.dtag').forEach(function(el){
     el.classList.toggle('on', sel.indexOf(el.getAttribute('data-t'))>=0);
   });
@@ -485,7 +601,10 @@ function processRows(rows,filename){
   rows.forEach(function(r){
     if(!COL.code||!r[COL.code])return;
     var ts=COL.ind&&r[COL.ind]?String(r[COL.ind]).split(',').map(function(t){return t.trim();}).filter(function(t){return t&&t!=='null';}):[]; 
-    nd.push({code:String(r[COL.code]),name:COL.name?String(r[COL.name]||''):'',close:COL.close?sf(r[COL.close]):null,pct:COL.pct?sf(r[COL.pct]):null,avg:COL.avg?sf(r[COL.avg]):null,volume:COL.volume?sf(r[COL.volume]):null,turnover:COL.turnover?sf(r[COL.turnover]):null,turnval:COL.turnval?sf(r[COL.turnval]):null,capital:COL.capital?sf(r[COL.capital]):null,margin:COL.margin?sf(r[COL.margin]):null,position:COL.pos&&r[COL.pos]?String(r[COL.pos]):'',tags:ts,rs:COL.rs?sf(r[COL.rs]):null,grossmargin:COL.grossmargin?sf(r[COL.grossmargin]):null,eps:COL.eps?sf(r[COL.eps]):null});
+    // 代碼欄可能是數字(2302)、帶空格(' 2302 ')或小數('2302.0')，統一正規化為4位字串
+    var rawCode=String(r[COL.code]).trim().replace(/\.0+$/,'');
+    var cleanCode=/^\d+$/.test(rawCode)?rawCode.padStart(4,'0'):rawCode;
+    nd.push({code:cleanCode,name:COL.name?String(r[COL.name]||'').trim():'',close:COL.close?sf(r[COL.close]):null,pct:COL.pct?sf(r[COL.pct]):null,avg:COL.avg?sf(r[COL.avg]):null,volume:COL.volume?sf(r[COL.volume]):null,turnover:COL.turnover?sf(r[COL.turnover]):null,turnval:COL.turnval?sf(r[COL.turnval]):null,capital:COL.capital?sf(r[COL.capital]):null,margin:COL.margin?sf(r[COL.margin]):null,position:COL.pos&&r[COL.pos]?String(r[COL.pos]).trim():'',tags:ts,rs:COL.rs?sf(r[COL.rs]):null,grossmargin:COL.grossmargin?sf(r[COL.grossmargin]):null,eps:COL.eps?sf(r[COL.eps]):null});
   });
   if(!nd.length){alert('沒有讀到有效資料');return;}
   D=nd;
@@ -503,6 +622,7 @@ var GAS_URL='https://script.google.com/macros/s/AKfycbwV9CWC1p0Kr-hPb7wqeab6_5z3
 var gdFiles=[];
 
 function openDrivePicker(){
+  console.log('openDrivePicker called');
   document.getElementById('gd-modal').classList.add('on');
   document.getElementById('gd-list').innerHTML='<div class="gd-loading">🔄 連線雲端...</div>';
   fetch(GAS_URL+'?action=list')
