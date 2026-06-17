@@ -2,7 +2,6 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-  <meta name="description" content="台股選股平台 - 技術面選股工具">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>台股選股 Mobile</title>
 <script>/*! xlsx.js (C) 2013-present SheetJS -- http://sheetjs.com */
@@ -364,23 +363,6 @@ function getFilt(){
   return d;
 }
 
-// ── EXCHANGE LABEL ──
-function getExchLabel(code){
-  var c=String(code).trim().replace(/\.0+$/,'');
-  // 優先使用動態 API 對照
-  if(EXCHANGE_MAP[c]) return EXCHANGE_MAP[c]==='TWSE'?{cls:'twse',txt:'上市'}:{cls:'tpex',txt:'上櫃'};
-  // Fallback 靜態 Set
-  var n=parseInt(c,10); var p=Math.floor(n/1000);
-  if(p<=2) return {cls:'twse',txt:'上市'};
-  if(p===3) return TPEX3.has(n)?{cls:'tpex',txt:'上櫃'}:{cls:'twse',txt:'上市'};
-  if(p===4) return TWSE4.has(n)?{cls:'twse',txt:'上市'}:{cls:'tpex',txt:'上櫃'};
-  if(p===5) return TWSE5.has(n)?{cls:'twse',txt:'上市'}:{cls:'tpex',txt:'上櫃'};
-  if(p===6) return TWSE6.has(n)?{cls:'twse',txt:'上市'}:{cls:'tpex',txt:'上櫃'};
-  if(p===7) return TWSE7.has(n)?{cls:'twse',txt:'上市'}:{cls:'tpex',txt:'上櫃'};
-  if(p===8) return TWSE8.has(n)?{cls:'twse',txt:'上市'}:{cls:'tpex',txt:'上櫃'};
-  return {cls:'twse',txt:'上市'};
-}
-
 // ── RENDER ──
 function render(){
   var data=getFilt().slice();
@@ -566,254 +548,40 @@ function yfSetRange(code, interval, btn){
   tvLoad(code, interval);
 }
 
-// ── CANVAS K線圖模組 ──
-var kCache={};  // {code_interval: [{d,o,h,l,c,v},...]}
-
 function isTPEX(code){
   var c=String(code).trim();
   if(EXCHANGE_MAP[c]) return EXCHANGE_MAP[c]==='TPEX';
   var n=parseInt(c,10), p=Math.floor(n/1000);
   if(p<=2) return false;
   if(p===3) return TPEX3.has(n);
-  if(p===4) return !TWSE4.has(n);
-  if(p===5) return !TWSE5.has(n);
-  if(p===6) return !TWSE6.has(n);
-  if(p===7) return !TWSE7.has(n);
+  if(p===4) return [4764,4904,4906,4912,4919,4935,4938,4943,4944,4958,4961,4966,4967,4968,4971,4972,4973,4974,4976,4977,4979,4980,4981,4982,4983,4984,4985,4986,4987,4988,4989,4990,4992,4993,4994,4995,4997,4999].indexOf(n)<0;
+  if(p===5) return [5002,5005,5009,5011,5014,5016,5347,5371].indexOf(n)<0;
+  if(p===6){ if(n>=6300) return [6409,6510,6516,6517,6533,6548,6556,6560,6654,6680,6683,6684].indexOf(n)<0; return [6125,6179,6180,6207,6282,6289,6290,6291,6292,6293,6294,6295,6296,6297,6298,6299].indexOf(n)>=0; }
+  if(p===7) return [7788,7796,7716,7715,7750,7760,7774,7780,7781,7782,7783,7784,7785,7786,7787,7789,7790,7791,7792,7793,7794,7795,7797,7798,7799].indexOf(n)<0;
   if(p===8) return !TWSE8.has(n);
   return false;
 }
 
-function getYFSuffix(code){
-  // Yahoo Finance symbol: 上市 .TW，上櫃 .TWO
-  return isTPEX(code) ? code+'.TWO' : code+'.TW';
-}
-
-function fetchKData(code, interval, cb){
-  var key=code+'_'+interval;
-  if(kCache[key]){cb(kCache[key]);return;}
-  var sym=getYFSuffix(code);
-  // Yahoo Finance v8 chart API — 不需要 key，支援 CORS
-  var yf_interval = interval==='W' ? '1wk' : '1d';
-  var range = '1y';
-  var url='https://query1.finance.yahoo.com/v8/finance/chart/'+sym
-    +'?interval='+yf_interval+'&range='+range+'&events=div';
-  fetch(url, {headers:{'User-Agent':'Mozilla/5.0'}})
-    .then(function(r){return r.json();})
-    .then(function(data){
-      var result=data&&data.chart&&data.chart.result&&data.chart.result[0];
-      if(!result||!result.timestamp)throw new Error('no data');
-      var ts=result.timestamp;
-      var q=result.indicators.quote[0];
-      var rows=[];
-      for(var i=0;i<ts.length;i++){
-        var o=q.open[i],h=q.high[i],l=q.low[i],c=q.close[i],v=q.volume[i];
-        if(o==null||h==null||l==null||c==null)continue;
-        var dt=new Date(ts[i]*1000);
-        var d=dt.getFullYear()+'-'
-          +String(dt.getMonth()+1).padStart(2,'0')+'-'
-          +String(dt.getDate()).padStart(2,'0');
-        rows.push({d:d,o:Math.round(o*100)/100,h:Math.round(h*100)/100,
-                   l:Math.round(l*100)/100,c:Math.round(c*100)/100,v:v||0});
-      }
-      kCache[key]=rows;
-      cb(rows);
-    })
-    .catch(function(e){
-      // query1 失敗時嘗試 query2
-      var url2='https://query2.finance.yahoo.com/v8/finance/chart/'+sym
-        +'?interval='+yf_interval+'&range='+range;
-      fetch(url2)
-        .then(function(r){return r.json();})
-        .then(function(data){
-          var result=data&&data.chart&&data.chart.result&&data.chart.result[0];
-          if(!result||!result.timestamp){cb([]);return;}
-          var ts=result.timestamp;
-          var q=result.indicators.quote[0];
-          var rows=[];
-          for(var i=0;i<ts.length;i++){
-            var o=q.open[i],h=q.high[i],l=q.low[i],c=q.close[i],v=q.volume[i];
-            if(o==null||h==null||l==null||c==null)continue;
-            var dt=new Date(ts[i]*1000);
-            var d=dt.getFullYear()+'-'
-              +String(dt.getMonth()+1).padStart(2,'0')+'-'
-              +String(dt.getDate()).padStart(2,'0');
-            rows.push({d:d,o:Math.round(o*100)/100,h:Math.round(h*100)/100,
-                       l:Math.round(l*100)/100,c:Math.round(c*100)/100,v:v||0});
-          }
-          kCache[key]=rows;
-          cb(rows);
-        })
-        .catch(function(){cb([]);});
-    });
-}
-
-function toWeekly(daily){
-  var weeks=[],cur=null;
-  daily.forEach(function(d){
-    var dt=new Date(d.d);
-    var mon=new Date(dt);mon.setDate(dt.getDate()-dt.getDay()+1);
-    var wk=mon.toISOString().slice(0,10);
-    if(!cur||cur.d!==wk){
-      if(cur)weeks.push(cur);
-      cur={d:wk,o:d.o,h:d.h,l:d.l,c:d.c,v:d.v};
-    } else {
-      cur.h=Math.max(cur.h,d.h);
-      cur.l=Math.min(cur.l,d.l);
-      cur.c=d.c;
-      cur.v+=d.v;
-    }
-  });
-  if(cur)weeks.push(cur);
-  return weeks;
-}
-
-function calcMA(data, n){
-  return data.map(function(_,i){
-    if(i<n-1)return null;
-    var sum=0;for(var j=i-n+1;j<=i;j++)sum+=data[j].c;
-    return Math.round(sum/n*100)/100;
-  });
-}
-
-function drawKChart(canvas, data){
-  if(!data||data.length===0){
-    var ctx=canvas.getContext('2d');
-    ctx.fillStyle='#8b949e';ctx.font='14px sans-serif';ctx.textAlign='center';
-    ctx.fillText('暫無資料',canvas.width/2,canvas.height/2);
-    return;
-  }
-  var W=canvas.width, H=canvas.height;
-  var ctx=canvas.getContext('2d');
-  ctx.clearRect(0,0,W,H);
-
-  // 只顯示最後120根（日K）或60根（週K）
-  var show=data.slice(-120);
-  var n=show.length;
-  var PAD={t:20,b:55,l:58,r:10};
-  var volH=Math.floor((H-PAD.t-PAD.b)*0.22);
-  var kH=H-PAD.t-PAD.b-volH-4;
-
-  // 價格範圍
-  var hi=Math.max.apply(null,show.map(function(d){return d.h;}));
-  var lo=Math.min.apply(null,show.map(function(d){return d.l;}));
-  var pad=(hi-lo)*0.05||hi*0.02;
-  hi+=pad; lo-=pad;
-
-  // K棒寬度
-  var barW=Math.max(1,Math.floor((W-PAD.l-PAD.r)/n)-1);
-  var barW=Math.min(barW,12);
-  var step=(W-PAD.l-PAD.r)/n;
-
-  function px(x,i){return PAD.l+i*step+step/2;}
-  function py(v){return PAD.t+kH-(v-lo)/(hi-lo)*kH;}
-
-  // MA線
-  var ma5=calcMA(show,5), ma20=calcMA(show,20), ma60=calcMA(show,Math.min(60,n));
-
-  // ── 格線 ──
-  ctx.strokeStyle='#21262d'; ctx.lineWidth=1;
-  for(var gi=0;gi<5;gi++){
-    var gv=lo+(hi-lo)*gi/4;
-    var gy=py(gv);
-    ctx.beginPath();ctx.moveTo(PAD.l,gy);ctx.lineTo(W-PAD.r,gy);ctx.stroke();
-    ctx.fillStyle='#484f58';ctx.font='10px sans-serif';ctx.textAlign='right';
-    ctx.fillText(gv.toFixed(1),PAD.l-3,gy+4);
-  }
-
-  // ── K棒 ──
-  show.forEach(function(d,i){
-    var x=px(0,i);
-    var isUp=d.c>=d.o;
-    var color=isUp?'#f85149':'#3fb950';  // 台灣紅漲綠跌
-    var oy=py(Math.max(d.o,d.c)), cy=py(Math.min(d.o,d.c));
-    var bodyH=Math.max(1,cy-oy);
-    ctx.fillStyle=color;
-    ctx.fillRect(x-barW/2,oy,barW,bodyH);
-    ctx.strokeStyle=color; ctx.lineWidth=1;
-    ctx.beginPath();ctx.moveTo(x,py(d.h));ctx.lineTo(x,oy);ctx.stroke();
-    ctx.beginPath();ctx.moveTo(x,cy+bodyH-1>cy?cy+bodyH-1:cy);ctx.lineTo(x,py(d.l));ctx.stroke();
-  });
-
-  // ── MA線 ──
-  function drawMA(ma,color,label){
-    ctx.strokeStyle=color;ctx.lineWidth=1.5;ctx.beginPath();
-    var started=false;
-    ma.forEach(function(v,i){
-      if(v===null)return;
-      var x=px(0,i),y=py(v);
-      if(!started){ctx.moveTo(x,y);started=true;}else{ctx.lineTo(x,y);}
-    });
-    ctx.stroke();
-  }
-  drawMA(ma5,'#f0c040','MA5');
-  drawMA(ma20,'#58a6ff','MA20');
-  if(n>=60)drawMA(ma60,'#e040fb','MA60');
-
-  // ── MA 圖例 ──
-  var lgx=PAD.l, lgy=PAD.t-6;
-  [[ma5,'#f0c040','MA5'],[ma20,'#58a6ff','MA20'],[ma60,'#e040fb','MA60']].forEach(function(m,mi){
-    var last=m[0][m[0].length-1];
-    if(last===null)return;
-    ctx.fillStyle=m[1];ctx.font='bold 10px sans-serif';
-    ctx.fillText(m[2]+' '+last.toFixed(1),lgx+mi*72,lgy+10);
-    lgx+=0;
-  });
-
-  // ── 成交量 ──
-  var volTop=PAD.t+kH+4;
-  var maxV=Math.max.apply(null,show.map(function(d){return d.v;}));
-  show.forEach(function(d,i){
-    var x=px(0,i);
-    var isUp=d.c>=d.o;
-    ctx.fillStyle=isUp?'rgba(248,81,73,0.6)':'rgba(63,185,80,0.6)';
-    var vh=d.v/maxV*(volH-4);
-    ctx.fillRect(x-barW/2,volTop+volH-4-vh,barW,vh);
-  });
-
-  // ── X軸日期 ──
-  ctx.fillStyle='#484f58';ctx.font='10px sans-serif';ctx.textAlign='center';
-  var step2=Math.max(1,Math.floor(n/8));
-  for(var i=0;i<n;i+=step2){
-    var d=show[i].d;
-    var label=d.slice(5);  // MM-DD
-    ctx.fillText(label,px(0,i),H-PAD.b+volH+13);
-  }
+function getExchLabel(code){
+  return isTPEX(code)?{cls:'tpex',txt:'上櫃'}:{cls:'twse',txt:'上市'};
 }
 
 function tvLoad(code, interval){
   var frameDiv=document.getElementById('yf-frame-'+code);
   if(!frameDiv) return;
-  frameDiv.innerHTML=
-    '<div style="position:relative;background:#0d1117;border-radius:6px;padding:4px 0">'
-    +'<canvas id="kc-'+code+'" style="width:100%;height:380px;display:block"></canvas>'
-    +'<div id="kc-loading-'+code+'" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#8b949e;font-size:13px;background:#0d1117;border-radius:6px">⏳ 載入K線...</div>'
-    +'</div>';
-  var canvas=document.getElementById('kc-'+code);
-  var dpr=window.devicePixelRatio||1;
-
-  function initCanvas(){
-    var w=canvas.parentElement.offsetWidth||canvas.parentElement.clientWidth||400;
-    canvas.width=w*dpr;
-    canvas.height=380*dpr;
-    canvas.style.width=w+'px';
-    canvas.style.height='380px';
-    canvas.getContext('2d').scale(dpr,dpr);
-  }
-  initCanvas();
-
-  fetchKData(code, interval, function(data){
-    var loading=document.getElementById('kc-loading-'+code);
-    if(loading)loading.style.display='none';
-    // 重新確認 canvas 寬度（資料回來後 DOM 可能已展開）
-    if(canvas.width<100*dpr) initCanvas();
-    if(!data||data.length===0){
-      var ctx=canvas.getContext('2d');
-      ctx.fillStyle='#8b949e';ctx.font='14px sans-serif';ctx.textAlign='center';
-      ctx.fillText('無法取得資料',canvas.width/dpr/2,190);
-      return;
-    }
-    drawKChart(canvas, data);
+  var sym=getTVSymbol(code);
+  // 用 iframe 方式嵌入：完全隔離、無 container_id 衝突、無 race condition
+  var params=new URLSearchParams({
+    autosize:'1', symbol:sym, interval:interval,
+    timezone:'Asia/Taipei', theme:'dark', style:'1', locale:'zh_TW',
+    hide_top_toolbar:'false', hide_legend:'false', save_image:'false',
+    allow_symbol_change:'false'
   });
+  frameDiv.innerHTML='<iframe '
+    +'src="https://s.tradingview.com/widgetembed/?'+params.toString()+'" '
+    +'style="width:100%;height:420px;border:none;" '
+    +'allowtransparency="true" scrolling="no" '
+    +'allowfullscreen></iframe>';
 }
 
 // ── XQ 複製代碼 ──
