@@ -131,17 +131,6 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .gd-open{padding:12px;border-top:1px solid #30363d;text-align:center}
 .gd-open a{color:#58a6ff;font-size:13px;text-decoration:none}
 
-/* ── TRADINGVIEW CHART ── */
-.tv-wrap{display:none;margin-top:8px;border-radius:8px;overflow:hidden;border:1px solid #30363d}
-.tv-wrap.on{display:block}
-.tv-wrap iframe{width:100%;height:400px;border:none;display:block}
-.tv-bar{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#21262d;font-size:12px}
-.tv-title{color:#79c0ff;font-weight:700}
-.tv-close{color:#8b949e;cursor:pointer;font-size:16px;padding:0 4px}
-.tv-intervals{display:flex;gap:4px}
-.tv-int{background:none;border:1px solid #30363d;border-radius:4px;padding:3px 8px;font-size:11px;color:#8b949e;cursor:pointer}
-.tv-int.on{border-color:#58a6ff;color:#58a6ff;background:#1f6feb22}
-
 /* ── TOAST ── */
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) scale(0.9);background:#238636;color:#fff;padding:10px 20px;border-radius:8px;font-size:14px;display:none;z-index:500;white-space:nowrap;opacity:0;transition:opacity .18s,transform .18s}
 .toast.show{opacity:1;transform:translateX(-50%) scale(1)}
@@ -406,104 +395,15 @@ function render(){
         +'<div class="cg-item"><div class="cg-lbl">毛利率</div><div class="cg-val '+gmc+'">'+(s.grossmargin!==null?s.grossmargin.toFixed(1)+'%':'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">單季EPS</div><div class="cg-val '+epsc+'">'+(s.eps!==null?s.eps.toFixed(2):'--')+'</div></div>'
       +'</div>'
-      // TradingView chart (hidden by default)
-      +'<div class="tv-wrap" id="tv-'+s.code+'">'
-        +'<div class="tv-bar">'
-          +'<span class="tv-title">'+s.code+' '+s.name+'</span>'
-          +'<div class="tv-intervals">'
-            +'<button class="tv-int on" onclick="event.stopPropagation();tvInterval(\''+s.code+'\',\'60\',this)">60分</button>'
-            +'<button class="tv-int" onclick="event.stopPropagation();tvInterval(\''+s.code+'\',\'D\',this)">日</button>'
-            +'<button class="tv-int" onclick="event.stopPropagation();tvInterval(\''+s.code+'\',\'W\',this)">週</button>'
-          +'</div>'
-          +'<span class="tv-close" onclick="event.stopPropagation();closeChart(\''+s.code+'\')">✕</span>'
-        +'</div>'
-        +'<div id="tv-frame-'+s.code+'"></div>'
-      +'</div>'
     +'</div>';
   }).join('');
-}
-
-// ── TradingView Chart ──
-var currentChart = null;
-
-function getTVSymbol(code) {
-  var num = parseInt(code);
-  if(num >= 1000 && num <= 3548) return 'TWSE:' + code;
-  return 'TPEX:' + code;
-}
-
-function openChart(code, name, interval) {
-  interval = interval || '60';
-  var wrap = document.getElementById('tv-' + code);
-  var frameDiv = document.getElementById('tv-frame-' + code);
-  if(!wrap || !frameDiv) return;
-
-  if(currentChart === code && wrap.classList.contains('on')) {
-    closeChart(code);
-    return;
-  }
-
-  if(currentChart && currentChart !== code) {
-    var prev = document.getElementById('tv-' + currentChart);
-    if(prev) prev.classList.remove('on');
-    var prevFrame = document.getElementById('tv-frame-' + currentChart);
-    if(prevFrame) prevFrame.innerHTML = '';
-  }
-
-  currentChart = code;
-  loadTVWidget(code, interval);
-  wrap.classList.add('on');
-  wrap.scrollIntoView({behavior:'smooth', block:'nearest'});
-}
-
-function loadTVWidget(code, interval) {
-  var frameDiv = document.getElementById('tv-frame-' + code);
-  if(!frameDiv) return;
-  var sym = getTVSymbol(code);
-  var containerId = 'tv_container_' + code;
-  frameDiv.innerHTML = '<div id="'+containerId+'" style="height:420px;width:100%"></div>';
-
-  var script = document.createElement('script');
-  script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
-  script.async = true;
-  script.innerHTML = JSON.stringify({
-    "autosize": true,
-    "symbol": sym,
-    "interval": interval,
-    "timezone": "Asia/Taipei",
-    "theme": "dark",
-    "style": "1",
-    "locale": "zh_TW",
-    "hide_top_toolbar": false,
-    "hide_legend": false,
-    "save_image": false,
-    "container_id": containerId
-  });
-  document.getElementById(containerId).appendChild(script);
-}
-
-function closeChart(code) {
-  var wrap = document.getElementById('tv-' + code);
-  var frameDiv = document.getElementById('tv-frame-' + code);
-  if(wrap) wrap.classList.remove('on');
-  if(frameDiv) frameDiv.innerHTML = '';
-  if(currentChart === code) currentChart = null;
-}
-
-function tvInterval(code, interval, btn) {
-  var wrap = document.getElementById('tv-' + code);
-  if(wrap) {
-    wrap.querySelectorAll('.tv-int').forEach(function(b){b.classList.remove('on');});
-    btn.classList.add('on');
-  }
-  loadTVWidget(code, interval);
 }
 
 // ── XQ 複製代碼 ──
 var xqTimer=null;
 
 function openLinks(e,code,name){
-  // 複製代碼到剪貼簿（給AHK用）
+  // 複製代碼到剪貼簿
   var txt=code;
   if(navigator.clipboard && navigator.clipboard.writeText){
     navigator.clipboard.writeText(txt).then(function(){
@@ -514,8 +414,6 @@ function openLinks(e,code,name){
   } else {
     fallbackCopy(txt,code,name);
   }
-  // 展開K線圖
-  openChart(code, name);
 }
 
 function fallbackCopy(txt,code,name){
