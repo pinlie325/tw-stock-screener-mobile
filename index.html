@@ -44,6 +44,9 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 /* Card header */
 .card-hd{display:flex;align-items:flex-start;gap:8px;margin-bottom:8px}
 .card-code{font-family:monospace;font-size:17px;font-weight:700;color:#79c0ff}
+.card-exch{font-size:10px;font-weight:600;text-align:center;border-radius:3px;padding:1px 5px;margin-top:2px;white-space:nowrap}
+.card-exch.twse{background:#1f6feb22;color:#79c0ff;border:1px solid #1f6feb44}
+.card-exch.tpex{background:#3fb95018;color:#3fb950;border:1px solid #3fb95033}
 .card-name{font-size:16px;font-weight:600;color:#e6edf3;flex:1}
 .card-cnyes{font-size:11px;color:#58a6ff;text-decoration:none;background:#1f6feb22;border:1px solid #1f6feb44;border-radius:4px;padding:2px 6px;white-space:nowrap;flex-shrink:0;align-self:center}
 .card-cnyes:active{background:#1f6feb44}
@@ -338,6 +341,23 @@ function getFilt(){
   return d;
 }
 
+// ── EXCHANGE LABEL ──
+function getExchLabel(code){
+  var c=String(code).trim().replace(/\.0+$/,'');
+  // 優先使用動態 API 對照
+  if(EXCHANGE_MAP[c]) return EXCHANGE_MAP[c]==='TWSE'?{cls:'twse',txt:'上市'}:{cls:'tpex',txt:'上櫃'};
+  // Fallback 靜態 Set
+  var n=parseInt(c,10); var p=Math.floor(n/1000);
+  if(p<=2) return {cls:'twse',txt:'上市'};
+  if(p===3) return TPEX3.has(n)?{cls:'tpex',txt:'上櫃'}:{cls:'twse',txt:'上市'};
+  if(p===4) return TWSE4.has(n)?{cls:'twse',txt:'上市'}:{cls:'tpex',txt:'上櫃'};
+  if(p===5) return TWSE5.has(n)?{cls:'twse',txt:'上市'}:{cls:'tpex',txt:'上櫃'};
+  if(p===6) return TWSE6.has(n)?{cls:'twse',txt:'上市'}:{cls:'tpex',txt:'上櫃'};
+  if(p===7) return TWSE7.has(n)?{cls:'twse',txt:'上市'}:{cls:'tpex',txt:'上櫃'};
+  if(p===8) return TWSE8.has(n)?{cls:'twse',txt:'上市'}:{cls:'tpex',txt:'上櫃'};
+  return {cls:'twse',txt:'上市'};
+}
+
 // ── RENDER ──
 function render(){
   var data=getFilt().slice();
@@ -373,7 +393,10 @@ function render(){
       +'<div class="card-hd">'
         +'<div style="flex:1">'
           +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'
-            +'<span class="card-code">'+s.code+'</span>'
+            +'<div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0">'
+              +'<span class="card-code">'+s.code+'</span>'
+              +(function(){var e=getExchLabel(s.code);return '<span class="card-exch '+e.cls+'">'+e.txt+'</span>';})()
+            +'</div>'
             +'<span class="card-name">'+s.name+'</span>'
             +'<a class="card-cnyes" href="https://www.cnyes.com/twstock/'+s.code+'" target="_blank" onclick="event.stopPropagation()">鉅亨</a>'
           +'</div>'
