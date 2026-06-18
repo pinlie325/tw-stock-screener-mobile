@@ -99,7 +99,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .card-avg span{color:#c9d1d9}
 
 /* Card stats grid */
-.card-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px;margin-bottom:8px}
+.card-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:5px;margin-bottom:8px}
 .cg-item{background:#0d1117;border-radius:6px;padding:6px 8px}
 .cg-lbl{font-size:10px;color:#6e7681;margin-bottom:2px}
 .cg-val{font-size:14px;font-weight:600;color:#c9d1d9}
@@ -182,6 +182,9 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .yf-intervals{display:flex;gap:4px}
 .yf-int{background:none;border:1px solid #30363d;border-radius:4px;padding:3px 8px;font-size:11px;color:#8b949e;cursor:pointer}
 .yf-int.on{border-color:#58a6ff;color:#58a6ff;background:#1f6feb22}
+.yf-kbars{display:flex;gap:3px}
+.yf-kbar{background:none;border:1px solid #30363d;border-radius:4px;padding:3px 7px;font-size:11px;color:#8b949e;cursor:pointer}
+.yf-kbar.on{border-color:#3fb950;color:#3fb950;background:#3fb95022}
 .yf-close{color:#8b949e;cursor:pointer;font-size:18px;padding:0 4px;line-height:1}
 
 /* ── TOAST ── */
@@ -523,7 +526,6 @@ function render(){
         +'<span class="card-close">'+(s.volume!==null?s.volume.toLocaleString():'--')+'</span>'
         +'<span class="card-avg" style="color:'+(pct>0?'#f85149':pct<0?'#3fb950':'#8b949e')+'">'+ps+'</span>'
         +(s.close!==null?'<span class="card-avg">昨收 <span>'+s.close.toFixed(1)+'</span></span>':'')
-        +(s.bigbuy!==null&&s.bigbuy!==undefined?'<span class="card-avg" style="color:#e040fb">外大單 <span style="color:#e040fb">'+s.bigbuy.toFixed(1)+'%</span></span>':'')
         +'<a class="card-cnyes" href="https://www.cnyes.com/twstock/'+s.code+'" target="_blank" onclick="event.stopPropagation()">鉅亨</a>'
       +'</div>'
       +'<div class="card-grid">'
@@ -535,6 +537,8 @@ function render(){
         +'<div class="cg-item"><div class="cg-lbl">RS%</div><div class="cg-val '+rsc+'">'+(s.rs!==null?s.rs.toFixed(1):'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">毛利率</div><div class="cg-val '+gmc+'">'+(s.grossmargin!==null?s.grossmargin.toFixed(1)+'%':'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">單季EPS</div><div class="cg-val '+epsc+'">'+(s.eps!==null?s.eps.toFixed(2):'--')+'</div></div>'
+        +(function(){var annEps=s.eps!==null?s.eps*4:null;var pe=(annEps&&annEps>0&&s.close!==null)?(s.close/(annEps)).toFixed(1):null;var pec=pe!==null?(parseFloat(pe)<15?'ok':parseFloat(pe)<30?'mid':'warn'):'';return '<div class="cg-item"><div class="cg-lbl">本益比(估)</div><div class="cg-val '+pec+'">'+(pe!==null?pe:'--')+'</div></div>';})()
+        +'<div class="cg-item"><div class="cg-lbl">外大單%</div><div class="cg-val" style="color:'+(s.bigbuy!==null&&s.bigbuy!==undefined?'#e040fb':'#c9d1d9')+'">'+(s.bigbuy!==null&&s.bigbuy!==undefined?s.bigbuy.toFixed(1)+'%':'--')+'</div></div>'
       +'</div>'
       // Yahoo K線圖區塊
       +'<div class="yf-wrap" id="yf-'+s.code+'">'
@@ -546,8 +550,13 @@ function render(){
           +'<div style="display:flex;align-items:center;gap:6px">'
             +'<div class="yf-intervals">'
               
-              +'<button class="yf-int on" onclick="event.stopPropagation();yfSetRange(\''+s.code+'\',\'D\',this)">日</button>'
-              +'<button class="yf-int" onclick="event.stopPropagation();yfSetRange(\''+s.code+'\',\'W\',this)">週</button>'
+              +'<button class="yf-int on" data-iv="D" onclick="event.stopPropagation();yfSetRange(\''+s.code+'\',\'D\',this)">日</button>'
+              +'<button class="yf-int" data-iv="W" onclick="event.stopPropagation();yfSetRange(\''+s.code+'\',\'W\',this)">週</button>'
+            +'</div>'
+            +'<div class="yf-kbars">'
+              +'<button class="yf-kbar" onclick="event.stopPropagation();setKBars(30,this)">30</button>'
+              +'<button class="yf-kbar on" onclick="event.stopPropagation();setKBars(60,this)">60</button>'
+              +'<button class="yf-kbar" onclick="event.stopPropagation();setKBars(120,this)">120</button>'
             +'</div>'
             +'<span class="yf-close" onclick="event.stopPropagation();closeChart(\''+s.code+'\')">✕</span>'
           +'</div>'
@@ -655,6 +664,21 @@ function yfSetRange(code, interval, btn){
   tvLoad(code, interval);
 }
 
+function setKBars(n, btn){
+  kBars=n;
+  // 更新所有 kbar 按鈕狀態
+  document.querySelectorAll('.yf-kbar').forEach(function(b){b.classList.remove('on');});
+  btn.classList.add('on');
+  // 重繪目前展開的圖表
+  if(currentChart){
+    var wrap=document.getElementById('yf-'+currentChart);
+    if(!wrap) return;
+    var intBtn=wrap.querySelector('.yf-int.on');
+    var interval=intBtn?intBtn.getAttribute('data-iv'):'D';
+    tvLoad(currentChart, interval);
+  }
+}
+
 function isTPEX(code){
   var c=String(code).trim();
   if(EXCHANGE_MAP[c]) return EXCHANGE_MAP[c]==='TPEX';
@@ -731,6 +755,7 @@ function calcMA(data, n){
 }
 
 var CHART_H=280;
+var kBars=60; // 預設顯示60根K棒
 function drawKChart(canvas, data){
   var dpr = window.devicePixelRatio||1;
   var W = canvas.width/dpr, H = CHART_H;
@@ -740,7 +765,12 @@ function drawKChart(canvas, data){
     ctx.fillStyle='#8b949e'; ctx.font='13px sans-serif'; ctx.textAlign='center';
     ctx.fillText('無法取得資料（請確認 API Key 及網路）', W/2, H/2); return;
   }
-  var show = data.slice(-120), n = show.length;
+  // 先對完整資料計算MA，再截切，確保任何kBars下MA都能畫齊
+  var ma13Full = calcMA(data, 13);
+  var ma60Full = calcMA(data, 60);
+  var show = data.slice(-kBars), n = show.length;
+  var ma13Show = ma13Full.slice(-kBars);
+  var ma60Show = ma60Full.slice(-kBars);
   var PAD = {t:22, b:18, l:60, r:8};
   var volH = Math.floor((H-PAD.t-PAD.b)*0.20);
   var kH = H-PAD.t-PAD.b-volH-6;
@@ -769,7 +799,7 @@ function drawKChart(canvas, data){
     ctx.beginPath(); ctx.moveTo(x,cy+bh); ctx.lineTo(x,py(d.l)); ctx.stroke();
   });
   // MA線
-  var mas = [[calcMA(show,13),'#f0c040','MA13'],[calcMA(show,60),'#e040fb','MA60']];
+  var mas = [[ma13Show,'#f0c040','MA13'],[ma60Show,'#e040fb','MA60']];
   mas.forEach(function(m){
     ctx.strokeStyle=m[1]; ctx.lineWidth=1.5; ctx.beginPath();
     var s=false;
