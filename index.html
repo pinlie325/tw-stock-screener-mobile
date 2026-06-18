@@ -523,6 +523,7 @@ function render(){
         +'<span class="card-close">'+(s.volume!==null?s.volume.toLocaleString():'--')+'</span>'
         +'<span class="card-avg" style="color:'+(pct>0?'#f85149':pct<0?'#3fb950':'#8b949e')+'">'+ps+'</span>'
         +(s.close!==null?'<span class="card-avg">昨收 <span>'+s.close.toFixed(1)+'</span></span>':'')
+        +(s.bigbuy!==null&&s.bigbuy!==undefined?'<span class="card-avg" style="color:#e040fb">外大單 <span style="color:#e040fb">'+s.bigbuy.toFixed(1)+'%</span></span>':'')
         +'<a class="card-cnyes" href="https://www.cnyes.com/twstock/'+s.code+'" target="_blank" onclick="event.stopPropagation()">鉅亨</a>'
       +'</div>'
       +'<div class="card-grid">'
@@ -982,7 +983,7 @@ function parseXL(file){
 function processRows(rows,filename){
   var keys=Object.keys(rows[0]);
   function fc(arr){for(var i=0;i<arr.length;i++)for(var j=0;j<keys.length;j++)if(keys[j].indexOf(arr[i])>=0)return keys[j];return null;}
-  var COL={code:fc(['代碼']),name:fc(['商品','名稱']),close:fc(['昨收']),pct:fc(['漲幅']),avg:fc(['均價']),volume:fc(['成交']),turnover:fc(['換手率']),turnval:fc(['成交值']),capital:fc(['股本']),margin:fc(['融資維持']),ind:fc(['所有細產業','細產業','產業']),pos:fc(['產業地位']),rs:fc(['RS%']),grossmargin:fc(['毛利率']),eps:fc(['盈餘(單)','單季','EPS'])};
+  var COL={code:fc(['代碼']),name:fc(['商品','名稱']),close:fc(['昨收']),pct:fc(['漲幅']),avg:fc(['均價']),volume:fc(['成交']),turnover:fc(['換手率']),turnval:fc(['成交值']),capital:fc(['股本']),margin:fc(['融資維持']),ind:fc(['所有細產業','細產業','產業']),pos:fc(['產業地位']),rs:fc(['RS%']),grossmargin:fc(['毛利率']),eps:fc(['盈餘(單)','單季','EPS']),bigbuy:fc(['外盤特大單%','外盤特大單','特大單%'])};
   function sf(v){if(v===null||v===undefined||v===''||v==='--')return null;var n=parseFloat(v);return isNaN(n)?null:n;}
   var nd=[];
   rows.forEach(function(r){
@@ -991,7 +992,7 @@ function processRows(rows,filename){
     // 代碼欄可能是數字(2302)、帶空格(' 2302 ')或小數('2302.0')，統一正規化為4位字串
     var rawCode=String(r[COL.code]).trim().replace(/\.0+$/,'');
     var cleanCode=/^\d+$/.test(rawCode)?rawCode.padStart(4,'0'):rawCode;
-    nd.push({code:cleanCode,name:COL.name?String(r[COL.name]||'').trim():'',close:COL.close?sf(r[COL.close]):null,pct:COL.pct?sf(r[COL.pct]):null,avg:COL.avg?sf(r[COL.avg]):null,volume:COL.volume?sf(r[COL.volume]):null,turnover:COL.turnover?sf(r[COL.turnover]):null,turnval:COL.turnval?sf(r[COL.turnval]):null,capital:COL.capital?sf(r[COL.capital]):null,margin:COL.margin?sf(r[COL.margin]):null,position:COL.pos&&r[COL.pos]?String(r[COL.pos]).trim():'',tags:ts,rs:COL.rs?sf(r[COL.rs]):null,grossmargin:COL.grossmargin?sf(r[COL.grossmargin]):null,eps:COL.eps?sf(r[COL.eps]):null});
+    nd.push({code:cleanCode,name:COL.name?String(r[COL.name]||'').trim():'',close:COL.close?sf(r[COL.close]):null,pct:COL.pct?sf(r[COL.pct]):null,avg:COL.avg?sf(r[COL.avg]):null,volume:COL.volume?sf(r[COL.volume]):null,turnover:COL.turnover?sf(r[COL.turnover]):null,turnval:COL.turnval?sf(r[COL.turnval]):null,capital:COL.capital?sf(r[COL.capital]):null,margin:COL.margin?sf(r[COL.margin]):null,position:COL.pos&&r[COL.pos]?String(r[COL.pos]).trim():'',tags:ts,rs:COL.rs?sf(r[COL.rs]):null,grossmargin:COL.grossmargin?sf(r[COL.grossmargin]):null,eps:COL.eps?sf(r[COL.eps]):null,bigbuy:COL.bigbuy?sf(r[COL.bigbuy]):null});
   });
   if(!nd.length){alert('沒有讀到有效資料');return;}
   D=nd;
