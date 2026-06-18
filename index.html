@@ -41,8 +41,11 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 
 /* ── FILTER BAR ── */
 .fbar{background:#161b22;border-bottom:1px solid #21262d;padding:7px 12px;display:flex;gap:8px;align-items:center;position:sticky;top:47px;z-index:99}
-.fbar-search{flex:1;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:8px 10px;color:#e6edf3;font-size:14px;outline:none}
+.fbar-search-wrap{flex:1;position:relative;display:flex;align-items:center;max-width:340px}
+.fbar-search{width:100%;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:5px 28px 5px 10px;color:#e6edf3;font-size:13px;outline:none;box-sizing:border-box}
 .fbar-search:focus{border-color:#58a6ff}
+.fbar-clear{position:absolute;right:6px;background:none;border:none;color:#8b949e;font-size:15px;cursor:pointer;padding:0;line-height:1;display:none}
+.fbar-clear:hover{color:#e6edf3}
 .btn-filter{background:none;border:1px solid #30363d;border-radius:6px;padding:6px 10px;font-size:13px;color:#8b949e;cursor:pointer;white-space:nowrap}
 .btn-filter.on{border-color:#58a6ff;color:#58a6ff;background:#1f6feb22}
 
@@ -208,7 +211,10 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 
 <!-- FILTER BAR -->
 <div class="fbar">
-  <input class="fbar-search" id="fsearch" type="text" placeholder="搜尋代碼或名稱..." oninput="doSearch(this.value)" onchange="doSearch(this.value)" onkeyup="doSearch(this.value)">
+  <div class="fbar-search-wrap">
+    <input class="fbar-search" id="fsearch" type="text" placeholder="搜尋代碼或名稱..." oninput="doSearch(this.value);toggleClear(this.value)" onkeyup="doSearch(this.value);toggleClear(this.value)">
+    <button class="fbar-clear" id="fclear" onclick="clearSearch()">✕</button>
+  </div>
   <button class="btn-filter" id="fbtn" onclick="openDrawer()">☰ 產業</button>
 </div>
 
@@ -274,6 +280,8 @@ var D=[];
 var C={"半導體":["IC設計","IC製造","晶圓代工","IC封裝","IC測試","IC封裝測試","DRAM","非揮發性記憶體","封測服務與材料","矽晶圓","第三類半導體","矽化鎵相關","化合物晶圓","設計IP","ASIC","探針、探針卡","半導體製程設備","封測用設備","PCB相關設備","廠務工程"],"AI / 伺服器":["AI伺服器","ASIC伺服器","伺服器","雲端科技","Internet技術與基礎設施"],"電源 / 電力":["電源供應器","UPS","變壓器","電力設備","配電盤","變電設備","配電工程","電力公共事業","PV Inverter","太陽能","工業用電池","電池","儲能系統"],"被動元件":["被動元件","MLCC","晶片電阻","電容","電感","鋁質電解電容","石英元件","振盪器","鉭質電解電容","分離式元件","電晶體"],"PCB / 載板":["印刷電路板","印刷電路板相關","HDI板","IC基板","BGA基板","ABF載板","軟板","銅箔基板"],"連接器 / 線材":["連接器","連接線材","電線電纜","電子線"],"電腦 / 系統":["電腦系統業","工業電腦","電子製造服務","筆記型電腦製造","桌上型電腦","週邊產品","機殼","散熱模組","散熱風扇馬達"],"通訊 / 網路":["網通設備","光通訊","無線網路設備系統(WLAN)","用戶端設備","衛星通訊設備","網路通訊IC"],"光電 / LED":["LED","LED照明產品","LED封裝","光學鏡片/頭","光學元件","面板業","面板零組件","顯示器"],"生技 / 醫療":["醫藥產業","生物科技","新藥研發","西藥製劑","醫療器材","食品生技"],"車用 / 電動車":["車用電子","電動車","決策車零組件","車輛整車","車用鋰電池","車用充電相關","傳動系統","機車零組件","輪圈"],"金融":["金融業","銀行","證券","保險","投信","金控","資產管理","金融其他"],"營建 / 地產":["營建","地產","住宅建設","營造工程","資產股"],"傳產 / 機械":["化學工業","傳產其他","塑化製品","塑化原料","產業機械","機械零組件"],"航運":["運輸事業","航空","海運","倉儲","流通業"],"零售 / 消費":["旅宿／餐飲","餐飲","飯店","休閒娛樂","食品加工","成衣","成衣製造","農林漁牧"],"軟體 / 系統整合":["軟體業","系統整合"],"電子通路":["電子通路","電子元件代理商","IC零組件通路商"]};
 
 var sel=[],sk='pct',sd='d',searchQ='';
+function toggleClear(v){var b=document.getElementById('fclear');if(b)b.style.display=v?'block':'none';}
+function clearSearch(){var i=document.getElementById('fsearch');if(i){i.value='';doSearch('');toggleClear('');}}
 
 // ── SORT ──
 function setSrt(el,k,d){
@@ -444,7 +452,7 @@ function render(){
           +'</div>'
           +'<div style="display:flex;align-items:center;gap:6px">'
             +'<div class="yf-intervals">'
-              +'<button class="yf-int" onclick="event.stopPropagation();yfSetRange(\''+s.code+'\',\'60\',this)">60分</button>'
+              
               +'<button class="yf-int on" onclick="event.stopPropagation();yfSetRange(\''+s.code+'\',\'D\',this)">日</button>'
               +'<button class="yf-int" onclick="event.stopPropagation();yfSetRange(\''+s.code+'\',\'W\',this)">週</button>'
             +'</div>'
