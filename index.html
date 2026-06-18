@@ -46,6 +46,13 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .fbar-search:focus{border-color:#58a6ff}
 .fbar-clear{position:absolute;right:6px;background:none;border:none;color:#8b949e;font-size:15px;cursor:pointer;padding:0;line-height:1;display:none}
 .fbar-clear:hover{color:#e6edf3}
+.fbar-tags{display:flex;flex-wrap:wrap;gap:5px;padding:0 12px 6px;min-height:0}
+.fbar-tags:empty{display:none}
+.fbar-sel-tag{display:inline-flex;align-items:center;gap:4px;background:#1f3a5f;color:#79c0ff;border:1px solid #1f6feb55;border-radius:12px;font-size:11px;padding:2px 8px;cursor:pointer}
+.fbar-sel-tag:hover{background:#1f4a7f}
+.fbar-sel-tag .rm{color:#8b949e;font-size:12px}
+.fbar-clear-all{display:none;align-items:center;background:none;border:1px solid #f8514955;color:#f85149;border-radius:12px;font-size:11px;padding:2px 8px;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.fbar-clear-all:hover{background:#3a1a1a}
 .btn-filter{background:none;border:1px solid #30363d;border-radius:6px;padding:6px 10px;font-size:13px;color:#8b949e;cursor:pointer;white-space:nowrap}
 .btn-filter.on{border-color:#58a6ff;color:#58a6ff;background:#1f6feb22}
 
@@ -119,14 +126,17 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 /* ── FILTER DRAWER ── */
 .drawer-bg{display:none;position:fixed;inset:0;background:#00000088;z-index:300}
 .drawer-bg.on{display:block}
-.drawer{position:fixed;bottom:0;left:0;right:0;background:#161b22;border-top:1px solid #30363d;border-radius:16px 16px 0 0;z-index:301;max-height:75vh;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .25s}
+.drawer{position:fixed;bottom:0;left:0;right:0;background:#161b22;border-top:1px solid #30363d;border-radius:16px 16px 0 0;z-index:301;height:80vh;max-height:80vh;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .25s}
 .drawer.on{transform:translateY(0)}
 .drawer-hd{padding:14px 16px;border-bottom:1px solid #30363d;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 .drawer-hd h3{font-size:15px;font-weight:700}
 .drawer-close{font-size:20px;color:#8b949e;cursor:pointer;padding:0 4px}
 .drawer-body{flex:1;overflow-y:auto;padding:10px}
-.drawer-search{width:100%;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:8px 10px;color:#e6edf3;font-size:14px;outline:none;margin-bottom:10px}
+.drawer-search-wrap{position:relative;display:flex;align-items:center;margin-bottom:10px}
+.drawer-search{width:100%;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:8px 32px 8px 10px;color:#e6edf3;font-size:14px;outline:none;box-sizing:border-box}
 .drawer-search:focus{border-color:#58a6ff}
+.drawer-clear{position:absolute;right:8px;background:none;border:none;color:#8b949e;font-size:15px;cursor:pointer;padding:0;line-height:1;display:none}
+.drawer-clear:hover{color:#e6edf3}
 .dall{width:100%;background:none;border:1px solid #30363d;border-radius:6px;padding:8px;font-size:14px;color:#58a6ff;cursor:pointer;margin-bottom:6px;text-align:left}
 .dall.on{background:#1f6feb22;border-color:#58a6ff}
 .dcat{margin-bottom:2px}
@@ -217,6 +227,10 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
   </div>
   <button class="btn-filter" id="fbtn" onclick="openDrawer()">☰ 產業</button>
 </div>
+<div id="fbar-tags-wrap" style="display:none;align-items:center;gap:5px;padding:0 12px 6px;flex-wrap:wrap">
+  <button class="fbar-clear-all" id="fbar-clear-all" onclick="selAll()">✕ 清除全部</button>
+  <div class="fbar-tags" id="fbar-tags" style="display:contents"></div>
+</div>
 
 <!-- SORT BAR -->
 <div class="sbar" id="sbar">
@@ -251,8 +265,11 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
     <span class="drawer-close" onclick="closeDrawer()">✕</span>
   </div>
   <div class="drawer-body">
-    <input class="drawer-search" id="dsearch" type="text" placeholder="搜尋標籤..." oninput="doTagSearch(this.value)">
     <button class="dall on" id="dall" onclick="selAll()">全部股票</button>
+    <div class="drawer-search-wrap">
+      <input class="drawer-search" id="dsearch" type="text" placeholder="搜尋標籤..." oninput="doTagSearch(this.value);toggleDClear(this.value)">
+      <button class="drawer-clear" id="dclear" onclick="clearDSearch()">✕</button>
+    </div>
     <div id="dcats"></div>
   </div>
 </div>
@@ -280,6 +297,8 @@ var D=[];
 var C={"半導體":["IC設計","IC製造","晶圓代工","IC封裝","IC測試","IC封裝測試","DRAM","非揮發性記憶體","封測服務與材料","矽晶圓","第三類半導體","矽化鎵相關","化合物晶圓","設計IP","ASIC","探針、探針卡","半導體製程設備","封測用設備","PCB相關設備","廠務工程"],"AI / 伺服器":["AI伺服器","ASIC伺服器","伺服器","雲端科技","Internet技術與基礎設施"],"電源 / 電力":["電源供應器","UPS","變壓器","電力設備","配電盤","變電設備","配電工程","電力公共事業","PV Inverter","太陽能","工業用電池","電池","儲能系統"],"被動元件":["被動元件","MLCC","晶片電阻","電容","電感","鋁質電解電容","石英元件","振盪器","鉭質電解電容","分離式元件","電晶體"],"PCB / 載板":["印刷電路板","印刷電路板相關","HDI板","IC基板","BGA基板","ABF載板","軟板","銅箔基板"],"連接器 / 線材":["連接器","連接線材","電線電纜","電子線"],"電腦 / 系統":["電腦系統業","工業電腦","電子製造服務","筆記型電腦製造","桌上型電腦","週邊產品","機殼","散熱模組","散熱風扇馬達"],"通訊 / 網路":["網通設備","光通訊","無線網路設備系統(WLAN)","用戶端設備","衛星通訊設備","網路通訊IC"],"光電 / LED":["LED","LED照明產品","LED封裝","光學鏡片/頭","光學元件","面板業","面板零組件","顯示器"],"生技 / 醫療":["醫藥產業","生物科技","新藥研發","西藥製劑","醫療器材","食品生技"],"車用 / 電動車":["車用電子","電動車","決策車零組件","車輛整車","車用鋰電池","車用充電相關","傳動系統","機車零組件","輪圈"],"金融":["金融業","銀行","證券","保險","投信","金控","資產管理","金融其他"],"營建 / 地產":["營建","地產","住宅建設","營造工程","資產股"],"傳產 / 機械":["化學工業","傳產其他","塑化製品","塑化原料","產業機械","機械零組件"],"航運":["運輸事業","航空","海運","倉儲","流通業"],"零售 / 消費":["旅宿／餐飲","餐飲","飯店","休閒娛樂","食品加工","成衣","成衣製造","農林漁牧"],"軟體 / 系統整合":["軟體業","系統整合"],"電子通路":["電子通路","電子元件代理商","IC零組件通路商"]};
 
 var sel=[],sk='pct',sd='d',searchQ='';
+function toggleDClear(v){var b=document.getElementById('dclear');if(b)b.style.display=v?'block':'none';}
+function clearDSearch(){var i=document.getElementById('dsearch');if(i){i.value='';doTagSearch('');toggleDClear('');}}
 function toggleClear(v){var b=document.getElementById('fclear');if(b)b.style.display=v?'block':'none';}
 function clearSearch(){var i=document.getElementById('fsearch');if(i){i.value='';doSearch('');toggleClear('');}}
 
@@ -336,6 +355,35 @@ function cCat(btn){
   btn.classList.toggle('on',open);
 }
 
+function renderSelTags(){
+  var wrap=document.getElementById('fbar-tags');
+  var outer=document.getElementById('fbar-tags-wrap');
+  var btn=document.getElementById('fbar-clear-all');
+  if(!wrap) return;
+  wrap.innerHTML=sel.map(function(t){
+    var safe=t.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+    return '<span class="fbar-sel-tag" data-tag="'+safe+'">'+t+' <span class="rm">✕</span></span>';
+  }).join('');
+  wrap.onclick=function(e){
+    var sp=e.target.closest('.fbar-sel-tag');
+    if(sp) removeTag(sp.getAttribute('data-tag'));
+  };
+  if(outer) outer.style.display=sel.length?'flex':'none';
+  if(btn) btn.style.display=sel.length?'inline-flex':'none';
+}
+function removeTag(tag){
+  var i=sel.indexOf(tag);
+  if(i>=0) sel.splice(i,1);
+  // 同步 drawer 內的 dtag 狀態
+  document.querySelectorAll('.dtag').forEach(function(el){
+    if(el.getAttribute('data-t')===tag) el.classList.remove('on');
+  });
+  document.getElementById('dall').classList.toggle('on',!sel.length);
+  document.getElementById('fbtn').classList.toggle('on',sel.length>0);
+  document.getElementById('fbtn').textContent=sel.length?'☰ 產業 ('+sel.length+')':'☰ 產業';
+  renderSelTags();
+  render();
+}
 function cTag(el,tag){
   var i=sel.indexOf(tag);
   if(i>=0){sel.splice(i,1);el.classList.remove('on');}
@@ -343,6 +391,7 @@ function cTag(el,tag){
   document.getElementById('dall').classList.toggle('on',!sel.length);
   document.getElementById('fbtn').classList.toggle('on',sel.length>0);
   document.getElementById('fbtn').textContent=sel.length?'☰ 產業 ('+sel.length+')':'☰ 產業';
+  renderSelTags();
   render();
 }
 
@@ -352,14 +401,34 @@ function selAll(){
   document.getElementById('dall').classList.add('on');
   document.getElementById('fbtn').classList.remove('on');
   document.getElementById('fbtn').textContent='☰ 產業';
+  renderSelTags();
   closeDrawer();
   render();
 }
 
 function doTagSearch(v){
-  var q=v.toLowerCase();
-  document.querySelectorAll('.dtag').forEach(function(el){
-    el.style.display=(!q||el.getAttribute('data-t').toLowerCase().indexOf(q)>=0)?'':'none';
+  var q=v.trim().toLowerCase();
+  document.querySelectorAll('.dcat').forEach(function(dcat){
+    var dtags=dcat.querySelector('.dtags');
+    if(!q){
+      dcat.style.display='';
+      if(dtags) dtags.style.display='';  // 還原預設（CSS none）
+      dcat.querySelectorAll('.dtag').forEach(function(t){t.style.display='';});
+      return;
+    }
+    var catBtn=dcat.querySelector('.dcat-btn span');
+    var catMatch=catBtn&&catBtn.textContent.toLowerCase().indexOf(q)>=0;
+    var anyTag=false;
+    dcat.querySelectorAll('.dtag').forEach(function(t){
+      var show=catMatch||t.getAttribute('data-t').toLowerCase().indexOf(q)>=0;
+      t.style.display=show?'':'none';
+      if(show) anyTag=true;
+    });
+    var visible=catMatch||anyTag;
+    dcat.style.display=visible?'':'none';
+    // 有匹配就展開標籤區
+    if(dtags) dtags.style.display=visible?'flex':'';
+    if(catMatch) dcat.querySelectorAll('.dtag').forEach(function(t){t.style.display='';});
   });
 }
 
@@ -406,7 +475,7 @@ function render(){
     var gmc=s.grossmargin!==null?(s.grossmargin>=40?'ok':s.grossmargin>=20?'mid':''):'';
     var epsc=s.eps!==null?(s.eps>0?'up':s.eps<0?'dn':''):'';
     var hiTags=s.tags.filter(function(t){return sel.indexOf(t)>=0;});
-    var showTags=hiTags.length?hiTags:s.tags.slice(0,3);
+    var showTags=s.tags.slice(0,4);
     return '<div class="card" onclick="openChart(event,\''+s.code+'\',\''+s.name.replace(/'/g,"\\'")+'\')">'
       +'<div class="card-hd">'
         +'<div style="flex:1">'
@@ -648,7 +717,7 @@ function drawKChart(canvas, data){
     ctx.fillText('無法取得資料（請確認 API Key 及網路）', W/2, H/2); return;
   }
   var show = data.slice(-120), n = show.length;
-  var PAD = {t:22, b:30, l:60, r:8};
+  var PAD = {t:22, b:18, l:60, r:8};
   var volH = Math.floor((H-PAD.t-PAD.b)*0.20);
   var kH = H-PAD.t-PAD.b-volH-6;
   var hi = Math.max.apply(null, show.map(function(d){return d.h;}));
@@ -701,11 +770,16 @@ function drawKChart(canvas, data){
     ctx.fillStyle=isUp?'rgba(248,81,73,0.55)':'rgba(63,185,80,0.55)';
     ctx.fillRect(x-barW/2, vTop+volH-2-vh, barW, vh);
   });
-  // X軸日期
-  ctx.fillStyle='#6e7681'; ctx.font='9px sans-serif'; ctx.textAlign='center';
-  var step2=Math.max(1,Math.floor(n/7));
+  // X軸日期（底部 PAD.b 區域內）
+  ctx.fillStyle='#8b949e'; ctx.font='9px sans-serif'; ctx.textAlign='center';
+  var step2=Math.max(1,Math.floor(n/6));
+  var prevM='';
   for(var i=0;i<n;i+=step2){
-    ctx.fillText(show[i].d.slice(5), px(i), H-PAD.b+volH+11);
+    var dd=show[i].d; // yyyy-mm-dd
+    var m=dd.slice(5,7), day=dd.slice(8,10);
+    var label= (m!==prevM) ? dd.slice(2,7) : '/'+day;
+    ctx.fillText(label, px(i), H-8);
+    prevM=m;
   }
 }
 
@@ -861,6 +935,7 @@ function tapTag(tag){
   document.getElementById('dall').classList.toggle('on',!sel.length);
   document.getElementById('fbtn').classList.toggle('on',sel.length>0);
   document.getElementById('fbtn').textContent=sel.length?'☰ 產業 ('+sel.length+')':'☰ 產業';
+  renderSelTags();
   render();
 }
 
