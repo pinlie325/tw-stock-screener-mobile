@@ -41,7 +41,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 
 /* ── FILTER BAR ── */
 .fbar{background:#161b22;border-bottom:1px solid #21262d;padding:7px 12px;display:flex;gap:8px;align-items:center;position:sticky;top:47px;z-index:99}
-.fbar-search-wrap{flex:1;position:relative;display:flex;align-items:center;max-width:340px}
+.fbar-search-wrap{flex:1;position:relative;display:flex;align-items:center}
 .fbar-search{width:100%;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:5px 28px 5px 10px;color:#e6edf3;font-size:13px;outline:none;box-sizing:border-box}
 .fbar-search:focus{border-color:#58a6ff}
 .fbar-clear{position:absolute;right:6px;background:none;border:none;color:#8b949e;font-size:15px;cursor:pointer;padding:0;line-height:1;display:none}
@@ -53,8 +53,10 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .fbar-sel-tag .rm{color:#8b949e;font-size:12px}
 .fbar-clear-all{display:none;align-items:center;background:none;border:1px solid #f8514955;color:#f85149;border-radius:12px;font-size:11px;padding:2px 8px;cursor:pointer;white-space:nowrap;flex-shrink:0}
 .fbar-clear-all:hover{background:#3a1a1a}
-.btn-filter{background:none;border:1px solid #30363d;border-radius:6px;padding:6px 10px;font-size:13px;color:#8b949e;cursor:pointer;white-space:nowrap}
+.btn-filter{background:none;border:1px solid #30363d;border-radius:6px;padding:0 10px;font-size:13px;color:#8b949e;cursor:pointer;white-space:nowrap;height:30px;line-height:30px}
 .btn-filter.on{border-color:#58a6ff;color:#58a6ff;background:#1f6feb22}
+.btn-top{background:none;border:1px solid #30363d;border-radius:6px;color:#8b949e;font-size:13px;padding:0 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;height:30px;line-height:30px}
+.btn-top:active{background:#21262d;color:#e6edf3}
 
 /* ── SORT BAR ── */
 .sbar{padding:7px 12px;display:flex;flex-wrap:wrap;gap:5px;background:#0d1117;border-bottom:1px solid #21262d}
@@ -75,11 +77,12 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 
 /* Card header */
 .card-hd{display:flex;align-items:flex-start;gap:8px;margin-bottom:8px}
+.card-left{min-width:0;flex:1}
 .card-code{font-family:monospace;font-size:21px;font-weight:700;color:#79c0ff}
 .card-exch{font-size:10px;font-weight:600;text-align:center;border-radius:3px;padding:1px 5px;margin-top:2px;white-space:nowrap}
 .card-exch.twse{background:#1f6feb22;color:#79c0ff;border:1px solid #1f6feb44}
 .card-exch.tpex{background:#3fb95018;color:#3fb950;border:1px solid #3fb95033}
-.card-name{font-size:20px;font-weight:600;color:#e6edf3;flex:1}
+.card-name{font-size:20px;font-weight:600;color:#e6edf3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .card-pattern{display:flex;flex-wrap:wrap;gap:3px;margin-top:3px}
 .cpat{font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;white-space:nowrap}
 .cpat-bull{background:#1a3a1a;color:#3fb950;border:1px solid #3fb95055}
@@ -93,14 +96,14 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .card-pct.fl{color:#8b949e;background:#21262d}
 
 /* Card price row */
-.card-price{display:flex;align-items:baseline;gap:8px;margin-bottom:10px}
+.card-price{display:flex;align-items:baseline;gap:8px;margin-bottom:10px;flex-wrap:nowrap}
 .card-close{font-size:22px;font-weight:700;color:#e6edf3}
 .card-avg{font-size:14px;color:#8b949e}
 .card-avg span{color:#c9d1d9}
 
 /* Card stats grid */
 .card-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:5px;margin-bottom:8px}
-.cg-item{background:#0d1117;border-radius:6px;padding:6px 8px}
+.cg-item{background:#0d1117;border-radius:6px;padding:4px 6px}
 .cg-lbl{font-size:10px;color:#6e7681;margin-bottom:2px}
 .cg-val{font-size:14px;font-weight:600;color:#c9d1d9}
 .cg-val.up{color:#f85149}
@@ -229,6 +232,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
     <button class="fbar-clear" id="fclear" onclick="clearSearch()">✕</button>
   </div>
   <button class="btn-filter" id="fbtn" onclick="openDrawer()">☰ 產業</button>
+  <button class="btn-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑ TOP</button>
 </div>
 <div id="fbar-tags-wrap" style="display:none;align-items:center;gap:5px;padding:0 12px 6px;flex-wrap:wrap">
   <button class="fbar-clear-all" id="fbar-clear-all" onclick="selAll()">✕ 清除全部</button>
@@ -504,7 +508,7 @@ function render(){
     var showTags=s.tags.slice(0,4);
     return '<div class="card" onclick="openChart(event,\''+s.code+'\',\''+s.name.replace(/'/g,"\\'")+'\')">'
       +'<div class="card-hd">'
-        +'<div style="flex:1">'
+        +'<div class="card-left">'
           +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'
             +'<div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0">'
               +'<span class="card-code">'+s.code+'</span>'
@@ -526,7 +530,7 @@ function render(){
         +'<span class="card-close">'+(s.volume!==null?s.volume.toLocaleString():'--')+'</span>'
         +'<span class="card-avg" style="color:'+(pct>0?'#f85149':pct<0?'#3fb950':'#8b949e')+'">'+ps+'</span>'
         +(s.close!==null?'<span class="card-avg">昨收 <span>'+s.close.toFixed(1)+'</span></span>':'')
-        +'<a class="card-cnyes" href="https://www.cnyes.com/twstock/'+s.code+'" target="_blank" onclick="event.stopPropagation()">鉅亨</a>'
+        +'<a class="card-cnyes" style="margin-left:auto" href="https://www.cnyes.com/twstock/'+s.code+'" target="_blank" onclick="event.stopPropagation()">鉅亨</a>'
       +'</div>'
       +'<div class="card-grid">'
         +'<div class="cg-item"><div class="cg-lbl">均價</div><div class="cg-val">'+(s.avg!==null?s.avg.toFixed(1):'--')+'</div></div>'
