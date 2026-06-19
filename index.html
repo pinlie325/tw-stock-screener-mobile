@@ -613,8 +613,8 @@ function cardScreenshot(e, el) {
 
   // 顯示提示 banner
   var tip = document.createElement('div');
-  tip.style.cssText = 'position:fixed;bottom:40px;left:50%;transform:translateX(-50%);background:#238636;color:#fff;font-size:15px;padding:12px 24px;border-radius:24px;z-index:9999;font-family:sans-serif;white-space:nowrap;box-shadow:0 4px 16px #0008;cursor:pointer';
-  tip.textContent = '📸 現在截圖　點此恢復畫面';
+  tip.style.cssText = 'position:fixed;bottom:12px;left:50%;transform:translateX(-50%);background:#238636;color:#fff;font-size:13px;padding:7px 18px;border-radius:20px;z-index:9999;font-family:sans-serif;white-space:nowrap;box-shadow:0 4px 16px #0008;cursor:pointer';
+  tip.textContent = '📸 截圖模式　按此離開';
   tip.onclick = function() {
     hidden.forEach(function(item) { item.el.style.display = item.disp; });
     document.body.removeChild(tip);
