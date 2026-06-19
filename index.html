@@ -73,6 +73,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .cards{flex:1;padding:8px 10px;display:grid;grid-template-columns:1fr;gap:8px;overflow-y:auto;align-content:start}
 @media(min-width:600px){.cards{grid-template-columns:1fr 1fr;padding:10px 12px}}
 .card{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:12px 14px;cursor:pointer;transition:border-color .15s}
+.card.capturing{outline:2px solid #58a6ff}
 .card:active{border-color:#58a6ff;background:#1a2030}
 
 /* Card header */
@@ -202,6 +203,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .xq-hint{font-size:12px;color:#ffffffaa;white-space:nowrap}
 .xq-x{font-size:20px;cursor:pointer;padding:0 4px;color:#ffffffcc}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
 
@@ -506,7 +508,7 @@ function render(){
     var epsc=s.eps!==null?(s.eps>0?'up':s.eps<0?'dn':''):'';
     var hiTags=s.tags.filter(function(t){return sel.indexOf(t)>=0;});
     var showTags=s.tags.slice(0,4);
-    return '<div class="card" onclick="openChart(event,\''+s.code+'\',\''+s.name.replace(/'/g,"\\'")+'\')">'
+    return '<div class="card" oncontextmenu="cardScreenshot(event,this)" ontouchstart="startLongPress(event,this)" ontouchend="cancelLongPress()" ontouchmove="cancelLongPress()" onclick="openChart(event,\''+s.code+'\',\''+s.name.replace(/'/g,"\\'")+'\')">'
       +'<div class="card-hd">'
         +'<div class="card-left">'
           +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">'
@@ -572,6 +574,37 @@ function render(){
 // ── TRADINGVIEW CHART ──
 var currentChart=null;
 var EXCHANGE_MAP={};  // 動態建立的 code→exchange map
+
+// ── 長按截圖 ──────────────────────────────
+var _lpTimer = null;
+function startLongPress(e, el) {
+  cancelLongPress();
+  _lpTimer = setTimeout(function() { _lpTimer = null; cardScreenshot(e, el); }, 600);
+}
+function cancelLongPress() {
+  if (_lpTimer) { clearTimeout(_lpTimer); _lpTimer = null; }
+}
+function cardScreenshot(e, el) {
+  e.preventDefault(); e.stopPropagation();
+  if (typeof html2canvas === 'undefined') { showToast('截圖功能載入中，請稍後再試'); return; }
+  el.classList.add('capturing');
+  showToast('截圖中…');
+  html2canvas(el, { backgroundColor:'#0d1117', scale:2, useCORS:true, logging:false })
+    .then(function(canvas) {
+      el.classList.remove('capturing');
+      var code = el.querySelector('.card-code');
+      var nm = code ? code.textContent.trim() : 'stock';
+      var link = document.createElement('a');
+      link.download = nm + '_' + new Date().toISOString().slice(0,10) + '.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      showToast('📸 截圖已儲存');
+    }).catch(function() {
+      el.classList.remove('capturing');
+      showToast('截圖失敗，請再試');
+    });
+}
+// ──────────────────────────────────────────
 
 // 頁面載入時自動fetch官方清單
 (function(){
