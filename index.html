@@ -205,7 +205,23 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .xq-hint{font-size:12px;color:#ffffffaa;white-space:nowrap}
 .xq-x{font-size:20px;cursor:pointer;padding:0 4px;color:#ffffffcc}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+(function(){
+  var cdns=[
+    'https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js',
+    'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'
+  ];
+  function tryLoad(i){
+    if(i>=cdns.length) return;
+    var s=document.createElement('script');
+    s.src=cdns[i];
+    s.onerror=function(){ tryLoad(i+1); };
+    document.head.appendChild(s);
+  }
+  tryLoad(0);
+})();
+</script>
 </head>
 <body>
 
@@ -521,13 +537,13 @@ function render(){
           +'<div class="card-pattern" id="pattern-'+s.code+'"></div>'
           +(s.position?'<div class="card-pos">'+s.position+'</div>':'')
         +'</div>'
-        +(showTags.length?'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;max-width:45%">'
+        +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;max-width:45%">'
           +'<button class="card-cam" onclick="event.stopPropagation();cardScreenshot(event,this.closest(\'.card\'))">📷</button>'
-          +showTags.map(function(t){
+          +(showTags.length?showTags.map(function(t){
             var h=hiTags.indexOf(t)>=0;
             return '<span class="ctag'+(h?' hi':'')+'" onclick="event.stopPropagation();tapTag(\''+t.replace(/'/g,"\\'")+'\')" data-t="'+t.replace(/"/g,'&quot;')+'">'+t+'</span>';
-          }).join('')
-          +'</div>':'')
+          }).join(''):'')
+        +'</div>'
       +'</div>'
       +'<div class="card-price">'
         +'<span class="card-close">'+(s.volume!==null?s.volume.toLocaleString():'--')+'</span>'
@@ -595,15 +611,22 @@ function cardScreenshot(e, el) {
   html2canvas(el, { backgroundColor:'#0d1117', scale:2, useCORS:true, logging:false })
     .then(function(canvas) {
       el.classList.remove('capturing');
-      canvas.toBlob(function(blob) {
-        if (navigator.clipboard && navigator.clipboard.write) {
-          navigator.clipboard.write([new ClipboardItem({'image/png': blob})])
-            .then(function() { showToast('📷 已複製到剪貼簿'); })
-            .catch(function() { fallbackDownload(canvas, el); });
-        } else {
-          fallbackDownload(canvas, el);
-        }
-      }, 'image/png');
+      var dataUrl = canvas.toDataURL('image/png');
+      // iOS Safari: open image in new tab, user long-presses to save
+      var win = window.open('', '_blank');
+      if (win) {
+        win.document.write(
+          '<html><head><meta name="viewport" content="width=device-width,initial-scale=1">'
+          + '<title>截圖</title>'
+          + '<style>body{margin:0;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh}'
+          + 'img{max-width:100%;border-radius:8px}'
+          + 'p{color:#fff;font-size:14px;margin-top:12px;opacity:0.7}</style></head>'
+          + '<body><img src="' + dataUrl + '"><p>長按圖片 → 儲存到相片</p></body></html>'
+        );
+        win.document.close();
+      } else {
+        showToast('請允許彈出視窗');
+      }
     }).catch(function() {
       el.classList.remove('capturing');
       showToast('截圖失敗，請再試');
