@@ -533,18 +533,20 @@ function render(){
         +'<span class="card-close">'+(s.volume!==null?s.volume.toLocaleString():'--')+'</span>'
         +'<span class="card-avg" style="color:'+(pct>0?'#f85149':pct<0?'#3fb950':'#8b949e')+'">'+ps+'</span>'
         +(s.close!==null?'<span class="card-avg">昨收 <span>'+s.close.toFixed(1)+'</span></span>':'')
+        +(s.avg!==null?'<span class="card-avg">均價 <span>'+s.avg.toFixed(1)+'</span></span>':'')
         +'<a class="card-cnyes" style="margin-left:auto" href="https://www.cnyes.com/twstock/'+s.code+'" target="_blank" onclick="event.stopPropagation()">鉅亨</a>'
       +'</div>'
       +'<div class="card-grid">'
-        +'<div class="cg-item"><div class="cg-lbl">均價</div><div class="cg-val">'+(s.avg!==null?s.avg.toFixed(1):'--')+'</div></div>'
-        +'<div class="cg-item"><div class="cg-lbl">換手率</div><div class="cg-val">'+(s.turnover!==null?s.turnover.toFixed(2)+'%':'--')+'</div></div>'
+
         +'<div class="cg-item"><div class="cg-lbl">成交值(億)</div><div class="cg-val">'+(s.turnval!==null?s.turnval.toFixed(2):'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">股本(億)</div><div class="cg-val">'+(s.capital!==null?s.capital.toFixed(1):'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">融資維持%</div><div class="cg-val '+mc+'">'+(s.margin!==null?s.margin.toFixed(1):'--')+'</div></div>'
+        +'<div class="cg-item"><div class="cg-lbl">換手率</div><div class="cg-val">'+(s.turnover!==null?s.turnover.toFixed(2)+'%':'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">RS%</div><div class="cg-val '+rsc+'">'+(s.rs!==null?s.rs.toFixed(1):'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">毛利率</div><div class="cg-val '+gmc+'">'+(s.grossmargin!==null?s.grossmargin.toFixed(1)+'%':'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">單季EPS</div><div class="cg-val '+epsc+'">'+(s.eps!==null?s.eps.toFixed(2):'--')+'</div></div>'
-        +(function(){var annEps=s.eps!==null?s.eps*4:null;var pe=(annEps&&annEps>0&&s.close!==null)?(s.close/(annEps)).toFixed(1):null;var pec=pe!==null?(parseFloat(pe)<15?'ok':parseFloat(pe)<30?'mid':'warn'):'';return '<div class="cg-item"><div class="cg-lbl">本益比(估)</div><div class="cg-val '+pec+'">'+(pe!==null?pe:'--')+'</div></div>';})()
+        +(function(){var annEps=s.eps!==null?s.eps*4:null;var pe=(annEps&&annEps>0&&s.volume!==null)?(s.volume/(annEps)).toFixed(1):null;var pec=pe!==null?(parseFloat(pe)<15?'ok':parseFloat(pe)<30?'mid':'warn'):'';return '<div class="cg-item"><div class="cg-lbl">本益比(估)</div><div class="cg-val '+pec+'">'+(pe!==null?pe:'--')+'</div></div>';})()
+        +(function(){var bias=(s.volume!==null&&s.avg!==null&&s.avg!==0)?((s.volume-s.avg)/s.avg*100):null;var biasc=bias!==null?(bias>5?'up':bias<-5?'dn':''):'';return '<div class="cg-item"><div class="cg-lbl">乖離率</div><div class="cg-val '+biasc+'">'+(bias!==null?((bias>0?'+':'')+bias.toFixed(1)+'%'):'--')+'</div></div>';})()
         +'<div class="cg-item"><div class="cg-lbl">外大單%</div><div class="cg-val" style="color:'+(s.bigbuy!==null&&s.bigbuy!==undefined?'#e040fb':'#c9d1d9')+'">'+(s.bigbuy!==null&&s.bigbuy!==undefined?s.bigbuy.toFixed(1)+'%':'--')+'</div></div>'
       +'</div>'
       // Yahoo K線圖區塊
