@@ -963,6 +963,33 @@ function drawKChart(canvas, data){
     ctx.fillText(label, px(i), H-8);
     prevM=m;
   }
+
+  // 回寫 MA13 乖離率到卡片
+  var lastMA13 = ma13Full[ma13Full.length-1];
+  var lastPrice = data[data.length-1].c;
+  if(lastMA13!==null && lastMA13>0 && lastPrice){
+    var bias = (lastPrice - lastMA13) / lastMA13 * 100;
+    var biasc = bias>5?'up':bias<-5?'dn':'';
+    var biasStr = (bias>0?'+':'')+bias.toFixed(1)+'%';
+    // 找到對應卡片的乖離率格子
+    var code = canvas.id.replace('kc-','');
+    var card = document.querySelector('.card [id="yf-'+code+'"]');
+    if(!card) card = document.getElementById('yf-'+code);
+    if(card){
+      var cardEl = card.closest('.card');
+      if(cardEl){
+        var cells = cardEl.querySelectorAll('.cg-lbl');
+        cells.forEach(function(lbl){
+          if(lbl.textContent==='乖離率'){
+            var val = lbl.nextElementSibling;
+            val.textContent = biasStr;
+            val.className = 'cg-val' + (biasc?' '+biasc:'');
+            lbl.textContent = '乖離MA13';
+          }
+        });
+      }
+    }
+  }
 }
 
 function tvLoad(code, interval){
