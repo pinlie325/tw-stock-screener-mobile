@@ -205,23 +205,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .xq-hint{font-size:12px;color:#ffffffaa;white-space:nowrap}
 .xq-x{font-size:20px;cursor:pointer;padding:0 4px;color:#ffffffcc}
 </style>
-<script>
-(function(){
-  var cdns=[
-    'https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js',
-    'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js',
-    'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'
-  ];
-  function tryLoad(i){
-    if(i>=cdns.length) return;
-    var s=document.createElement('script');
-    s.src=cdns[i];
-    s.onerror=function(){ tryLoad(i+1); };
-    document.head.appendChild(s);
-  }
-  tryLoad(0);
-})();
-</script>
+
 </head>
 <body>
 
@@ -594,7 +578,7 @@ function render(){
 var currentChart=null;
 var EXCHANGE_MAP={};  // 動態建立的 code→exchange map
 
-// ── 長按截圖 ──────────────────────────────
+// ── 卡片截圖（純 Canvas，不需外部套件）────────
 var _lpTimer = null;
 function startLongPress(e, el) {
   cancelLongPress();
@@ -603,43 +587,113 @@ function startLongPress(e, el) {
 function cancelLongPress() {
   if (_lpTimer) { clearTimeout(_lpTimer); _lpTimer = null; }
 }
+
 function cardScreenshot(e, el) {
   e.preventDefault(); e.stopPropagation();
-  if (typeof html2canvas === 'undefined') { showToast('截圖功能載入中，請稍後再試'); return; }
-  el.classList.add('capturing');
-  showToast('截圖中…');
-  html2canvas(el, { backgroundColor:'#0d1117', scale:2, useCORS:true, logging:false })
-    .then(function(canvas) {
-      el.classList.remove('capturing');
-      var dataUrl = canvas.toDataURL('image/png');
-      // iOS Safari: open image in new tab, user long-presses to save
-      var win = window.open('', '_blank');
-      if (win) {
-        win.document.write(
-          '<html><head><meta name="viewport" content="width=device-width,initial-scale=1">'
-          + '<title>截圖</title>'
-          + '<style>body{margin:0;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh}'
-          + 'img{max-width:100%;border-radius:8px}'
-          + 'p{color:#fff;font-size:14px;margin-top:12px;opacity:0.7}</style></head>'
-          + '<body><img src="' + dataUrl + '"><p>長按圖片 → 儲存到相片</p></body></html>'
-        );
-        win.document.close();
-      } else {
-        showToast('請允許彈出視窗');
-      }
-    }).catch(function() {
-      el.classList.remove('capturing');
-      showToast('截圖失敗，請再試');
-    });
+
+  // 隱藏所有 UI，只留當前卡片
+  var hdr = document.querySelector('.hdr');
+  var fbar = document.querySelector('.fbar');
+  var sbar = document.querySelector('.sbar');
+  var statsRow = document.querySelector('.cbar');
+  var tagRow = document.getElementById('fbar-tags-wrap');
+  var otherCards = document.querySelectorAll('.card');
+
+  var hidden = [];
+  [hdr, fbar, sbar, statsRow, tagRow].forEach(function(el2) {
+    if (el2) { hidden.push({el:el2, disp:el2.style.display}); el2.style.display='none'; }
+  });
+  otherCards.forEach(function(c) {
+    if (c !== el) { hidden.push({el:c, disp:c.style.display}); c.style.display='none'; }
+  });
+
+  // 捲到最頂
+  window.scrollTo(0, 0);
+  el.scrollIntoView({behavior:'instant', block:'start'});
+
+  // 顯示提示 banner
+  var tip = document.createElement('div');
+  tip.style.cssText = 'position:fixed;bottom:40px;left:50%;transform:translateX(-50%);background:#238636;color:#fff;font-size:15px;padding:12px 24px;border-radius:24px;z-index:9999;font-family:sans-serif;white-space:nowrap;box-shadow:0 4px 16px #0008;cursor:pointer';
+  tip.textContent = '📸 現在截圖　點此恢復畫面';
+  tip.onclick = function() {
+    hidden.forEach(function(item) { item.el.style.display = item.disp; });
+    document.body.removeChild(tip);
+  };
+  document.body.appendChild(tip);
 }
-function fallbackDownload(canvas, el) {
-  var code = el.querySelector('.card-code');
-  var nm = code ? code.textContent.trim() : 'stock';
-  var link = document.createElement('a');
-  link.download = nm + '_' + new Date().toISOString().slice(0,10) + '.png';
-  link.href = canvas.toDataURL('image/png');
-  link.click();
-  showToast('📷 截圖已下載');
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y); ctx.arcTo(x+w, y, x+w, y+r, r);
+  ctx.lineTo(x+w, y+h-r); ctx.arcTo(x+w, y+h, x+w-r, y+h, r);
+  ctx.lineTo(x+r, y+h); ctx.arcTo(x, y+h, x, y+h-r, r);
+  ctx.lineTo(x, y+r); ctx.arcTo(x, y, x+r, y, r);
+  ctx.closePath();
+}
+
+function getStyle(el, prop) {
+  return window.getComputedStyle(el).getPropertyValue(prop);
+}
+
+function drawEl(ctx, el, ox, oy) {
+  var rect = el.getBoundingClientRect();
+  var pRect = el.closest('.card').getBoundingClientRect();
+  var x = rect.left - pRect.left + ox;
+  var y = rect.top - pRect.top + oy;
+  var w = rect.width, h = rect.height;
+
+  // K線 canvas
+  if (el.tagName === 'CANVAS') {
+    try { ctx.drawImage(el, x, y, w, h); } catch(e){}
+    return;
+  }
+
+  // 背景色
+  var bg = getStyle(el, 'background-color');
+  if (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') {
+    ctx.fillStyle = bg;
+    var br = parseFloat(getStyle(el, 'border-radius')) || 0;
+    if (br > 0) { roundRect(ctx, x, y, w, h, br); ctx.fill(); }
+    else { ctx.fillRect(x, y, w, h); }
+  }
+
+  // 文字節點
+  for (var i = 0; i < el.childNodes.length; i++) {
+    var node = el.childNodes[i];
+    if (node.nodeType === 3) { // text node
+      var txt = node.textContent.trim();
+      if (!txt) continue;
+      var fs = getStyle(el, 'font-size');
+      var fw = getStyle(el, 'font-weight');
+      var fc = getStyle(el, 'color');
+      ctx.fillStyle = fc;
+      ctx.font = fw + ' ' + fs + ' -apple-system,sans-serif';
+      ctx.textBaseline = 'top';
+      var pad = parseFloat(getStyle(el, 'padding-left')) || 0;
+      ctx.fillText(txt, x + pad, y + (parseFloat(getStyle(el,'padding-top'))||2));
+    }
+  }
+
+  // 遞迴子元素
+  for (var j = 0; j < el.children.length; j++) {
+    drawEl(ctx, el.children[j], ox, oy);
+  }
+}
+
+function showImgOverlay(dataUrl) {
+  var ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:#000c;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;box-sizing:border-box';
+  var img = document.createElement('img');
+  img.src = dataUrl;
+  img.style.cssText = 'max-width:100%;border-radius:10px';
+  var txt = document.createElement('p');
+  txt.textContent = '長按圖片 → 儲存到相片　　點此處關閉';
+  txt.style.cssText = 'color:#fff;font-size:13px;margin-top:12px;font-family:sans-serif';
+  ov.appendChild(img); ov.appendChild(txt);
+  ov.onclick = function(e){ if(e.target===ov||e.target===txt) document.body.removeChild(ov); };
+  document.body.appendChild(ov);
+  showToast('📷 長按圖片可儲存');
 }
 // ──────────────────────────────────────────
 
