@@ -543,11 +543,11 @@ function render(){
         +'<div class="cg-item"><div class="cg-lbl">融資維持%</div><div class="cg-val '+mc+'">'+(s.margin!==null?s.margin.toFixed(1):'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">換手率</div><div class="cg-val">'+(s.turnover!==null?s.turnover.toFixed(2)+'%':'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">RS%</div><div class="cg-val '+rsc+'">'+(s.rs!==null?s.rs.toFixed(1):'--')+'</div></div>'
+        +(function(){var bias=s.pct!==null?s.pct:null;var biasc=bias!==null?(bias>0?'up':bias<0?'dn':''):'';return '<div class="cg-item"><div class="cg-lbl">漲跌幅</div><div class="cg-val '+biasc+'">'+(bias!==null?((bias>0?'+':'')+bias.toFixed(1)+'%'):'--')+'</div></div>';})()
+        +'<div class="cg-item"><div class="cg-lbl">外大單%</div><div class="cg-val" style="color:'+(s.bigbuy!==null&&s.bigbuy!==undefined?'#e040fb':'#c9d1d9')+'">'+(s.bigbuy!==null&&s.bigbuy!==undefined?s.bigbuy.toFixed(1)+'%':'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">毛利率</div><div class="cg-val '+gmc+'">'+(s.grossmargin!==null?s.grossmargin.toFixed(1)+'%':'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">單季EPS</div><div class="cg-val '+epsc+'">'+(s.eps!==null?s.eps.toFixed(2):'--')+'</div></div>'
         +(function(){var annEps=s.eps!==null?s.eps*4:null;var pe=(annEps&&annEps>0&&s.volume!==null)?(s.volume/(annEps)).toFixed(1):null;var pec=pe!==null?(parseFloat(pe)<15?'ok':parseFloat(pe)<30?'mid':'warn'):'';return '<div class="cg-item"><div class="cg-lbl">本益比(估)</div><div class="cg-val '+pec+'">'+(pe!==null?pe:'--')+'</div></div>';})()
-        +(function(){var bias=(s.volume!==null&&s.avg!==null&&s.avg!==0)?((s.volume-s.avg)/s.avg*100):null;var biasc=bias!==null?(bias>5?'up':bias<-5?'dn':''):'';return '<div class="cg-item"><div class="cg-lbl">乖離率</div><div class="cg-val '+biasc+'">'+(bias!==null?((bias>0?'+':'')+bias.toFixed(1)+'%'):'--')+'</div></div>';})()
-        +'<div class="cg-item"><div class="cg-lbl">外大單%</div><div class="cg-val" style="color:'+(s.bigbuy!==null&&s.bigbuy!==undefined?'#e040fb':'#c9d1d9')+'">'+(s.bigbuy!==null&&s.bigbuy!==undefined?s.bigbuy.toFixed(1)+'%':'--')+'</div></div>'
       +'</div>'
       // Yahoo K線圖區塊
       +'<div class="yf-wrap" id="yf-'+s.code+'">'
@@ -964,14 +964,13 @@ function drawKChart(canvas, data){
     prevM=m;
   }
 
-  // 回寫 MA13 乖離率到卡片
-  var lastMA13 = ma13Full[ma13Full.length-1];
+  // 回寫 MA60 乖離率到卡片
+  var lastMA60 = ma60Full[ma60Full.length-1];
   var lastPrice = data[data.length-1].c;
-  if(lastMA13!==null && lastMA13>0 && lastPrice){
-    var bias = (lastPrice - lastMA13) / lastMA13 * 100;
+  if(lastMA60!==null && lastMA60>0 && lastPrice){
+    var bias = (lastPrice - lastMA60) / lastMA60 * 100;
     var biasc = bias>5?'up':bias<-5?'dn':'';
     var biasStr = (bias>0?'+':'')+bias.toFixed(1)+'%';
-    // 找到對應卡片的乖離率格子
     var code = canvas.id.replace('kc-','');
     var card = document.querySelector('.card [id="yf-'+code+'"]');
     if(!card) card = document.getElementById('yf-'+code);
@@ -980,11 +979,11 @@ function drawKChart(canvas, data){
       if(cardEl){
         var cells = cardEl.querySelectorAll('.cg-lbl');
         cells.forEach(function(lbl){
-          if(lbl.textContent==='乖離率'){
+          if(lbl.textContent==='漲跌幅'||lbl.textContent==='乖離MA60'){
             var val = lbl.nextElementSibling;
             val.textContent = biasStr;
             val.className = 'cg-val' + (biasc?' '+biasc:'');
-            lbl.textContent = '乖離MA13';
+            lbl.textContent = '乖離MA60';
           }
         });
       }
