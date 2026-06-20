@@ -547,7 +547,7 @@ function render(){
         +'<div class="cg-item"><div class="cg-lbl">外大單%</div><div class="cg-val" style="color:'+(s.bigbuy!==null&&s.bigbuy!==undefined?'#e040fb':'#c9d1d9')+'">'+(s.bigbuy!==null&&s.bigbuy!==undefined?s.bigbuy.toFixed(1)+'%':'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">毛利率</div><div class="cg-val '+gmc+'">'+(s.grossmargin!==null?s.grossmargin.toFixed(1)+'%':'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">單季EPS</div><div class="cg-val '+epsc+'">'+(s.eps!==null?s.eps.toFixed(2):'--')+'</div></div>'
-        +(function(){var annEps=s.eps!==null?s.eps*4:null;var pe=(annEps&&annEps>0&&s.volume!==null)?(s.volume/(annEps)).toFixed(1):null;var pec=pe!==null?(parseFloat(pe)<15?'ok':parseFloat(pe)<30?'mid':'warn'):'';return '<div class="cg-item"><div class="cg-lbl">本益比(估)</div><div class="cg-val '+pec+'">'+(pe!==null?pe:'--')+'</div></div>';})()
+        +(function(){var annEps=s.eps!==null?s.eps*4/0.6:null;var pe=(annEps&&annEps>0&&s.volume!==null)?(s.volume/(annEps)).toFixed(1):null;var pec=pe!==null?(parseFloat(pe)<15?'ok':parseFloat(pe)<30?'mid':'warn'):'';return '<div class="cg-item"><div class="cg-lbl">本益比(估)</div><div class="cg-val '+pec+'">'+(pe!==null?pe:'--')+'</div></div>';})()
       +'</div>'
       // Yahoo K線圖區塊
       +'<div class="yf-wrap" id="yf-'+s.code+'">'
