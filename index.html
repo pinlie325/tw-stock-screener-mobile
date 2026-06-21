@@ -648,6 +648,9 @@ function cancelLongPress() {
 function cardScreenshot(e, el) {
   e.preventDefault(); e.stopPropagation();
 
+  // 記住目前捲動位置
+  var savedScroll = window.scrollY;
+
   // 隱藏所有 UI，只留當前卡片
   var hdr = document.querySelector('.hdr');
   var fbar = document.querySelector('.fbar');
@@ -675,6 +678,8 @@ function cardScreenshot(e, el) {
   tip.onclick = function() {
     hidden.forEach(function(item) { item.el.style.display = item.disp; });
     document.body.removeChild(tip);
+    // 還原捲動位置
+    setTimeout(function(){ window.scrollTo(0, savedScroll); }, 30);
   };
   document.body.appendChild(tip);
 }
