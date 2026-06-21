@@ -93,6 +93,8 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .cpat-neu{background:#21262d;color:#8b949e;border:1px solid #30363d}
 .card-cnyes{font-size:11px;color:#58a6ff;text-decoration:none;background:#1f6feb22;border:1px solid #1f6feb44;border-radius:4px;padding:2px 6px;white-space:nowrap;flex-shrink:0;align-self:center}
 .card-cnyes:active{background:#1f6feb44}
+.card-line{font-size:11px;color:#fff;text-decoration:none;background:#06C755;border:1px solid #06C755;border-radius:4px;padding:2px 6px;white-space:nowrap;flex-shrink:0;align-self:center}
+.card-line:active{background:#05a847}
 .card-pct{font-size:16px;font-weight:700;padding:3px 10px;border-radius:6px}
 .card-pct.up{color:#f85149;background:#f8514918}
 .card-pct.dn{color:#3fb950;background:#3fb95018}
@@ -335,7 +337,29 @@ var sel=[],sk='pct',sd='d',searchQ='';
 function toggleDClear(v){var b=document.getElementById('dclear');if(b)b.style.display=v?'block':'none';}
 function clearDSearch(){var i=document.getElementById('dsearch');if(i){i.value='';doTagSearch('');toggleDClear('');}}
 function toggleClear(v){var b=document.getElementById('fclear');if(b)b.style.display=v?'block':'none';}
-function clearSearch(){var i=document.getElementById('fsearch');if(i){i.value='';doSearch('');toggleClear('');}}
+function clearSearch(){
+  // 記住目前畫面上第一張可見卡片的代碼
+  var firstCard = document.querySelector('#cards .card');
+  var firstCode = firstCard ? firstCard.querySelector('.card-code') : null;
+  var targetCode = firstCode ? firstCode.textContent.trim() : null;
+
+  var i=document.getElementById('fsearch');
+  if(i){i.value='';doSearch('');toggleClear('');}
+
+  // render 後捲到該卡片
+  if(targetCode){
+    setTimeout(function(){
+      var cards = document.querySelectorAll('#cards .card');
+      for(var i=0;i<cards.length;i++){
+        var code = cards[i].querySelector('.card-code');
+        if(code && code.textContent.trim()===targetCode){
+          cards[i].scrollIntoView({block:'start', behavior:'instant'});
+          break;
+        }
+      }
+    }, 50);
+  }
+}
 
 // ── SORT ──
 function setSrt(el,k,d){
@@ -508,6 +532,8 @@ function getFilt(){
 
 // ── RENDER ──
 function render(){
+  var cardsEl = document.getElementById('cards');
+  var scrollY = cardsEl ? cardsEl.scrollTop : 0; // 記住捲動位置
   var data=getFilt().slice();
   data.sort(function(a,b){
     var av=a[sk],bv=b[sk];
@@ -562,6 +588,7 @@ function render(){
         +(s.close!==null?'<span class="card-avg">昨收 <span>'+s.close.toFixed(1)+'</span></span>':'')
         +(s.avg!==null?'<span class="card-avg">均價 <span>'+s.avg.toFixed(1)+'</span></span>':'')
         +'<a class="card-cnyes" style="margin-left:auto" href="https://www.cmoney.tw/forum/stock/'+s.code+'" target="_blank" onclick="event.stopPropagation()">CMoney</a>'
+        +(function(){var p=s.volume!==null?s.volume:'';var pc=s.pct!==null?(s.pct>0?'+':'')+s.pct.toFixed(2)+'%':'';var eps=s.eps!==null?s.eps.toFixed(2):'--';var rs=s.rs!==null?s.rs.toFixed(1):'--';var txt=s.code+' '+s.name+' '+p+'('+pc+') RS'+rs+' EPS'+eps;var url='https://social-plugins.line.me/lineit/share?url='+encodeURIComponent('https://www.cmoney.tw/forum/stock/'+s.code)+'&text='+encodeURIComponent(txt);return '<a class="card-line" href="'+url+'" target="_blank" onclick="event.stopPropagation()">LINE</a>';})()
       +'</div>'
       +'<div class="card-grid">'
 
@@ -601,6 +628,7 @@ function render(){
       +'</div>'
     +'</div>';
   }).join('');
+  if(cardsEl) cardsEl.scrollTop = scrollY; // 還原捲動位置
 }
 
 // ── TRADINGVIEW CHART ──
