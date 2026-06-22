@@ -76,6 +76,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .card.capturing{outline:2px solid #58a6ff}
 .card-cam{background:none;border:none;font-size:16px;cursor:pointer;padding:0;line-height:1;opacity:0.5;display:block;margin-left:auto;margin-bottom:2px}
 .card-cam:hover,.card-cam:active{opacity:1}
+.card-note-bar{background:#30363d;color:#e040fb;font-size:12px;padding:4px 8px;border-radius:4px;margin-bottom:6px;line-height:1.4}
 .card:active{border-color:#58a6ff;background:#1a2030}
 
 /* Card header */
@@ -227,6 +228,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
   </div>
   <div class="hdr-r">
     <button class="btn-cloud" onclick="openDrivePicker()">☁️</button>
+    <button class="btn-cloud" onclick="toggleNoteFilter()" id="hdr-note-btn" title="只顯示有備註的股票" style="font-size:12px;padding:5px 10px">⭐</button>
     <button class="btn-load" onclick="document.getElementById('fi').click()">📄 載入</button>
     <input id="fi" type="file" accept=".xlsx,.xls" style="display:none" onchange="loadXL(this)">
   </div>
@@ -518,6 +520,23 @@ function doTagSearch(v){
 }
 
 // ── FILTER & SORT ──
+var noteFilterOn = false;
+
+function toggleNoteFilter(){
+  noteFilterOn = !noteFilterOn;
+  var btn = document.getElementById('hdr-note-btn');
+  if(noteFilterOn){
+    btn.style.borderColor = '#f0c040';
+    btn.style.color = '#f0c040';
+    btn.style.background = '#f0c04022';
+  } else {
+    btn.style.borderColor = '';
+    btn.style.color = '';
+    btn.style.background = '';
+  }
+  render();
+}
+
 function getFilt(){
   var d=D;
   if(sel.length) d=d.filter(function(s){return s.tags.some(function(t){return sel.indexOf(t)>=0;});});
@@ -527,6 +546,7 @@ function getFilt(){
       return s.code.toLowerCase().indexOf(q)>=0 || s.name.toLowerCase().indexOf(q)>=0;
     });
   }
+  if(noteFilterOn) d=d.filter(function(s){return noteMap[String(s.code)];});
   return d;
 }
 
@@ -629,6 +649,7 @@ function render(){
     +'</div>';
   }).join('');
   if(cardsEl) cardsEl.scrollTop = scrollY; // 還原捲動位置
+  if(Object.keys(noteMap).length) applyNotes(); // 重新套用備註
 }
 
 // ── TRADINGVIEW CHART ──
@@ -1247,6 +1268,7 @@ function processRows(rows,filename){
   initCats();
   render();
   toast('✅ 載入完成！共 '+D.length+' 支股票','#238636');
+  autoLoadNotes(); // 自動載入備註
 }
 
 // ── GAS / DRIVE ──
@@ -1303,6 +1325,92 @@ function loadGdFile(i){
     .catch(function(e){toast('❌ 載入失敗：'+e.message,'#da3633');});
 }
 
+var NOTE_GAS_URL = 'https://script.google.com/macros/s/AKfycbz2qxVYgYeowc4wRACEjFpxyAlsQjJIVOPjmHBQI5RxqcgVADPbTeDaMkO5X0jkKvbeYw/exec';
+
+function autoLoadNotes(){
+  fetch(NOTE_GAS_URL)
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(!d.ok) return;
+      noteMap = d.notes || {};
+      var count = Object.keys(noteMap).length;
+      if(count > 0){
+        applyNotes();
+        showToast('📝 已自動載入 '+count+' 筆備註');
+      }
+    })
+    .catch(function(){});  // 靜默失敗，不打擾使用者
+}
+
+function openNotePicker(){
+  document.getElementById('gd-modal').classList.add('on');
+  document.getElementById('gd-list').innerHTML='<div class="gd-loading">🔄 連線雲端...</div>';
+  fetch(GAS_URL+'?action=list')
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(!d.ok){showGdError(d.error);return;}
+      // 在清單上標示這次是載入備註用
+      gdFiles=d.files;
+      document.getElementById('gd-list').innerHTML=
+        '<div style="padding:10px 14px;color:#8b949e;font-size:12px">📝 選擇含有「備註」分頁的試算表</div>'
+        +d.files.map(function(f,i){
+          var mod=f.modified?new Date(f.modified):'';
+          var date=mod?mod.toLocaleDateString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit'}):'';
+          return '<div class="gd-item" onclick="loadNoteFile('+i+')">'
+            +'<span class="gd-icon">'+(f.isSheet?'📋':'📊')+'</span>'
+            +'<div class="gd-info"><div class="gd-name">'+f.name+'</div><div class="gd-meta">'+date+'</div></div>'
+            +'<span class="gd-arr">›</span>'
+          +'</div>';
+        }).join('');
+    })
+    .catch(function(e){showGdError(e.message);});
+}
+
+function loadNoteFile(i){
+  var f=gdFiles[i];if(!f)return;
+  document.getElementById('gd-modal').classList.remove('on');
+  toast('⏳ 讀取備註中...','#1f6feb');
+  fetch(GAS_URL+'?action=file&id='+f.id)
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(!d.ok)throw new Error(d.error);
+      var binary=atob(d.base64);
+      var bytes=new Uint8Array(binary.length);
+      for(var i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+      var wb=XLSX.read(bytes.buffer,{type:'array'});
+      // 找備註分頁
+      var sheetName=wb.SheetNames.find(function(n){return n===NOTE_SHEET;})||wb.SheetNames[0];
+      var ws=wb.Sheets[sheetName];
+      var rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+      noteMap={};
+      rows.forEach(function(r){
+        var code=String(r['代碼']||r['code']||'').trim();
+        var note=String(r['備註']||r['note']||'').trim();
+        if(code&&note) noteMap[code]=note;
+      });
+      applyNotes();
+      toast('📝 已載入 '+Object.keys(noteMap).length+' 筆備註','#238636');
+    })
+    .catch(function(e){toast('❌ 備註載入失敗：'+e.message,'#da3633');});
+}
+
+function applyNotes(){
+  document.querySelectorAll('.card').forEach(function(card){
+    var codeEl=card.querySelector('.card-code');
+    if(!codeEl)return;
+    var code=codeEl.textContent.trim();
+    var note=noteMap[code];
+    var existing=card.querySelector('.card-note-bar');
+    if(existing)existing.remove();
+    if(note){
+      var bar=document.createElement('div');
+      bar.className='card-note-bar';
+      bar.textContent='📝 '+note;
+      card.insertBefore(bar,card.firstChild);
+    }
+  });
+}
+
 function toast(msg,color){
   var t=document.getElementById('toast');
   t.textContent=msg;t.style.background=color||'#238636';
@@ -1310,6 +1418,13 @@ function toast(msg,color){
   requestAnimationFrame(function(){t.classList.add('show');});
   setTimeout(function(){t.classList.remove('show');setTimeout(function(){t.style.display='none';},200);},3000);
 }
+
+function showToast(msg){ toast(msg); }
+
+// 頁面載入時自動載入備註
+window.addEventListener('load', function(){
+  autoLoadNotes();
+});
 </script>
 </body>
 </html>
