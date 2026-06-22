@@ -213,7 +213,63 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 </head>
 <body>
 
-<!-- XQ BANNER -->
+<!-- LOGIN SCREEN -->
+<div id="login-screen" style="position:fixed;inset:0;background:#0d1117;z-index:99999;display:flex;align-items:center;justify-content:center;">
+  <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:32px 28px;width:280px;box-sizing:border-box;">
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="font-size:28px;margin-bottom:8px;">📈</div>
+      <div style="font-size:18px;font-weight:700;color:#e6edf3">台股選股平台</div>
+      <div style="font-size:12px;color:#6e7681;margin-top:4px">請登入以繼續</div>
+    </div>
+    <input id="login-user" type="text" placeholder="帳號" autocomplete="username"
+      style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:8px 12px;color:#e6edf3;font-size:14px;outline:none;box-sizing:border-box;margin-bottom:10px;">
+    <input id="login-pass" type="password" placeholder="密碼" autocomplete="current-password"
+      style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:8px 12px;color:#e6edf3;font-size:14px;outline:none;box-sizing:border-box;margin-bottom:10px;">
+    <label style="display:flex;align-items:center;gap:6px;color:#8b949e;font-size:12px;margin-bottom:16px;cursor:pointer;">
+      <input type="checkbox" id="login-remember" style="cursor:pointer;"> 記住帳號密碼
+    </label>
+    <button onclick="doLogin()"
+      style="width:100%;background:#238636;border:none;border-radius:6px;padding:10px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;">登入</button>
+    <div id="login-err" style="color:#f85149;font-size:12px;text-align:center;margin-top:10px;display:none">帳號或密碼錯誤</div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  // 自動填入已儲存的帳號密碼
+  var saved = localStorage.getItem('twstock_login');
+  if(saved){
+    try {
+      var d = JSON.parse(saved);
+      document.getElementById('login-user').value = d.u || '';
+      document.getElementById('login-pass').value = d.p || '';
+      document.getElementById('login-remember').checked = true;
+    } catch(e){}
+  }
+  document.getElementById('login-pass').addEventListener('keydown', function(e){
+    if(e.key==='Enter') doLogin();
+  });
+  document.getElementById('login-user').addEventListener('keydown', function(e){
+    if(e.key==='Enter') document.getElementById('login-pass').focus();
+  });
+});
+function doLogin(){
+  var u = document.getElementById('login-user').value.trim();
+  var p = document.getElementById('login-pass').value;
+  if(u === 'pinlie' && p === '0325888'){
+    if(document.getElementById('login-remember').checked){
+      localStorage.setItem('twstock_login', JSON.stringify({u:u, p:p}));
+    } else {
+      localStorage.removeItem('twstock_login');
+    }
+    document.getElementById('login-screen').style.display = 'none';
+  } else {
+    document.getElementById('login-err').style.display = 'block';
+    document.getElementById('login-pass').value = '';
+    document.getElementById('login-pass').focus();
+  }
+}
+</script>
 <div class="xq-banner" id="xq-banner">
   <span class="xq-code" id="xq-code"></span>
   <span class="xq-name" id="xq-name"></span>
