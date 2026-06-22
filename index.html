@@ -29,10 +29,10 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 </script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:#e6edf3;min-height:100vh;display:flex;flex-direction:column}
+body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:#e6edf3;min-height:100vh;display:flex;flex-direction:column;padding-top:95px}
 
 /* ── HEADER ── */
-.hdr{background:#161b22;border-bottom:1px solid #30363d;padding:9px 14px;display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:100;}
+.hdr{background:#161b22;border-bottom:1px solid #30363d;padding:9px 14px;display:flex;align-items:center;gap:8px;position:fixed;top:0;left:0;right:0;z-index:100;}
 .hdr-t{font-size:17px;font-weight:700;color:#58a6ff;white-space:nowrap}
 .hdr-sub{font-size:12px;color:#8b949e;margin-left:4px}
 .hdr-r{margin-left:auto;display:flex;gap:6px}
@@ -40,9 +40,9 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .btn-load{background:none;border:1px solid #30363d;border-radius:6px;padding:6px 12px;font-size:13px;color:#8b949e;cursor:pointer}
 
 /* ── FILTER BAR ── */
-.fbar{background:#161b22;border-bottom:1px solid #21262d;padding:7px 12px;display:flex;gap:8px;align-items:center;position:sticky;top:47px;z-index:99}
+.fbar{background:#161b22;border-bottom:1px solid #21262d;padding:7px 12px;display:flex;gap:8px;align-items:center;position:fixed;top:47px;left:0;right:0;z-index:99}
 .fbar-search-wrap{flex:1;position:relative;display:flex;align-items:center}
-.fbar-search{width:100%;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:5px 28px 5px 10px;color:#e6edf3;font-size:13px;outline:none;box-sizing:border-box}
+.fbar-search{width:100%;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:8px 32px 8px 12px;color:#e6edf3;font-size:15px;outline:none;box-sizing:border-box}
 .fbar-search:focus{border-color:#58a6ff}
 .fbar-clear{position:absolute;right:4px;background:none;border:none;color:#8b949e;font-size:18px;cursor:pointer;padding:4px 8px;line-height:1;display:none}
 .fbar-clear:hover{color:#e6edf3}
@@ -59,7 +59,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .btn-top:active{background:#21262d;color:#e6edf3}
 
 /* ── SORT BAR ── */
-.sbar{padding:7px 12px;display:flex;flex-wrap:wrap;gap:5px;background:#0d1117;border-bottom:1px solid #21262d}
+.sbar{padding:7px 12px;display:flex;flex-wrap:wrap;gap:5px;background:#0d1117;border-bottom:1px solid #21262d;position:fixed;top:95px;left:0;right:0;z-index:98}
 .sbtn{background:#21262d;border:1px solid #30363d;border-radius:16px;padding:5px 12px;font-size:12px;color:#8b949e;cursor:pointer;white-space:nowrap}
 .sbtn.on{background:#1f6feb22;border-color:#58a6ff;color:#58a6ff}
 
@@ -274,7 +274,7 @@ function doLogin(){
 </script>
 
 <!-- FLOATING TOP BUTTON -->
-<button id="float-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" style="position:fixed;right:10px;top:50%;transform:translateY(-50%);z-index:900;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#8b949e;font-size:18px;padding:10px 6px;cursor:pointer;box-shadow:0 2px 8px #0006">↑</button>
+<button id="float-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" style="position:fixed;right:10px;top:65%;transform:translateY(-50%);z-index:900;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#8b949e;font-size:18px;padding:10px 6px;cursor:pointer;box-shadow:0 2px 8px #0006">↑</button>
 
 <div class="xq-banner" id="xq-banner">
   <span class="xq-code" id="xq-code"></span>
@@ -311,8 +311,7 @@ function doLogin(){
 
 <!-- SORT BAR -->
 <div class="sbar" id="sbar">
-  <button class="sbtn on" data-k="pct" data-d="d" onclick="setSrt(this,'pct','d')">漲幅 ↓</button>
-  <button class="sbtn" data-k="pct" data-d="a" onclick="setSrt(this,'pct','a')">跌幅 ↓</button>
+  <button class="sbtn on" data-k="pct" onclick="setSrtToggle(this,'pct','漲跌幅 ↑','漲跌幅 ↓')">漲跌幅 ↑</button>
   <button class="sbtn" data-k="close" onclick="setSrtToggle(this,'close','股價高→低','股價低→高')">股價高→低</button>
   <button class="sbtn" data-k="rs" onclick="setSrtToggle(this,'rs','RS% ↑','RS% ↓')">RS% ↑</button>
   <button class="sbtn" data-k="eps" onclick="setSrtToggle(this,'eps','EPS ↑','EPS ↓')">EPS ↑</button>
@@ -1351,7 +1350,7 @@ function analyzePattern(data){
     var avgVol=data.slice(-11,-1).reduce(function(s,d){return s+d.v;},0)/10;
     var volOk=data[data.length-1].v>avgVol;
     if(rsiVal>50 && rsiVal>rsiPrev && ma60Up && volOk){
-      tags.push({cls:'cpat-666',txt:'666買點'});
+      tags.push({cls:'cpat-666',txt:'進場訊號'});
     }
   }
 
@@ -1624,10 +1623,25 @@ function toast(msg,color){
 
 function showToast(msg){ toast(msg); }
 
-// 頁面載入時自動載入備註
+// 動態調整 body padding-top
+function adjustPadding(){
+  var hdr = document.querySelector('.hdr');
+  var fbar = document.querySelector('.fbar');
+  var sbar = document.querySelector('.sbar');
+  if(hdr && fbar && sbar){
+    var total = hdr.offsetHeight + fbar.offsetHeight + sbar.offsetHeight;
+    document.body.style.paddingTop = total + 'px';
+    fbar.style.top = hdr.offsetHeight + 'px';
+    sbar.style.top = (hdr.offsetHeight + fbar.offsetHeight) + 'px';
+  }
+}
+
+// 頁面載入時自動載入備註與調整間距
 window.addEventListener('load', function(){
+  adjustPadding();
   autoLoadNotes();
 });
+window.addEventListener('resize', adjustPadding);
 </script>
 </body>
 </html>
