@@ -272,6 +272,10 @@ function doLogin(){
   }
 }
 </script>
+
+<!-- FLOATING TOP BUTTON -->
+<button id="float-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" style="position:fixed;right:10px;top:50%;transform:translateY(-50%);z-index:900;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#8b949e;font-size:18px;padding:10px 6px;cursor:pointer;box-shadow:0 2px 8px #0006">↑</button>
+
 <div class="xq-banner" id="xq-banner">
   <span class="xq-code" id="xq-code"></span>
   <span class="xq-name" id="xq-name"></span>
@@ -299,7 +303,6 @@ function doLogin(){
     <button class="fbar-clear" id="fclear" onclick="clearSearch()">✕</button>
   </div>
   <button class="btn-filter" id="fbtn" onclick="openDrawer()">☰ 產業</button>
-  <button class="btn-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑ TOP</button>
 </div>
 <div id="fbar-tags-wrap" style="display:none;align-items:center;gap:5px;padding:0 12px 6px;flex-wrap:wrap">
   <button class="fbar-clear-all" id="fbar-clear-all" onclick="selAll()">✕ 清除全部</button>
@@ -704,7 +707,6 @@ function render(){
             +'<div class="yf-intervals">'
               
               +'<button class="yf-int on" data-iv="D" onclick="event.stopPropagation();yfSetRange(\''+s.code+'\',\'D\',this)">日</button>'
-              +'<button class="yf-int" data-iv="W" onclick="event.stopPropagation();yfSetRange(\''+s.code+'\',\'W\',this)">週</button>'
             +'</div>'
             +'<div class="yf-kbars">'
               +'<button class="yf-kbar" onclick="event.stopPropagation();setKBars(30,this)">30</button>'
@@ -940,11 +942,13 @@ function yfSetRange(code, interval, btn){
   var wrap=document.getElementById('yf-'+code);
   if(wrap) wrap.querySelectorAll('.yf-int').forEach(function(b){b.classList.remove('on');});
   btn.classList.add('on');
+  kOffset=0; // 重置偏移
   tvLoad(code, interval);
 }
 
 function setKBars(n, btn){
   kBars=n;
+  kOffset=0; // 重置偏移
   // 更新所有 kbar 按鈕狀態
   document.querySelectorAll('.yf-kbar').forEach(function(b){b.classList.remove('on');});
   btn.classList.add('on');
@@ -1035,6 +1039,7 @@ function calcMA(data, n){
 
 var CHART_H=280;
 var kBars=60; // 預設顯示60根K棒
+var kOffset=0; // 往左偏移的K棒數（0=最新）
 function drawKChart(canvas, data){
   var dpr = window.devicePixelRatio||1;
   var W = canvas.width/dpr, H = CHART_H;
@@ -1047,9 +1052,11 @@ function drawKChart(canvas, data){
   // 先對完整資料計算MA，再截切，確保任何kBars下MA都能畫齊
   var ma13Full = calcMA(data, 13);
   var ma60Full = calcMA(data, 60);
-  var show = data.slice(-kBars), n = show.length;
-  var ma13Show = ma13Full.slice(-kBars);
-  var ma60Show = ma60Full.slice(-kBars);
+  var end = kOffset>0 ? data.length-kOffset : data.length;
+  var start = Math.max(0, end-kBars);
+  var show = data.slice(start, end), n = show.length;
+  var ma13Show = ma13Full.slice(start, end);
+  var ma60Show = ma60Full.slice(start, end);
   var PAD = {t:22, b:18, l:60, r:8};
   var volH = Math.floor((H-PAD.t-PAD.b)*0.20);
   var kH = H-PAD.t-PAD.b-volH-6;
@@ -1081,18 +1088,18 @@ function drawKChart(canvas, data){
     // 數字位置：K棒左側，往左移足夠距離
     var lx = candleX - barW/2 - 8;
     var ly = Math.max(PAD.t+18, candleHiY - 4);
-    // 數字位置：圖表3/4處，虛線上方
-    var lx = PAD.l + (W-PAD.l-PAD.r)*0.75;
+    // 數字位置：左側，虛線上方
+    var lx = PAD.l + 4;
     var ly = candleHiY - 6;
     // 半透明背景
     ctx.fillStyle='rgba(13,17,23,0.85)';
-    ctx.fillRect(lx-tw/2-4, ly-14, tw+8, 18);
+    ctx.fillRect(lx-4, ly-14, tw+8, 18);
     // 灰色水平虛線
-    ctx.strokeStyle='rgba(180,180,180,0.5)'; ctx.lineWidth=0.8;
+    ctx.strokeStyle='rgba(255,255,255,0.6)'; ctx.lineWidth=1.5;
     ctx.setLineDash([4,3]);
     ctx.beginPath(); ctx.moveTo(PAD.l, candleHiY); ctx.lineTo(candleX, candleHiY); ctx.stroke();
     ctx.setLineDash([]);
-    ctx.textAlign='center';
+    ctx.textAlign='left';
     ctx.fillStyle='#ffffff';
     ctx.fillText(txt, lx, ly);
     ctx.restore();
@@ -1205,6 +1212,35 @@ function tvLoad(code, interval){
         return '<span class="cpat '+p.cls+'">'+p.txt+'</span>';
       }).join('');
     }
+
+    // 左右滑動支援
+    var dragStartX = null;
+    var dragOffset = 0;
+    var barW = canvas.offsetWidth / kBars;
+    var didDrag = false;
+
+    function onDragStart(x){ dragStartX=x; dragOffset=kOffset; didDrag=false; }
+    function onDragMove(x){
+      if(dragStartX===null) return;
+      var dx = dragStartX - x;
+      if(Math.abs(dx) > 5) didDrag=true;
+      var shift = Math.round(dx / barW);
+      kOffset = Math.max(0, Math.min(data.length-kBars, dragOffset+shift));
+      drawKChart(canvas, data);
+    }
+    function onDragEnd(){ dragStartX=null; }
+
+    // 觸控
+    canvas.addEventListener('touchstart', function(e){ onDragStart(e.touches[0].clientX); }, {passive:true});
+    canvas.addEventListener('touchmove',  function(e){ e.preventDefault(); onDragMove(e.touches[0].clientX); }, {passive:false});
+    canvas.addEventListener('touchend',   function(e){ onDragEnd(); });
+    // 滑鼠
+    canvas.addEventListener('mousedown',  function(e){ onDragStart(e.clientX); });
+    canvas.addEventListener('mousemove',  function(e){ if(e.buttons) onDragMove(e.clientX); });
+    canvas.addEventListener('mouseup',    onDragEnd);
+    canvas.addEventListener('mouseleave', onDragEnd);
+    // 拖曳後阻止 click 冒泡（避免關閉卡片）
+    canvas.addEventListener('click', function(e){ if(didDrag){ e.stopPropagation(); didDrag=false; } });
   });
 }
 
