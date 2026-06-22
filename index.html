@@ -89,9 +89,11 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .card-name{font-size:17px;font-weight:600;color:#e6edf3;line-height:1.2}
 .card-pattern{display:flex;flex-wrap:wrap;gap:3px;margin-top:3px}
 .cpat{font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;white-space:nowrap}
-.cpat-bull{background:#1a3a1a;color:#3fb950;border:1px solid #3fb95055}
-.cpat-bear{background:#3a1a1a;color:#f85149;border:1px solid #f8514955}
+.cpat-bull{background:#3a1a1a;color:#f85149;border:1px solid #f8514955}
+.cpat-bear{background:#1a3a1a;color:#3fb950;border:1px solid #3fb95055}
 .cpat-neu{background:#21262d;color:#8b949e;border:1px solid #30363d}
+.cpat-vol{background:#1a1a3a;color:#79c0ff;border:1px solid #79c0ff55}
+.cpat-666{background:#3a2a00;color:#ffd700;border:1px solid #ffd70088;font-weight:700}
 .card-cnyes{font-size:11px;color:#58a6ff;text-decoration:none;background:#1f6feb22;border:1px solid #1f6feb44;border-radius:4px;padding:2px 6px;white-space:nowrap;flex-shrink:0;align-self:center}
 .card-cnyes:active{background:#1f6feb44}
 .card-line{font-size:11px;color:#fff;text-decoration:none;background:#06C755;border:1px solid #06C755;border-radius:4px;padding:2px 6px;white-space:nowrap;flex-shrink:0;align-self:center}
@@ -308,14 +310,14 @@ function doLogin(){
 <div class="sbar" id="sbar">
   <button class="sbtn on" data-k="pct" data-d="d" onclick="setSrt(this,'pct','d')">漲幅 ↓</button>
   <button class="sbtn" data-k="pct" data-d="a" onclick="setSrt(this,'pct','a')">跌幅 ↓</button>
-  <button class="sbtn" data-k="close" data-d="d" onclick="setSrt(this,'close','d')">股價高低</button>
-  <button class="sbtn" data-k="rs" data-d="d" onclick="setSrt(this,'rs','d')">RS% ↓</button>
-  <button class="sbtn" data-k="eps" data-d="d" onclick="setSrt(this,'eps','d')">EPS ↓</button>
-  <button class="sbtn" data-k="grossmargin" data-d="d" onclick="setSrt(this,'grossmargin','d')">毛利率 ↓</button>
-  <button class="sbtn" data-k="turnval" data-d="d" onclick="setSrt(this,'turnval','d')">成交值 ↓</button>
-  <button class="sbtn" data-k="turnover" data-d="d" onclick="setSrt(this,'turnover','d')">換手率 ↓</button>
-  <button class="sbtn" data-k="margin" data-d="a" onclick="setSrt(this,'margin','a')">融資維持 ↑</button>
-  <button class="sbtn" data-k="capital" data-d="a" onclick="setSrt(this,'capital','a')">股本小→大</button>
+  <button class="sbtn" data-k="close" onclick="setSrtToggle(this,'close','股價高→低','股價低→高')">股價高→低</button>
+  <button class="sbtn" data-k="rs" onclick="setSrtToggle(this,'rs','RS% ↑','RS% ↓')">RS% ↑</button>
+  <button class="sbtn" data-k="eps" onclick="setSrtToggle(this,'eps','EPS ↑','EPS ↓')">EPS ↑</button>
+  <button class="sbtn" data-k="grossmargin" onclick="setSrtToggle(this,'grossmargin','毛利率 ↑','毛利率 ↓')">毛利率 ↑</button>
+  <button class="sbtn" data-k="turnval" onclick="setSrtToggle(this,'turnval','成交值 ↑','成交值 ↓')">成交值 ↑</button>
+  <button class="sbtn" data-k="turnover" onclick="setSrtToggle(this,'turnover','換手率 ↑','換手率 ↓')">換手率 ↑</button>
+  <button class="sbtn" data-k="margin" onclick="setSrtToggle(this,'margin','融資維持 ↑','融資維持 ↓','a')">融資維持 ↑</button>
+  <button class="sbtn" data-k="capital" onclick="setSrtToggle(this,'capital','股本小→大','股本大→小','a')">股本小→大</button>
 </div>
 
 <!-- COUNT BAR -->
@@ -424,6 +426,17 @@ function setSrt(el,k,d){
   document.querySelectorAll('.sbtn').forEach(function(b){b.classList.remove('on');});
   el.classList.add('on');
   sk=k;sd=d;
+  render();
+}
+
+function setSrtToggle(el, k, labelD, labelA, defaultDir){
+  var def = defaultDir || 'd';
+  var isOn = el.classList.contains('on') && sk===k;
+  var d = isOn ? (sd==='d'?'a':'d') : def;
+  document.querySelectorAll('.sbtn').forEach(function(b){b.classList.remove('on');});
+  el.classList.add('on');
+  sk=k; sd=d;
+  el.textContent = d==='d' ? (labelD||k+' ↓') : (labelA||k+' ↑');
   render();
 }
 
@@ -1054,6 +1067,35 @@ function drawKChart(canvas, data){
     ctx.fillStyle='#6e7681'; ctx.font='9px sans-serif'; ctx.textAlign='right';
     ctx.fillText(gv.toFixed(gv<10?2:1), PAD.l-3, gy+3);
   }
+
+  // 最後一根最高價標示（動態位置，在最高點正上方）
+  var lastCandle = show[n-1];
+  if(lastCandle){
+    ctx.save();
+    ctx.fillStyle='#ffffff'; ctx.font='bold 16px sans-serif'; ctx.textAlign='right';
+    var txt = lastCandle.h.toFixed(lastCandle.h<10?2:1);
+    var tw = ctx.measureText(txt).width;
+    var candleX = px(n-1);
+    var candleHiY = py(lastCandle.h);
+    // 數字位置：K棒左側，往左移足夠距離
+    var lx = candleX - barW/2 - 8;
+    var ly = Math.max(PAD.t+18, candleHiY - 4);
+    // 數字位置：圖表3/4處，虛線上方
+    var lx = PAD.l + (W-PAD.l-PAD.r)*0.75;
+    var ly = candleHiY - 6;
+    // 半透明背景
+    ctx.fillStyle='rgba(13,17,23,0.85)';
+    ctx.fillRect(lx-tw/2-4, ly-14, tw+8, 18);
+    // 灰色水平虛線
+    ctx.strokeStyle='rgba(180,180,180,0.5)'; ctx.lineWidth=0.8;
+    ctx.setLineDash([4,3]);
+    ctx.beginPath(); ctx.moveTo(PAD.l, candleHiY); ctx.lineTo(candleX, candleHiY); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.textAlign='center';
+    ctx.fillStyle='#ffffff';
+    ctx.fillText(txt, lx, ly);
+    ctx.restore();
+  }
   // K棒（台灣慣例：紅漲綠跌）
   show.forEach(function(d,i){
     var x=px(i), isUp=d.c>=d.o, color=isUp?'#f85149':'#3fb950';
@@ -1241,6 +1283,74 @@ function analyzePattern(data){
   var aboveMA60=prev5.filter(function(d){return d.c>m60;});
   if(aboveMA60.length>=3 && close<m60){
     tags.push({cls:'cpat-bear',txt:'跌破MA60'});
+  }
+
+  // 666買點（近似，嚴格版）
+  if(data.length>=15 && close>m60 && close>m13){
+    // 計算 RSI(14)
+    var rsiData=data.slice(-15);
+    var gains=0, losses=0;
+    for(var ri=1;ri<15;ri++){
+      var diff=rsiData[ri].c-rsiData[ri-1].c;
+      if(diff>0) gains+=diff; else losses+=(-diff);
+    }
+    var avgGain=gains/14, avgLoss=losses/14;
+    var rsiVal=avgLoss===0?100:100-(100/(1+avgGain/avgLoss));
+    // RSI前一期
+    var rsiDataP=data.slice(-16,-1);
+    var gainsP=0, lossesP=0;
+    for(var rj=1;rj<15;rj++){
+      var diffP=rsiDataP[rj].c-rsiDataP[rj-1].c;
+      if(diffP>0) gainsP+=diffP; else lossesP+=(-diffP);
+    }
+    var avgGainP=gainsP/14, avgLossP=lossesP/14;
+    var rsiPrev=avgLossP===0?100:100-(100/(1+avgGainP/avgLossP));
+    // MA60 向上（近5根MA60遞增）
+    var ma60Full2=calcMA(data,60);
+    var ma60Now=ma60Full2[ma60Full2.length-1];
+    var ma60Prev=ma60Full2[ma60Full2.length-6]||ma60Now;
+    var ma60Up=ma60Now>ma60Prev;
+    // 成交量 > 10根均量
+    var avgVol=data.slice(-11,-1).reduce(function(s,d){return s+d.v;},0)/10;
+    var volOk=data[data.length-1].v>avgVol;
+    if(rsiVal>50 && rsiVal>rsiPrev && ma60Up && volOk){
+      tags.push({cls:'cpat-666',txt:'666買點'});
+    }
+  }
+
+  // 價量齊揚 — 今日收紅且成交量創近10根新高
+  var maxVol10 = Math.max.apply(null, data.slice(-11,-1).map(function(d){return d.v;}));
+  if(data.length>=2 && close>data[data.length-2].c && last.v>maxVol10){
+    tags.push({cls:'cpat-bull',txt:'價量齊揚'});
+  }
+
+  // 量縮回測 — 今日成交量低於10根均量50%且收盤在MA13附近
+  var avgVol10 = data.slice(-11,-1).reduce(function(s,d){return s+d.v;},0)/10;
+  if(last.v < avgVol10*0.5 && Math.abs(close-m13)/m13 < 0.02){
+    tags.push({cls:'cpat-neu',txt:'量縮回測'});
+  }
+
+  // 三連紅
+  if(data.length>=3){
+    var d1=data[data.length-1],d2=data[data.length-2],d3=data[data.length-3];
+    if(d1.c>d1.o && d2.c>d2.o && d3.c>d3.o){
+      tags.push({cls:'cpat-bull',txt:'三連紅'});
+    }
+    // 三連黑
+    if(d1.c<d1.o && d2.c<d2.o && d3.c<d3.o){
+      tags.push({cls:'cpat-bear',txt:'三連黑'});
+    }
+  }
+
+  // 長紅K — 今日實體大於近10根平均實體的1.5倍且收紅
+  var avgBody = data.slice(-11,-1).reduce(function(s,d){return s+Math.abs(d.c-d.o);},0)/10;
+  var todayBody = Math.abs(last.c-last.o);
+  if(last.c>last.o && todayBody>avgBody*1.5){
+    tags.push({cls:'cpat-bull',txt:'長紅K'});
+  }
+  // 長黑K
+  if(last.c<last.o && todayBody>avgBody*1.5){
+    tags.push({cls:'cpat-bear',txt:'長黑K'});
   }
 
   return tags;
