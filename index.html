@@ -1636,6 +1636,26 @@ function adjustPadding(){
   }
 }
 
+// 往下滑隱藏排序列，往上滑顯示
+(function(){
+  var lastY = 0;
+  window.addEventListener('scroll', function(){
+    var y = window.scrollY;
+    var sbar = document.querySelector('.sbar');
+    if(!sbar) return;
+    if(y > lastY && y > 60){
+      // 往下滑 - 隱藏
+      sbar.style.transform = 'translateY(-100%)';
+      sbar.style.transition = 'transform 0.2s';
+    } else {
+      // 往上滑 - 顯示
+      sbar.style.transform = 'translateY(0)';
+      sbar.style.transition = 'transform 0.2s';
+    }
+    lastY = y;
+  });
+})();
+
 // 頁面載入時自動載入備註與調整間距
 window.addEventListener('load', function(){
   adjustPadding();
