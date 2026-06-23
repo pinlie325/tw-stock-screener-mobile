@@ -274,7 +274,34 @@ function doLogin(){
 </script>
 
 <!-- FLOATING TOP BUTTON -->
-<button id="float-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" style="position:fixed;right:10px;top:65%;transform:translateY(-50%);z-index:900;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#8b949e;font-size:18px;padding:10px 6px;cursor:pointer;box-shadow:0 2px 8px #0006">↑</button>
+<button id="float-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" style="position:fixed;right:10px;top:65%;transform:translateY(-50%);z-index:900;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#8b949e;font-size:14px;padding:10px 6px;cursor:pointer;box-shadow:0 2px 8px #0006">▲</button>
+
+<!-- HELP MODAL -->
+<div id="help-modal" style="display:none;position:fixed;inset:0;background:#000a;z-index:9998;align-items:center;justify-content:center;padding:16px;box-sizing:border-box">
+  <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;width:100%;max-width:420px;max-height:85vh;overflow-y:auto;padding:20px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <span style="font-size:17px;font-weight:700;color:#58a6ff">📈 選股平台使用說明</span>
+      <button onclick="document.getElementById('help-modal').style.display='none'" style="background:none;border:none;color:#8b949e;font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <div style="font-size:13px;color:#c9d1d9;line-height:1.8">
+      <p style="color:#f0c040;font-weight:700;margin:0 0 6px">📥 載入資料</p>
+      <p style="margin:0 0 12px">☁️ 雲端：從 Google Drive 載入最新選股 Excel<br>📄 本機：從手機/電腦載入 Excel 檔案</p>
+      <p style="color:#f0c040;font-weight:700;margin:0 0 6px">🔍 搜尋與篩選</p>
+      <p style="margin:0 0 12px">搜尋框輸入股票代碼或名稱<br>產業按鈕：依產業篩選個股<br>⭐ 按鈕：只顯示有備註的個股</p>
+      <p style="color:#f0c040;font-weight:700;margin:0 0 6px">📊 卡片功能</p>
+      <p style="margin:0 0 12px">點擊卡片：展開 K 線圖<br>K 線圖左右滑動：查看歷史走勢<br>📷 圖示：截圖模式<br>CM / LINE：跳轉外部連結</p>
+      <p style="color:#f0c040;font-weight:700;margin:0 0 6px">📈 技術型態（點開K線後顯示）</p>
+      <p style="margin:0 0 12px">
+        <span style="color:#f85149">多頭趨勢 / 突破MA60 / 三連紅 / 長紅K / 價量齊揚</span><br>
+        <span style="color:#3fb950">空頭趨勢 / 跌破MA60 / 三連黑 / 長黑K</span><br>
+        <span style="color:#8b949e">均線糾結 / 量縮回測</span><br>
+        <span style="color:#ffd700">進場訊號：站上MA60+MA13，RSI>50向上，MA60向上，量能放大</span>
+      </p>
+      <p style="color:#f0c040;font-weight:700;margin:0 0 6px">📝 備註系統</p>
+      <p style="margin:0">開啟 app 自動從雲端載入備註<br>備註顯示於卡片頂部（灰底紫字）<br>按 ⭐ 可篩選有備註的個股並更新備註</p>
+    </div>
+  </div>
+</div>
 
 <div class="xq-banner" id="xq-banner">
   <span class="xq-code" id="xq-code"></span>
@@ -285,13 +312,13 @@ function doLogin(){
 
 <div class="hdr">
   <div>
-    <span class="hdr-t">台股選股</span>
+    <span class="hdr-t" onclick="showHelpModal()" style="cursor:pointer">選股平台</span>
     <span class="hdr-sub" id="hdr-sub">請載入資料</span>
   </div>
   <div class="hdr-r">
-    <button class="btn-cloud" onclick="openDrivePicker()">☁️</button>
+    <button class="btn-cloud" onclick="openDrivePicker()" style="font-size:20px;padding:4px 10px">☁️</button>
     <button class="btn-cloud" onclick="toggleNoteFilter()" id="hdr-note-btn" title="只顯示有備註的股票" style="font-size:12px;padding:5px 10px">⭐</button>
-    <button class="btn-load" onclick="document.getElementById('fi').click()">📄 載入</button>
+    <button class="btn-load" onclick="document.getElementById('fi').click()">📄</button>
     <input id="fi" type="file" accept=".xlsx,.xls" style="display:none" onchange="loadXL(this)">
   </div>
 </div>
@@ -1221,7 +1248,7 @@ function tvLoad(code, interval){
     function onDragStart(x){ dragStartX=x; dragOffset=kOffset; didDrag=false; }
     function onDragMove(x){
       if(dragStartX===null) return;
-      var dx = dragStartX - x;
+      var dx = x - dragStartX;  // 反向：往右滑 = 看更早
       if(Math.abs(dx) > 5) didDrag=true;
       var shift = Math.round(dx / barW);
       kOffset = Math.max(0, Math.min(data.length-kBars, dragOffset+shift));
@@ -1623,6 +1650,11 @@ function toast(msg,color){
 
 function showToast(msg){ toast(msg); }
 
+function showHelpModal(){
+  var m = document.getElementById('help-modal');
+  m.style.display = 'flex';
+}
+
 // 動態調整 body padding-top
 function adjustPadding(){
   var hdr = document.querySelector('.hdr');
@@ -1636,23 +1668,16 @@ function adjustPadding(){
   }
 }
 
-// 往下滑隱藏排序列，往上滑顯示
+// 只有在頂部才顯示排序列
 (function(){
-  var lastY = 0;
   window.addEventListener('scroll', function(){
-    var y = window.scrollY;
     var sbar = document.querySelector('.sbar');
     if(!sbar) return;
-    if(y > lastY && y > 60){
-      // 往下滑 - 隱藏
-      sbar.style.transform = 'translateY(-100%)';
-      sbar.style.transition = 'transform 0.2s';
-    } else {
-      // 往上滑 - 顯示
+    if(window.scrollY <= 10){
       sbar.style.transform = 'translateY(0)';
-      sbar.style.transition = 'transform 0.2s';
+    } else {
+      sbar.style.transform = 'translateY(-100%)';
     }
-    lastY = y;
   });
 })();
 
