@@ -274,7 +274,7 @@ function doLogin(){
 </script>
 
 <!-- FLOATING TOP BUTTON -->
-<button id="float-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" style="position:fixed;right:10px;top:65%;transform:translateY(-50%);z-index:900;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#8b949e;font-size:14px;padding:10px 6px;cursor:pointer;box-shadow:0 2px 8px #0006">▲</button>
+<button id="float-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" style="position:fixed;left:10px;top:65%;transform:translateY(-50%);z-index:900;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#8b949e;font-size:14px;padding:10px 6px;cursor:pointer;box-shadow:0 2px 8px #0006">▲</button>
 
 <!-- HELP MODAL -->
 <div id="help-modal" style="display:none;position:fixed;inset:0;background:#000a;z-index:9998;align-items:center;justify-content:center;padding:16px;box-sizing:border-box">
@@ -776,29 +776,34 @@ function cardScreenshot(e, el) {
   var sbar = document.querySelector('.sbar');
   var statsRow = document.querySelector('.cbar');
   var tagRow = document.getElementById('fbar-tags-wrap');
+  var floatBtn = document.getElementById('float-top');
   var otherCards = document.querySelectorAll('.card');
 
   var hidden = [];
-  [hdr, fbar, sbar, statsRow, tagRow].forEach(function(el2) {
+  [hdr, fbar, sbar, statsRow, tagRow, floatBtn].forEach(function(el2) {
     if (el2) { hidden.push({el:el2, disp:el2.style.display}); el2.style.display='none'; }
   });
   otherCards.forEach(function(c) {
     if (c !== el) { hidden.push({el:c, disp:c.style.display}); c.style.display='none'; }
   });
 
+  // body padding 清零讓卡片貼頂
+  var savedPadding = document.body.style.paddingTop;
+  document.body.style.paddingTop = '8px';
+
   // 捲到最頂
   window.scrollTo(0, 0);
-  el.scrollIntoView({behavior:'instant', block:'start'});
 
-  // 顯示提示 banner
+  // 顯示提示 banner（右下角小按鈕，不蓋卡片）
   var tip = document.createElement('div');
-  tip.style.cssText = 'position:fixed;bottom:12px;left:50%;transform:translateX(-50%);background:#238636;color:#fff;font-size:13px;padding:7px 18px;border-radius:20px;z-index:9999;font-family:sans-serif;white-space:nowrap;box-shadow:0 4px 16px #0008;cursor:pointer';
-  tip.textContent = '📸 截圖模式　按此離開';
+  tip.style.cssText = 'position:fixed;bottom:8px;right:8px;background:#238636cc;color:#fff;font-size:11px;padding:5px 10px;border-radius:12px;z-index:9999;font-family:sans-serif;white-space:nowrap;box-shadow:0 2px 8px #0006;cursor:pointer;opacity:0.85';
+  tip.textContent = '📸 離開截圖';
   tip.onclick = function() {
     hidden.forEach(function(item) { item.el.style.display = item.disp; });
+    document.body.style.paddingTop = savedPadding;
     document.body.removeChild(tip);
     // 還原捲動位置
-    setTimeout(function(){ window.scrollTo(0, savedScroll); }, 30);
+    setTimeout(function(){ window.scrollTo(0, savedScroll); adjustPadding(); }, 30);
   };
   document.body.appendChild(tip);
 }
@@ -1130,17 +1135,24 @@ function drawKChart(canvas, data){
     ctx.fillText(txt, lx, ly);
     ctx.restore();
   }
-  // K棒（台灣慣例：紅漲綠跌）
+  // K棒（上漲紅色，下跌白色）
   show.forEach(function(d,i){
-    var x=px(i), isUp=d.c>=d.o, color=isUp?'#f85149':'#3fb950';
+    var x=px(i), isUp=d.c>=d.o, color=isUp?'#f85149':'#ffffff';
     var oy=py(Math.max(d.o,d.c)), cy=py(Math.min(d.o,d.c)), bh=Math.max(1,cy-oy);
     ctx.fillStyle=color; ctx.fillRect(x-barW/2, oy, barW, bh);
     ctx.strokeStyle=color; ctx.lineWidth=1;
     ctx.beginPath(); ctx.moveTo(x,py(d.h)); ctx.lineTo(x,oy); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(x,cy+bh); ctx.lineTo(x,py(d.l)); ctx.stroke();
   });
+  // 成交量顏色同步
+  var vTop=PAD.t+kH+6, maxV=Math.max.apply(null,show.map(function(d){return d.v;}));
+  show.forEach(function(d,i){
+    var x=px(i), isUp=d.c>=d.o, vh=maxV>0?d.v/maxV*(volH-2):0;
+    ctx.fillStyle=isUp?'rgba(248,81,73,0.55)':'rgba(63,185,80,0.55)';
+    ctx.fillRect(x-barW/2, vTop+volH-2-vh, barW, vh);
+  });
   // MA線
-  var mas = [[ma13Show,'#f0c040','MA13'],[ma60Show,'#e040fb','MA60']];
+  var mas = [[ma13Show,'#00bcd4','MA13'],[ma60Show,'#f0c040','MA60']];
   mas.forEach(function(m){
     ctx.strokeStyle=m[1]; ctx.lineWidth=1.5; ctx.beginPath();
     var s=false;
@@ -1157,13 +1169,6 @@ function drawKChart(canvas, data){
     if(!last) return;
     ctx.fillStyle=m[1]; ctx.font='bold 9px sans-serif'; ctx.textAlign='left';
     ctx.fillText(m[2]+' '+last.toFixed(last<10?2:1), lx, PAD.t-6); lx+=62;
-  });
-  // 成交量
-  var vTop=PAD.t+kH+6, maxV=Math.max.apply(null,show.map(function(d){return d.v;}));
-  show.forEach(function(d,i){
-    var x=px(i), isUp=d.c>=d.o, vh=maxV>0?d.v/maxV*(volH-2):0;
-    ctx.fillStyle=isUp?'rgba(248,81,73,0.55)':'rgba(63,185,80,0.55)';
-    ctx.fillRect(x-barW/2, vTop+volH-2-vh, barW, vh);
   });
   // X軸日期（底部 PAD.b 區域內）
   ctx.fillStyle='#8b949e'; ctx.font='9px sans-serif'; ctx.textAlign='center';
@@ -1377,7 +1382,7 @@ function analyzePattern(data){
     var avgVol=data.slice(-11,-1).reduce(function(s,d){return s+d.v;},0)/10;
     var volOk=data[data.length-1].v>avgVol;
     if(rsiVal>50 && rsiVal>rsiPrev && ma60Up && volOk){
-      tags.push({cls:'cpat-666',txt:'進場訊號'});
+      tags.push({cls:'cpat-666',txt:'觀察股'});
     }
   }
 
