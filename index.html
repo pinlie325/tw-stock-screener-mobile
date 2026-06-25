@@ -726,7 +726,7 @@ function render(){
     var epsc=s.eps!==null?(s.eps>0?'up':s.eps<0?'dn':''):'';
     var hiTags=s.tags.filter(function(t){return sel.indexOf(t)>=0;});
     var showTags=s.tags.slice(0,4);
-    return '<div class="card" oncontextmenu="cardScreenshot(event,this)" ontouchstart="startLongPress(event,this)" ontouchend="cancelLongPress()" ontouchmove="cancelLongPress()" onclick="openChart(event,\''+s.code+'\',\''+s.name.replace(/'/g,"\\'")+'\')">'
+    return '<div class="card" data-code="'+s.code+'" data-pct="'+(s.pct!==null?s.pct:'')+'" oncontextmenu="cardScreenshot(event,this)" ontouchstart="startLongPress(event,this)" ontouchend="cancelLongPress()" ontouchmove="cancelLongPress()" onclick="openChart(event,\''+s.code+'\',\''+s.name.replace(/'/g,"\\'")+'\')">'
       +'<div class="card-hd">'
         +'<div class="card-left">'
           +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">'
@@ -1011,6 +1011,26 @@ function closeChart(code){
   var frame=document.getElementById('yf-frame-'+code);
   if(frame) frame.innerHTML='';
   if(currentChart===code) currentChart=null;
+
+  // 還原乖離MA60 → 漲跌幅
+  var cardEl = document.querySelector('.card[data-code="'+code+'"]');
+  if(cardEl){
+    var cells = cardEl.querySelectorAll('.cg-lbl');
+    cells.forEach(function(lbl){
+      if(lbl.textContent==='乖離MA60'){
+        var s = window._stockData && window._stockData[code];
+        var val = lbl.nextElementSibling;
+        lbl.textContent = '漲跌幅';
+        // 從卡片 data 取回原始漲跌幅
+        var pct = cardEl.getAttribute('data-pct');
+        if(pct!==null){
+          var p = parseFloat(pct);
+          val.textContent = (p>0?'+':'')+p.toFixed(1)+'%';
+          val.className = 'cg-val' + (p>0?' up':p<0?' dn':'');
+        }
+      }
+    });
+  }
 }
 
 function yfSetRange(code, interval, btn){
@@ -1234,21 +1254,18 @@ function drawKChart(canvas, data){
     var biasc = bias>5?'up':bias<-5?'dn':'';
     var biasStr = (bias>0?'+':'')+bias.toFixed(1)+'%';
     var code = canvas.id.replace('kc-','');
-    var card = document.querySelector('.card [id="yf-'+code+'"]');
-    if(!card) card = document.getElementById('yf-'+code);
-    if(card){
-      var cardEl = card.closest('.card');
-      if(cardEl){
-        var cells = cardEl.querySelectorAll('.cg-lbl');
-        cells.forEach(function(lbl){
-          if(lbl.textContent==='漲跌幅'||lbl.textContent==='乖離MA60'){
-            var val = lbl.nextElementSibling;
-            val.textContent = biasStr;
-            val.className = 'cg-val' + (biasc?' '+biasc:'');
-            lbl.textContent = '乖離MA60';
-          }
-        });
-      }
+    var cardEl = document.querySelector('.card[data-code="'+code+'"]') ||
+                 (document.getElementById('yf-'+code) ? document.getElementById('yf-'+code).closest('.card') : null);
+    if(cardEl){
+      var cells = cardEl.querySelectorAll('.cg-lbl');
+      cells.forEach(function(lbl){
+        if(lbl.textContent==='漲跌幅'||lbl.textContent==='乖離MA60'){
+          var val = lbl.nextElementSibling;
+          val.textContent = biasStr;
+          val.className = 'cg-val' + (biasc?' '+biasc:'');
+          lbl.textContent = '乖離MA60';
+        }
+      });
     }
   }
 }
