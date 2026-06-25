@@ -303,6 +303,49 @@ function doLogin(){
   </div>
 </div>
 
+<!-- SETTINGS MODAL -->
+<div id="settings-modal" style="display:none;position:fixed;inset:0;background:#000a;z-index:9998;align-items:center;justify-content:center;padding:16px;box-sizing:border-box">
+  <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;width:100%;max-width:340px;padding:20px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <span style="font-size:17px;font-weight:700;color:#e6edf3">⚙️ 設定</span>
+      <button onclick="document.getElementById('settings-modal').style.display='none'" style="background:none;border:none;color:#8b949e;font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <button onclick="location.reload()" style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
+      🔄 重新整理網頁
+    </button>
+    <button onclick="showAddToHome()" style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:15px;padding:12px;cursor:pointer;text-align:left">
+      📲 加入主畫面（iOS）
+    </button>
+  </div>
+</div>
+
+<!-- ADD TO HOME GUIDE -->
+<div id="add-home-modal" style="display:none;position:fixed;inset:0;background:#000a;z-index:9999;align-items:center;justify-content:center;padding:16px;box-sizing:border-box">
+  <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;width:100%;max-width:340px;padding:20px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <span style="font-size:17px;font-weight:700;color:#58a6ff">📲 加入 iPhone 主畫面</span>
+      <button onclick="document.getElementById('add-home-modal').style.display='none'" style="background:none;border:none;color:#8b949e;font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <div style="font-size:14px;color:#c9d1d9;line-height:2">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <span style="background:#1f6feb;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0">1</span>
+        <span>點下方工具列的 <b style="color:#58a6ff">分享</b> 按鈕 (□↑)</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <span style="background:#1f6feb;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0">2</span>
+        <span>向下滑找到 <b style="color:#58a6ff">加入主畫面</b></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+        <span style="background:#1f6feb;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0">3</span>
+        <span>點右上角 <b style="color:#58a6ff">新增</b> 完成</span>
+      </div>
+      <div style="background:#21262d;border-radius:8px;padding:10px;font-size:12px;color:#8b949e;text-align:center">
+        加入後可從主畫面直接開啟，<br>像 App 一樣使用 📈
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="xq-banner" id="xq-banner">
   <span class="xq-code" id="xq-code"></span>
   <span class="xq-name" id="xq-name"></span>
@@ -330,6 +373,7 @@ function doLogin(){
     <button class="fbar-clear" id="fclear" onclick="clearSearch()">✕</button>
   </div>
   <button class="btn-filter" id="fbtn" onclick="openDrawer()">☰ 產業</button>
+  <button class="btn-filter" onclick="openSettings()" title="設定">⚙️</button>
 </div>
 <div id="fbar-tags-wrap" style="display:none;align-items:center;gap:5px;padding:0 12px 6px;flex-wrap:wrap">
   <button class="fbar-clear-all" id="fbar-clear-all" onclick="selAll()">✕ 清除全部</button>
@@ -1658,6 +1702,15 @@ function showToast(msg){ toast(msg); }
 function showHelpModal(){
   var m = document.getElementById('help-modal');
   m.style.display = 'flex';
+}
+
+function openSettings(){
+  document.getElementById('settings-modal').style.display = 'flex';
+}
+
+function showAddToHome(){
+  document.getElementById('settings-modal').style.display = 'none';
+  document.getElementById('add-home-modal').style.display = 'flex';
 }
 
 // 動態調整 body padding-top
