@@ -1786,16 +1786,60 @@ function showCompactList(){
     ' <span style="font-size:12px;font-weight:400;color:#8b949e">'+data.length+'支　'
     +'<span style="color:#f85149">▲'+ups+'</span>　'
     +'<span style="color:#3fb950">▼'+dns+'</span></span>';
-  var html = '';
+  // 產業熱力圖（大分類）
+  var catStats = {};
+  Object.keys(C).forEach(function(cat){
+    var catTags = C[cat];
+    var matched = data.filter(function(s){
+      return s.tags && s.tags.some(function(t){ return catTags.indexOf(t)>=0; });
+    });
+    if(!matched.length) return;
+    var ups2 = matched.filter(function(s){return s.pct>0;}).length;
+    var dns2 = matched.filter(function(s){return s.pct<0;}).length;
+    var pctSum2 = matched.reduce(function(acc,s){return acc+(s.pct||0);},0);
+    catStats[cat] = {total:matched.length, ups:ups2, dns:dns2, pctSum:pctSum2};
+  });
+  var catKeys = Object.keys(catStats).sort(function(a,b){
+    return (catStats[b].pctSum/catStats[b].total) - (catStats[a].pctSum/catStats[a].total);
+  });
+  var heatHtml = '<div style="padding:10px 16px;border-bottom:1px solid #30363d">'
+    +'<div style="font-size:11px;color:#8b949e;margin-bottom:8px">產業熱力圖</div>'
+    +'<div style="display:flex;flex-wrap:wrap;gap:4px">';
+  catKeys.forEach(function(t){
+    var st = catStats[t];
+    var avg = st.pctSum / st.total;
+    var intensity = Math.min(Math.abs(avg)/5, 1);
+    var bg, tc;
+    if(avg > 0){
+      var r = Math.round(80 + intensity*168);
+      bg = 'rgba('+r+',50,50,0.9)';
+      tc = '#ffaaaa';
+    } else if(avg < 0){
+      var g = Math.round(80 + intensity*150);
+      bg = 'rgba(30,'+g+',60,0.9)';
+      tc = '#aaffaa';
+    } else {
+      bg = '#21262d'; tc = '#8b949e';
+    }
+    heatHtml += '<div style="background:'+bg+';border-radius:4px;padding:4px 7px;cursor:pointer;min-width:60px;text-align:center" class="hcat" data-tag="'+t+'">'
+      +'<div style="color:'+tc+';font-size:10px;font-weight:700">'+t+'</div>'
+      +'<div style="color:'+tc+';font-size:10px;opacity:0.8">'+st.total+'支 '+(avg>0?'+':'')+avg.toFixed(1)+'%</div>'
+      +'</div>';
+  });
+  heatHtml += '</div></div>';
+
+  var html = heatHtml;
   data.forEach(function(s){
     var pct = s.pct!==null?(s.pct>0?'+':'')+s.pct.toFixed(2)+'%':'--';
     var pc = s.pct>0?'#f85149':s.pct<0?'#3fb950':'#8b949e';
     var itags = s.tags ? s.tags.slice(0,2).map(function(t){
       return '<span style="background:#21262d;color:#8b949e;border-radius:3px;font-size:10px;padding:1px 5px">'+t+'</span>';
     }).join('') : '';
+    var price = s.volume!==null?s.volume:'--';
     html += '<div class="citem" data-code="'+s.code+'" style="display:flex;align-items:center;gap:8px;padding:7px 16px;border-bottom:1px solid #21262d;cursor:pointer">'
       +'<span style="color:#58a6ff;font-weight:700;font-size:13px;min-width:42px">'+s.code+'</span>'
-      +'<span style="color:#e6edf3;font-size:13px;min-width:58px">'+s.name+'</span>'
+      +'<span style="color:#e6edf3;font-size:13px;min-width:55px">'+s.name+'</span>'
+      +'<span style="color:'+pc+';font-size:13px;min-width:48px;text-align:right">'+price+'</span>'
       +'<span style="color:'+pc+';font-size:13px;min-width:55px;text-align:right">'+pct+'</span>'
       +'<span style="display:flex;flex-wrap:wrap;gap:3px;flex:1">'+itags+'</span>'
       +'</div>';
@@ -1846,6 +1890,28 @@ function showCompactList(){
     ctx2.textBaseline='middle';
     ctx2.fillText(data.length+'支',cx,cy);
   }
+  document.querySelectorAll('.hcat').forEach(function(el){
+    el.addEventListener('click', function(){
+      var cat = el.getAttribute('data-tag');
+      document.getElementById('compact-modal').style.display='none';
+      // 先完全清除
+      sel = [];
+      document.querySelectorAll('.dtag').forEach(function(d){d.classList.remove('on');});
+      document.getElementById('dall').classList.add('on');
+      // 加新大產業的細標籤
+      var subTags = C[cat] || [];
+      subTags.forEach(function(t){ if(sel.indexOf(t)<0) sel.push(t); });
+      // 更新 drawer 內 dtag 狀態
+      document.querySelectorAll('.dtag').forEach(function(d){
+        if(sel.indexOf(d.getAttribute('data-t'))>=0) d.classList.add('on');
+      });
+      document.getElementById('dall').classList.toggle('on', !sel.length);
+      document.getElementById('fbtn').classList.toggle('on', sel.length>0);
+      document.getElementById('fbtn').textContent = sel.length?'☰ 產業 ('+sel.length+')':'☰ 產業';
+      renderSelTags(); render();
+    });
+  });
+
   document.querySelectorAll('.citem').forEach(function(el){
     el.addEventListener('click', function(){
       document.getElementById('compact-modal').style.display='none';
