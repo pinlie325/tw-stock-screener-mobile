@@ -77,6 +77,8 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .card-cam{background:none;border:none;font-size:16px;cursor:pointer;padding:0;line-height:1;opacity:0.5;display:block;margin-left:auto;margin-bottom:2px}
 .card-cam:hover,.card-cam:active{opacity:1}
 .card-note-bar{background:#30363d;color:#e040fb;font-size:12px;padding:4px 8px;border-radius:4px;margin-bottom:6px;line-height:1.4}
+.card-strategy-bar{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
+.stag{background:#1a2a3a;color:#58a6ff;border:1px solid #1f6feb55;border-radius:4px;font-size:11px;padding:2px 6px;white-space:nowrap}
 .card:active{border-color:#58a6ff;background:#1a2030}
 
 /* Card header */
@@ -792,6 +794,7 @@ function render(){
   }).join('');
   if(cardsEl) cardsEl.scrollTop = scrollY; // 還原捲動位置
   if(Object.keys(noteMap).length) applyNotes(); // 重新套用備註
+  if(Object.keys(strategyMap).length) applyStrategies(); // 重新套用策略
 }
 
 // ── TRADINGVIEW CHART ──
@@ -1563,7 +1566,8 @@ function processRows(rows,filename){
   initCats();
   render();
   toast('✅ 載入完成！共 '+D.length+' 支股票','#238636');
-  autoLoadNotes(); // 自動載入備註
+  autoLoadNotes();
+  autoLoadStrategies();
 }
 
 // ── GAS / DRIVE ──
@@ -1620,7 +1624,45 @@ function loadGdFile(i){
     .catch(function(e){toast('❌ 載入失敗：'+e.message,'#da3633');});
 }
 
+var STRATEGY_GAS_URL = 'https://script.google.com/macros/s/AKfycbzonSgY3uZ1Y7HU1Joh_ibrVqBgP5dDJ5k1KMiKu9TRee2Wtk0PT-2VnrnuaNjZ6cgjoA/exec';
+var strategyMap = {};
+
 var NOTE_GAS_URL = 'https://script.google.com/macros/s/AKfycbz2qxVYgYeowc4wRACEjFpxyAlsQjJIVOPjmHBQI5RxqcgVADPbTeDaMkO5X0jkKvbeYw/exec';
+
+function autoLoadStrategies(){
+  fetch(STRATEGY_GAS_URL)
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(!d.ok) return;
+      strategyMap = d.strategies || {};
+      var count = Object.keys(strategyMap).filter(function(k){return k!=='#ERROR!';}).length;
+      if(count > 0){
+        applyStrategies();
+        showToast('📊 已載入 '+count+' 支策略股');
+      }
+    })
+    .catch(function(){});
+}
+
+function applyStrategies(){
+  document.querySelectorAll('.card').forEach(function(card){
+    var code = String(card.getAttribute('data-code')||'').trim();
+    if(!code) return;
+    var tags = strategyMap[code] || strategyMap[String(parseInt(code))] || [];
+    var existing = card.querySelector('.card-strategy-bar');
+    if(existing) existing.remove();
+    if(tags && tags.length){
+      var bar = document.createElement('div');
+      bar.className = 'card-strategy-bar';
+      bar.innerHTML = tags.map(function(t){
+        return '<span class="stag">'+t+'</span>';
+      }).join('');
+      var noteBar = card.querySelector('.card-note-bar');
+      if(noteBar) noteBar.after(bar);
+      else card.insertBefore(bar, card.firstChild);
+    }
+  });
+}
 
 function autoLoadNotes(){
   fetch(NOTE_GAS_URL)
@@ -1760,6 +1802,7 @@ function adjustPadding(){
 window.addEventListener('load', function(){
   adjustPadding();
   autoLoadNotes();
+  autoLoadStrategies();
 });
 window.addEventListener('resize', adjustPadding);
 </script>
