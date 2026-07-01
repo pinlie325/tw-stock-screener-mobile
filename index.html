@@ -696,6 +696,9 @@ function toggleNoteFilter(){
 
 function getFilt(){
   var d=D;
+  if(window._filterCodes && window._filterCodes.length){
+    d=d.filter(function(s){ return window._filterCodes.indexOf(String(s.code))>=0; });
+  }
   if(sel.length) d=d.filter(function(s){return s.tags.some(function(t){return sel.indexOf(t)>=0;});});
   if(searchQ){
     var q=searchQ;
@@ -1890,25 +1893,31 @@ function showCompactList(){
     ctx2.textBaseline='middle';
     ctx2.fillText(data.length+'支',cx,cy);
   }
+  // 記住目前簡列的股票代碼（交叉篩選用）
+  var compactCodes = data.map(function(s){ return String(s.code); });
+
   document.querySelectorAll('.hcat').forEach(function(el){
     el.addEventListener('click', function(){
       var cat = el.getAttribute('data-tag');
       document.getElementById('compact-modal').style.display='none';
-      // 先完全清除
-      sel = [];
-      document.querySelectorAll('.dtag').forEach(function(d){d.classList.remove('on');});
-      document.getElementById('dall').classList.add('on');
-      // 加新大產業的細標籤
       var subTags = C[cat] || [];
-      subTags.forEach(function(t){ if(sel.indexOf(t)<0) sel.push(t); });
-      // 更新 drawer 內 dtag 狀態
+      // 找出簡列中屬於這個大產業的股票代碼
+      var matchCodes = data.filter(function(s){
+        return s.tags && s.tags.some(function(t){ return subTags.indexOf(t)>=0; });
+      }).map(function(s){ return String(s.code); });
+      // 把細標籤加進 sel，但搜尋框用代碼過濾（臨時方案：直接搜代碼）
+      // 改用：先套用現有篩選，再用搜尋框搜第一個代碼... 太複雜
+      // 最直接：把符合的股票放進 searchFilter
+      window._filterCodes = matchCodes;
+      sel = subTags.slice();
       document.querySelectorAll('.dtag').forEach(function(d){
-        if(sel.indexOf(d.getAttribute('data-t'))>=0) d.classList.add('on');
+        d.classList.toggle('on', sel.indexOf(d.getAttribute('data-t'))>=0);
       });
       document.getElementById('dall').classList.toggle('on', !sel.length);
       document.getElementById('fbtn').classList.toggle('on', sel.length>0);
       document.getElementById('fbtn').textContent = sel.length?'☰ 產業 ('+sel.length+')':'☰ 產業';
       renderSelTags(); render();
+      window._filterCodes = null;
     });
   });
 
