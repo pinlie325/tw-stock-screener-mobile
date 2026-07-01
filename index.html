@@ -696,9 +696,6 @@ function toggleNoteFilter(){
 
 function getFilt(){
   var d=D;
-  if(window._filterCodes && window._filterCodes.length){
-    d=d.filter(function(s){ return window._filterCodes.indexOf(String(s.code))>=0; });
-  }
   if(sel.length) d=d.filter(function(s){return s.tags.some(function(t){return sel.indexOf(t)>=0;});});
   if(searchQ){
     var q=searchQ;
@@ -1893,31 +1890,68 @@ function showCompactList(){
     ctx2.textBaseline='middle';
     ctx2.fillText(data.length+'支',cx,cy);
   }
-  // 記住目前簡列的股票代碼（交叉篩選用）
-  var compactCodes = data.map(function(s){ return String(s.code); });
-
   document.querySelectorAll('.hcat').forEach(function(el){
     el.addEventListener('click', function(){
       var cat = el.getAttribute('data-tag');
-      document.getElementById('compact-modal').style.display='none';
       var subTags = C[cat] || [];
-      // 找出簡列中屬於這個大產業的股票代碼
-      var matchCodes = data.filter(function(s){
+      // 找出目前簡列中屬於這個產業的股票
+      var subData = data.filter(function(s){
         return s.tags && s.tags.some(function(t){ return subTags.indexOf(t)>=0; });
-      }).map(function(s){ return String(s.code); });
-      // 把細標籤加進 sel，但搜尋框用代碼過濾（臨時方案：直接搜代碼）
-      // 改用：先套用現有篩選，再用搜尋框搜第一個代碼... 太複雜
-      // 最直接：把符合的股票放進 searchFilter
-      window._filterCodes = matchCodes;
-      sel = subTags.slice();
-      document.querySelectorAll('.dtag').forEach(function(d){
-        d.classList.toggle('on', sel.indexOf(d.getAttribute('data-t'))>=0);
       });
-      document.getElementById('dall').classList.toggle('on', !sel.length);
-      document.getElementById('fbtn').classList.toggle('on', sel.length>0);
-      document.getElementById('fbtn').textContent = sel.length?'☰ 產業 ('+sel.length+')':'☰ 產業';
-      renderSelTags(); render();
-      window._filterCodes = null;
+      // 更新標題
+      document.getElementById('compact-title').textContent = '📋 '+cat;
+      var u2 = subData.filter(function(s){return s.pct>0;}).length;
+      var d2 = subData.filter(function(s){return s.pct<0;}).length;
+      document.getElementById('compact-title').innerHTML += ' <span style="font-size:12px;font-weight:400;color:#8b949e">'+subData.length+'支　<span style="color:#f85149">▲'+u2+'</span>　<span style="color:#3fb950">▼'+d2+'</span></span>';
+      // 只更新清單部分，保留圓餅圖和熱力圖
+      var newList = '';
+      subData.forEach(function(s){
+        var pct = s.pct!==null?(s.pct>0?'+':'')+s.pct.toFixed(2)+'%':'--';
+        var pc = s.pct>0?'#f85149':s.pct<0?'#3fb950':'#8b949e';
+        var price = s.volume!==null?s.volume:'--';
+        var itags = s.tags ? s.tags.slice(0,2).map(function(t){
+          return '<span style="background:#21262d;color:#8b949e;border-radius:3px;font-size:10px;padding:1px 5px">'+t+'</span>';
+        }).join('') : '';
+        newList += '<div class="citem2" data-code="'+s.code+'" style="display:flex;align-items:center;gap:8px;padding:7px 16px;border-bottom:1px solid #21262d;cursor:pointer">'
+          +'<span style="color:#58a6ff;font-weight:700;font-size:13px;min-width:42px">'+s.code+'</span>'
+          +'<span style="color:#e6edf3;font-size:13px;min-width:55px">'+s.name+'</span>'
+          +'<span style="color:'+pc+';font-size:13px;min-width:48px;text-align:right">'+price+'</span>'
+          +'<span style="color:'+pc+';font-size:13px;min-width:55px;text-align:right">'+pct+'</span>'
+          +'<span style="display:flex;flex-wrap:wrap;gap:3px;flex:1">'+itags+'</span>'
+          +'</div>';
+      });
+      // 替換清單（保留圓餅和熱力圖）
+      var listDiv = document.getElementById('compact-list');
+      var pieRow = listDiv.querySelector('div[style*="canvas"]') ? listDiv.children[0] : null;
+      var heatRow = listDiv.querySelector('[style*="產業熱力"]') ? listDiv.children[1] : null;
+      // 移除舊的個股列表，保留前兩個區塊
+      while(listDiv.children.length > 2) listDiv.removeChild(listDiv.lastChild);
+      var tmp = document.createElement('div');
+      tmp.innerHTML = newList;
+      while(tmp.firstChild) listDiv.appendChild(tmp.firstChild);
+      // 加點擊事件
+      document.querySelectorAll('.citem2').forEach(function(el2){
+        el2.addEventListener('click', function(){
+          document.getElementById('compact-modal').style.display='none';
+          var code = el2.getAttribute('data-code');
+          var fsearch = document.getElementById('fsearch');
+          if(fsearch && fsearch.value){ fsearch.value=''; doSearch(''); toggleClear(''); }
+          setTimeout(function(){
+            var card = document.querySelector('.card[data-code="'+code+'"]');
+            if(card){
+              var hdr = document.querySelector('.hdr');
+              var fbar = document.querySelector('.fbar');
+              var sbar = document.querySelector('.sbar');
+              var offset = (hdr?hdr.offsetHeight:0)+(fbar?fbar.offsetHeight:0)+(sbar?sbar.offsetHeight:0)+8;
+              var top = card.getBoundingClientRect().top + window.scrollY - offset;
+              window.scrollTo({top:top, behavior:'smooth'});
+            }
+          }, 100);
+        });
+      });
+      // 高亮選中的方塊
+      document.querySelectorAll('.hcat').forEach(function(h){ h.style.outline='none'; });
+      el.style.outline='2px solid #fff';
     });
   });
 
