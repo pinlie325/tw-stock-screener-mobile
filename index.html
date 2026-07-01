@@ -348,6 +348,17 @@ function doLogin(){
   </div>
 </div>
 
+<!-- COMPACT LIST MODAL -->
+<div id="compact-modal" style="display:none;position:fixed;inset:0;background:#000a;z-index:9998;align-items:flex-start;justify-content:center;padding:16px;box-sizing:border-box;overflow-y:auto">
+  <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;width:100%;max-width:520px;margin-top:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid #30363d;position:sticky;top:0;background:#161b22;z-index:1;border-radius:12px 12px 0 0">
+      <span id="compact-title" style="font-size:15px;font-weight:700;color:#e6edf3">📋 個股簡列</span>
+      <button onclick="document.getElementById('compact-modal').style.display='none'" style="background:none;border:none;color:#8b949e;font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <div id="compact-list" style="padding:8px 0"></div>
+  </div>
+</div>
+
 <div class="xq-banner" id="xq-banner">
   <span class="xq-code" id="xq-code"></span>
   <span class="xq-name" id="xq-name"></span>
@@ -375,6 +386,7 @@ function doLogin(){
     <button class="fbar-clear" id="fclear" onclick="clearSearch()">✕</button>
   </div>
   <button class="btn-filter" id="fbtn" onclick="openDrawer()">☰ 產業</button>
+  <button class="btn-filter" onclick="showCompactList()" title="簡列">📋</button>
   <button class="btn-filter" onclick="openSettings()" title="設定">⚙️</button>
 </div>
 <div id="fbar-tags-wrap" style="display:none;align-items:center;gap:5px;padding:0 12px 6px;flex-wrap:wrap">
@@ -1757,6 +1769,105 @@ function toast(msg,color){
 }
 
 function showToast(msg){ toast(msg); }
+
+function showCompactList(){
+  var data = getFilt().slice();
+  data.sort(function(a,b){
+    var av=a[sk], bv=b[sk];
+    if(av===null&&bv===null)return 0;
+    if(av===null)return 1; if(bv===null)return -1;
+    return sd==='d'?bv-av:av-bv;
+  });
+  var ups = data.filter(function(s){return s.pct>0;}).length;
+  var dns = data.filter(function(s){return s.pct<0;}).length;
+  var selLabel = sel.length ? sel.join(' / ') : '全部';
+  document.getElementById('compact-title').textContent = '📋 '+selLabel;
+  document.getElementById('compact-title').innerHTML +=
+    ' <span style="font-size:12px;font-weight:400;color:#8b949e">'+data.length+'支　'
+    +'<span style="color:#f85149">▲'+ups+'</span>　'
+    +'<span style="color:#3fb950">▼'+dns+'</span></span>';
+  var html = '';
+  data.forEach(function(s){
+    var pct = s.pct!==null?(s.pct>0?'+':'')+s.pct.toFixed(2)+'%':'--';
+    var pc = s.pct>0?'#f85149':s.pct<0?'#3fb950':'#8b949e';
+    var itags = s.tags ? s.tags.slice(0,2).map(function(t){
+      return '<span style="background:#21262d;color:#8b949e;border-radius:3px;font-size:10px;padding:1px 5px">'+t+'</span>';
+    }).join('') : '';
+    html += '<div class="citem" data-code="'+s.code+'" style="display:flex;align-items:center;gap:8px;padding:7px 16px;border-bottom:1px solid #21262d;cursor:pointer">'
+      +'<span style="color:#58a6ff;font-weight:700;font-size:13px;min-width:42px">'+s.code+'</span>'
+      +'<span style="color:#e6edf3;font-size:13px;min-width:58px">'+s.name+'</span>'
+      +'<span style="color:'+pc+';font-size:13px;min-width:55px;text-align:right">'+pct+'</span>'
+      +'<span style="display:flex;flex-wrap:wrap;gap:3px;flex:1">'+itags+'</span>'
+      +'</div>';
+  });
+  // 畫圓餅圖
+  var flat = data.length - ups - dns;
+  var total = data.length || 1;
+  var pieHtml = '<div style="display:flex;align-items:center;gap:16px;padding:12px 16px;border-bottom:1px solid #30363d">'
+    +'<canvas id="pie-chart" width="80" height="80"></canvas>'
+    +'<div style="font-size:12px;line-height:2">'
+    +'<div><span style="color:#f85149">▲ 上漲</span>　'+ups+'支 ('+Math.round(ups/total*100)+'%)</div>'
+    +'<div><span style="color:#3fb950">▼ 下跌</span>　'+dns+'支 ('+Math.round(dns/total*100)+'%)</div>'
+    +'<div><span style="color:#8b949e">─ 平盤</span>　'+flat+'支 ('+Math.round(flat/total*100)+'%)</div>'
+    +'</div>'
+    +'</div>';
+  html = pieHtml + html;
+  document.getElementById('compact-list').innerHTML = html;
+  // 繪製圓餅
+  var canvas = document.getElementById('pie-chart');
+  if(canvas){
+    var ctx2 = canvas.getContext('2d');
+    var cx=40,cy=40,r=36;
+    var slices=[
+      {v:ups,c:'#f85149'},
+      {v:dns,c:'#3fb950'},
+      {v:flat,c:'#30363d'}
+    ];
+    var angle = -Math.PI/2;
+    slices.forEach(function(sl){
+      if(!sl.v) return;
+      var sweep = (sl.v/total)*Math.PI*2;
+      ctx2.beginPath();
+      ctx2.moveTo(cx,cy);
+      ctx2.arc(cx,cy,r,angle,angle+sweep);
+      ctx2.closePath();
+      ctx2.fillStyle=sl.c;
+      ctx2.fill();
+      angle+=sweep;
+    });
+    // 中心白圈
+    ctx2.beginPath();
+    ctx2.arc(cx,cy,18,0,Math.PI*2);
+    ctx2.fillStyle='#161b22';
+    ctx2.fill();
+    ctx2.fillStyle='#e6edf3';
+    ctx2.font='bold 11px sans-serif';
+    ctx2.textAlign='center';
+    ctx2.textBaseline='middle';
+    ctx2.fillText(data.length+'支',cx,cy);
+  }
+  document.querySelectorAll('.citem').forEach(function(el){
+    el.addEventListener('click', function(){
+      document.getElementById('compact-modal').style.display='none';
+      var code = el.getAttribute('data-code');
+      // 清除搜尋，還原完整清單後捲到該卡片
+      var fsearch = document.getElementById('fsearch');
+      if(fsearch && fsearch.value){ fsearch.value=''; doSearch(''); toggleClear(''); }
+      setTimeout(function(){
+        var card = document.querySelector('.card[data-code="'+code+'"]');
+        if(card){
+          var hdr = document.querySelector('.hdr');
+          var fbar = document.querySelector('.fbar');
+          var sbar = document.querySelector('.sbar');
+          var offset = (hdr?hdr.offsetHeight:0) + (fbar?fbar.offsetHeight:0) + (sbar?sbar.offsetHeight:0) + 8;
+          var top = card.getBoundingClientRect().top + window.scrollY - offset;
+          window.scrollTo({top:top, behavior:'smooth'});
+        }
+      }, 100);
+    });
+  });
+  document.getElementById('compact-modal').style.display = 'flex';
+}
 
 function showHelpModal(){
   var m = document.getElementById('help-modal');
