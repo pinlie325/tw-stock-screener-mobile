@@ -385,8 +385,8 @@ function doLogin(){
     <input class="fbar-search" id="fsearch" type="text" placeholder="搜尋代碼或名稱..." oninput="doSearch(this.value);toggleClear(this.value)" onkeyup="doSearch(this.value);toggleClear(this.value)">
     <button class="fbar-clear" id="fclear" onclick="clearSearch()">✕</button>
   </div>
-  <button class="btn-filter" id="fbtn" onclick="openDrawer()">☰ 產業</button>
-  <button class="btn-filter" onclick="showCompactList()" title="簡列">📋</button>
+  <button class="btn-filter" id="fbtn" onclick="openDrawer()">🔍 產業</button>
+  <button class="btn-filter" onclick="showCompactList()" title="簡列">🏷️</button>
   <button class="btn-filter" onclick="openSettings()" title="設定">⚙️</button>
 </div>
 <div id="fbar-tags-wrap" style="display:none;align-items:center;gap:5px;padding:0 12px 6px;flex-wrap:wrap">
@@ -593,7 +593,7 @@ function selAllCat(cat){
   });
   document.getElementById('dall').classList.toggle('on',!sel.length);
   document.getElementById('fbtn').classList.toggle('on',sel.length>0);
-  document.getElementById('fbtn').textContent=sel.length?'☰ 產業 ('+sel.length+')':'☰ 產業';
+  document.getElementById('fbtn').textContent=sel.length?'🔍 產業 ('+sel.length+')':'🔍 產業';
   renderSelTags();
   render();
 }
@@ -623,7 +623,7 @@ function removeTag(tag){
   });
   document.getElementById('dall').classList.toggle('on',!sel.length);
   document.getElementById('fbtn').classList.toggle('on',sel.length>0);
-  document.getElementById('fbtn').textContent=sel.length?'☰ 產業 ('+sel.length+')':'☰ 產業';
+  document.getElementById('fbtn').textContent=sel.length?'🔍 產業 ('+sel.length+')':'🔍 產業';
   renderSelTags();
   render();
 }
@@ -633,7 +633,7 @@ function cTag(el,tag){
   else{sel.push(tag);el.classList.add('on');}
   document.getElementById('dall').classList.toggle('on',!sel.length);
   document.getElementById('fbtn').classList.toggle('on',sel.length>0);
-  document.getElementById('fbtn').textContent=sel.length?'☰ 產業 ('+sel.length+')':'☰ 產業';
+  document.getElementById('fbtn').textContent=sel.length?'🔍 產業 ('+sel.length+')':'🔍 產業';
   renderSelTags();
   render();
 }
@@ -643,7 +643,7 @@ function selAll(){
   document.querySelectorAll('.dtag').forEach(function(el){el.classList.remove('on');});
   document.getElementById('dall').classList.add('on');
   document.getElementById('fbtn').classList.remove('on');
-  document.getElementById('fbtn').textContent='☰ 產業';
+  document.getElementById('fbtn').textContent='🔍 產業';
   renderSelTags();
   closeDrawer();
   render();
@@ -696,6 +696,10 @@ function toggleNoteFilter(){
 
 function getFilt(){
   var d=D;
+  if(window._hcatCodes && window._hcatCodes.length){
+    d=d.filter(function(s){ return window._hcatCodes.indexOf(String(s.code))>=0; });
+    return d;
+  }
   if(sel.length) d=d.filter(function(s){return s.tags.some(function(t){return sel.indexOf(t)>=0;});});
   if(searchQ){
     var q=searchQ;
@@ -1275,27 +1279,7 @@ function drawKChart(canvas, data){
   var lastPrice = data[data.length-1].c;
   var lastDate = data[data.length-1].d;
 
-  // 顯示最新K棒收盤價在成交價上方
-  var kCode = canvas.id.replace('kc-','');
-  var kCard = document.querySelector('.card[data-code="'+kCode+'"]');
-  if(kCard && lastPrice){
-    var oldRt = kCard.querySelector('.realtime-bar');
-    if(oldRt) oldRt.remove();
-    var prevPrice = data.length>1 ? data[data.length-2].c : lastPrice;
-    var rtColor = lastPrice>prevPrice?'#f85149':lastPrice<prevPrice?'#3fb950':'#8b949e';
-    var rtPct = prevPrice>0?((lastPrice-prevPrice)/prevPrice*100):0;
-    var rtPctStr = (rtPct>0?'+':'')+rtPct.toFixed(2)+'%';
-    var priceRow = kCard.querySelector('.card-price');
-    if(priceRow){
-      var rtBar = document.createElement('div');
-      rtBar.className = 'realtime-bar';
-      rtBar.style.cssText = 'display:flex;align-items:baseline;gap:8px;padding:3px 0 5px;border-bottom:1px dashed #30363d;margin-bottom:4px';
-      rtBar.innerHTML = '<span style="font-size:11px;color:#6e7681">'+lastDate+'</span>'
-        +'<span style="font-size:20px;font-weight:700;color:'+rtColor+'">'+lastPrice+'</span>'
-        +'<span style="font-size:13px;color:'+rtColor+'">'+rtPctStr+'</span>';
-      priceRow.parentNode.insertBefore(rtBar, priceRow);
-    }
-  }
+  // 最新K棒收盤價已由 fetchRealTimePrice 負責顯示，這裡不重複插入
   if(lastMA60!==null && lastMA60>0 && lastPrice){
     var bias = (lastPrice - lastMA60) / lastMA60 * 100;
     var biasc = bias>5?'up':bias<-5?'dn':'';
@@ -1327,9 +1311,8 @@ function fetchRealTimePrice(code, cardEl){
       var change = parseFloat(d.change||0);
       var pct = parseFloat(d.changePercent||0);
       // 用昨天成交價（data-volume）當基準
-      var basePrice = parseFloat(cardEl.getAttribute('data-volume')||0);
-      var realChange = basePrice>0 ? price-basePrice : change;
-      var realPct = basePrice>0 ? (realChange/basePrice*100) : pct;
+      var realChange = change;
+      var realPct = pct;
       var color = realChange>0?'#f85149':realChange<0?'#3fb950':'#8b949e';
       var changeStr = (realChange>0?'+':'')+realChange.toFixed(2);
       var pctStr = (realPct>0?'+':'')+realPct.toFixed(2)+'%';
@@ -1343,12 +1326,14 @@ function fetchRealTimePrice(code, cardEl){
       if(old2) old2.remove();
       var priceRow = cardEl.querySelector('.card-price');
       if(priceRow){
+        var now = new Date(d.time/1000);
+        var dateStr = (now.getMonth()+1)+'/'+(now.getDate());
         var bar = document.createElement('div');
         bar.className = 'realtime-bar';
-        bar.style.cssText = 'display:flex;align-items:baseline;gap:8px;padding:3px 0 5px;border-bottom:1px dashed #30363d;margin-bottom:4px';
-        bar.innerHTML = '<span style="font-size:11px;color:#6e7681">即時'+(timeStr?' '+timeStr:'')+'</span>'
-          +'<span style="font-size:20px;font-weight:700;color:'+color+'">'+price+'</span>'
-          +'<span style="font-size:13px;color:'+color+'">'+changeStr+' ('+pctStr+')</span>';
+        bar.style.cssText = 'display:flex;align-items:center;gap:10px;padding:4px 0 6px;border-bottom:1px dashed #30363d;margin-bottom:4px';
+        bar.innerHTML = '<span style="background:#1f6feb33;border:1px solid #58a6ff55;border-radius:4px;padding:1px 6px;font-size:11px;color:#58a6ff;white-space:nowrap">📡 即時 '+dateStr+' '+timeStr+'</span>'
+          +'<span style="font-size:22px;font-weight:700;color:'+color+'">'+price+'</span>'
+          +'<span style="font-size:13px;color:'+color+'">'+changeStr+'&nbsp;('+pctStr+')</span>';
         priceRow.parentNode.insertBefore(bar, priceRow);
       }
     })
@@ -1603,7 +1588,7 @@ function tapTag(tag){
   });
   document.getElementById('dall').classList.toggle('on',!sel.length);
   document.getElementById('fbtn').classList.toggle('on',sel.length>0);
-  document.getElementById('fbtn').textContent=sel.length?'☰ 產業 ('+sel.length+')':'☰ 產業';
+  document.getElementById('fbtn').textContent=sel.length?'🔍 產業 ('+sel.length+')':'🔍 產業';
   renderSelTags();
   render();
 }
@@ -2022,6 +2007,49 @@ function showCompactList(){
       // 高亮選中的方塊
       document.querySelectorAll('.hcat').forEach(function(h){ h.style.outline='none'; });
       el.style.outline='2px solid #fff';
+
+      // 顯示確認按鈕「進入這 XX 支」
+      var oldBtn = document.getElementById('hcat-enter-btn');
+      if(oldBtn) oldBtn.remove();
+      var enterBtn = document.createElement('div');
+      enterBtn.id = 'hcat-enter-btn';
+      enterBtn.style.cssText = 'padding:10px 16px;border-top:1px solid #30363d;background:#161b22;position:sticky;bottom:0';
+      enterBtn.innerHTML = '<button style="width:100%;background:#1f6feb;border:none;border-radius:8px;color:#fff;font-size:15px;font-weight:600;padding:10px;cursor:pointer" id="hcat-confirm-btn">進入 '+cat+'（'+subData.length+' 支）</button>';
+      document.getElementById('compact-list').after(enterBtn);
+      document.getElementById('hcat-confirm-btn').addEventListener('click', function(){
+        document.getElementById('compact-modal').style.display='none';
+        var oldBtn2 = document.getElementById('hcat-enter-btn');
+        if(oldBtn2) oldBtn2.remove();
+        // 用代碼白名單：只顯示簡列中屬於這個產業的那幾支
+        var codes = subData.map(function(s){ return String(s.code); });
+        // 用搜尋功能逐一比對太複雜，改用臨時 D 替換
+        window._filteredD = D.filter(function(s){ return codes.indexOf(String(s.code))>=0; });
+        sel = [];
+        renderSelTags();
+        document.getElementById('dall').classList.add('on');
+        document.getElementById('fbtn').classList.remove('on');
+        document.getElementById('fbtn').textContent = '🔍 產業';
+        // 臨時替換 D，render 後還原
+        var origD = D;
+        D = window._filteredD;
+        render();
+        D = origD;
+        window._filteredD = null;
+        // 顯示清除提示
+        var clearTag = document.createElement('span');
+        clearTag.className = 'dtag-selected';
+        clearTag.style.cssText = 'background:#30363d;color:#58a6ff;border:1px solid #58a6ff55;border-radius:4px;font-size:12px;padding:3px 8px;display:inline-flex;align-items:center;gap:4px;cursor:pointer';
+        clearTag.innerHTML = cat+' '+codes.length+'支 <span onclick="clearHcatFilter()" style="color:#8b949e">✕</span>';
+        var tagsWrap = document.getElementById('fbar-tags-wrap');
+        if(tagsWrap){
+          var old = tagsWrap.querySelector('.dtag-selected');
+          if(old) old.remove();
+          tagsWrap.style.display='flex';
+          tagsWrap.insertBefore(clearTag, tagsWrap.firstChild);
+        }
+        // 儲存 codes 供重新 render 用
+        window._hcatCodes = codes;
+      });
     });
   });
 
@@ -2046,6 +2074,17 @@ function showCompactList(){
     });
   });
   document.getElementById('compact-modal').style.display = 'flex';
+}
+
+function clearHcatFilter(){
+  window._hcatCodes = null;
+  var old = document.querySelector('.dtag-selected');
+  if(old) old.remove();
+  var tagsWrap = document.getElementById('fbar-tags-wrap');
+  if(tagsWrap && tagsWrap.querySelectorAll('span').length === 0){
+    tagsWrap.style.display='none';
+  }
+  render();
 }
 
 function showHelpModal(){
