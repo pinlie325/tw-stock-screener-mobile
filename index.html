@@ -1018,6 +1018,13 @@ function openChart(e, code, name){
   wrap.classList.add('on');
   wrap.scrollIntoView({behavior:'smooth', block:'nearest'});
   tvLoad(code, 'D');
+  // 取得即時股價
+  var cardEl = document.querySelector('.card[data-code="'+code+'"]');
+  if(cardEl) {
+    var rtBar = cardEl.querySelector('.realtime-bar');
+    if(rtBar) rtBar.remove();
+    fetchRealTimePrice(code, cardEl);
+  }
 }
 
 function closeChart(code){
@@ -1030,6 +1037,8 @@ function closeChart(code){
   // 還原乖離MA60 → 漲跌幅
   var cardEl = document.querySelector('.card[data-code="'+code+'"]');
   if(cardEl){
+    var rtBar = cardEl.querySelector('.realtime-bar');
+    if(rtBar) rtBar.remove();
     var cells = cardEl.querySelectorAll('.cg-lbl');
     cells.forEach(function(lbl){
       if(lbl.textContent==='乖離MA60'){
@@ -1264,6 +1273,29 @@ function drawKChart(canvas, data){
   // 回寫 MA60 乖離率到卡片
   var lastMA60 = ma60Full[ma60Full.length-1];
   var lastPrice = data[data.length-1].c;
+  var lastDate = data[data.length-1].d;
+
+  // 顯示最新K棒收盤價在成交價上方
+  var kCode = canvas.id.replace('kc-','');
+  var kCard = document.querySelector('.card[data-code="'+kCode+'"]');
+  if(kCard && lastPrice){
+    var oldRt = kCard.querySelector('.realtime-bar');
+    if(oldRt) oldRt.remove();
+    var prevPrice = data.length>1 ? data[data.length-2].c : lastPrice;
+    var rtColor = lastPrice>prevPrice?'#f85149':lastPrice<prevPrice?'#3fb950':'#8b949e';
+    var rtPct = prevPrice>0?((lastPrice-prevPrice)/prevPrice*100):0;
+    var rtPctStr = (rtPct>0?'+':'')+rtPct.toFixed(2)+'%';
+    var priceRow = kCard.querySelector('.card-price');
+    if(priceRow){
+      var rtBar = document.createElement('div');
+      rtBar.className = 'realtime-bar';
+      rtBar.style.cssText = 'display:flex;align-items:baseline;gap:8px;padding:3px 0 5px;border-bottom:1px dashed #30363d;margin-bottom:4px';
+      rtBar.innerHTML = '<span style="font-size:11px;color:#6e7681">'+lastDate+'</span>'
+        +'<span style="font-size:20px;font-weight:700;color:'+rtColor+'">'+lastPrice+'</span>'
+        +'<span style="font-size:13px;color:'+rtColor+'">'+rtPctStr+'</span>';
+      priceRow.parentNode.insertBefore(rtBar, priceRow);
+    }
+  }
   if(lastMA60!==null && lastMA60>0 && lastPrice){
     var bias = (lastPrice - lastMA60) / lastMA60 * 100;
     var biasc = bias>5?'up':bias<-5?'dn':'';
@@ -1283,6 +1315,40 @@ function drawKChart(canvas, data){
       });
     }
   }
+}
+
+function fetchRealTimePrice(code, cardEl){
+  var url = NOTE_GAS_URL + '?action=price&code='+code;
+  fetch(url)
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(!d.ok || !d.price) return;
+      var price = parseFloat(d.price);
+      var change = parseFloat(d.change||0);
+      var pct = parseFloat(d.changePercent||0);
+      var color = change>0?'#f85149':change<0?'#3fb950':'#8b949e';
+      var changeStr = (change>0?'+':'')+change.toFixed(2);
+      var pctStr = (pct>0?'+':'')+pct.toFixed(2)+'%';
+      // 時間格式化
+      var timeStr = '';
+      if(d.time){
+        var t = new Date(d.time/1000);
+        timeStr = t.getHours()+':'+String(t.getMinutes()).padStart(2,'0');
+      }
+      var old2 = cardEl.querySelector('.realtime-bar');
+      if(old2) old2.remove();
+      var priceRow = cardEl.querySelector('.card-price');
+      if(priceRow){
+        var bar = document.createElement('div');
+        bar.className = 'realtime-bar';
+        bar.style.cssText = 'display:flex;align-items:baseline;gap:8px;padding:3px 0 5px;border-bottom:1px dashed #30363d;margin-bottom:4px';
+        bar.innerHTML = '<span style="font-size:11px;color:#6e7681">即時'+(timeStr?' '+timeStr:'')+'</span>'
+          +'<span style="font-size:20px;font-weight:700;color:'+color+'">'+price+'</span>'
+          +'<span style="font-size:13px;color:'+color+'">'+changeStr+' ('+pctStr+')</span>';
+        priceRow.parentNode.insertBefore(bar, priceRow);
+      }
+    })
+    .catch(function(){});
 }
 
 function tvLoad(code, interval){
