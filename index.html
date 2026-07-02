@@ -359,6 +359,17 @@ function doLogin(){
   </div>
 </div>
 
+<!-- STRATEGY FILTER MODAL -->
+<div id="strategy-modal" style="display:none;position:fixed;inset:0;background:#000a;z-index:9998;align-items:center;justify-content:center;padding:16px;box-sizing:border-box">
+  <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;width:100%;max-width:420px;max-height:80vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid #30363d;position:sticky;top:0;background:#161b22;border-radius:12px 12px 0 0">
+      <span style="font-size:15px;font-weight:700;color:#e6edf3">📌 策略篩選</span>
+      <button onclick="document.getElementById('strategy-modal').style.display='none'" style="background:none;border:none;color:#8b949e;font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <div id="strategy-list" style="padding:12px 16px;display:flex;flex-wrap:wrap;gap:8px"></div>
+  </div>
+</div>
+
 <div class="xq-banner" id="xq-banner">
   <span class="xq-code" id="xq-code"></span>
   <span class="xq-name" id="xq-name"></span>
@@ -387,6 +398,7 @@ function doLogin(){
   </div>
   <button class="btn-filter" id="fbtn" onclick="openDrawer()">🔍 產業</button>
   <button class="btn-filter" onclick="showCompactList()" title="簡列">🏷️</button>
+  <button class="btn-filter" onclick="openStrategyFilter()" title="策略篩選">📌</button>
   <button class="btn-filter" onclick="openSettings()" title="設定">⚙️</button>
 </div>
 <div id="fbar-tags-wrap" style="display:none;align-items:center;gap:5px;padding:0 12px 6px;flex-wrap:wrap">
@@ -2074,6 +2086,47 @@ function showCompactList(){
     });
   });
   document.getElementById('compact-modal').style.display = 'flex';
+}
+
+function openStrategyFilter(){
+  var stratNames = {};
+  Object.keys(strategyMap).forEach(function(code){
+    (strategyMap[code]||[]).forEach(function(s){ stratNames[s]=true; });
+  });
+  var names = Object.keys(stratNames).sort();
+  var html = names.map(function(n){
+    var count = Object.keys(strategyMap).filter(function(c){ return (strategyMap[c]||[]).indexOf(n)>=0; }).length;
+    return '<button onclick="applyStratFilter(\''+n+'\')" style="background:#1a2a3a;color:#58a6ff;border:1px solid #1f6feb55;border-radius:6px;font-size:13px;padding:8px 14px;cursor:pointer;text-align:left">'
+      +n+'<span style="color:#6e7681;font-size:11px;margin-left:6px">'+count+'支</span></button>';
+  }).join('');
+  document.getElementById('strategy-list').innerHTML = html || '<div style="color:#8b949e;padding:8px">尚未載入策略資料</div>';
+  document.getElementById('strategy-modal').style.display = 'flex';
+}
+
+function applyStratFilter(stratName){
+  document.getElementById('strategy-modal').style.display = 'none';
+  var codes = Object.keys(strategyMap).filter(function(c){
+    return (strategyMap[c]||[]).indexOf(stratName) >= 0;
+  });
+  window._hcatCodes = codes;
+  sel = [];
+  renderSelTags();
+  document.getElementById('dall').classList.add('on');
+  document.getElementById('fbtn').classList.remove('on');
+  document.getElementById('fbtn').textContent = '🔍 產業';
+  // 顯示策略標籤
+  var tagsWrap = document.getElementById('fbar-tags-wrap');
+  if(tagsWrap){
+    var old = tagsWrap.querySelector('.dtag-selected');
+    if(old) old.remove();
+    tagsWrap.style.display='flex';
+    var tag = document.createElement('span');
+    tag.className = 'dtag-selected';
+    tag.style.cssText = 'background:#1a2a3a;color:#58a6ff;border:1px solid #1f6feb55;border-radius:4px;font-size:12px;padding:3px 8px;display:inline-flex;align-items:center;gap:4px;cursor:pointer';
+    tag.innerHTML = '📌 '+stratName+' '+codes.length+'支 <span onclick="clearHcatFilter()" style="color:#8b949e">✕</span>';
+    tagsWrap.insertBefore(tag, tagsWrap.firstChild);
+  }
+  render();
 }
 
 function clearHcatFilter(){
