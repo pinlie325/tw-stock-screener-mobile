@@ -214,6 +214,20 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .xq-x{font-size:20px;cursor:pointer;padding:0 4px;color:#ffffffcc}
 </style>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script>
+// ⚠️ 請把下面換成你自己 Firebase 專案的設定值（Firebase Console → 專案設定 → 一般 → 你的應用程式 → SDK設定與程式碼）
+// 這些值本來就是要公開放在前端的，不是密鑰，安全性是靠 Firebase 後台的規則與授權網域控管
+var firebaseConfig = {
+  apiKey: "AIzaSyBDx7mWny81i4DxG14NZkplZ1zDCFQS2dI",
+  authDomain: "tw-stock-screener-mobile.firebaseapp.com",
+  projectId: "tw-stock-screener-mobile"
+};
+firebase.initializeApp(firebaseConfig);
+var fbAuth = firebase.auth();
+</script>
+
 </head>
 <body>
 
@@ -225,55 +239,349 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
       <div style="font-size:18px;font-weight:700;color:#e6edf3">台股選股平台</div>
       <div style="font-size:12px;color:#6e7681;margin-top:4px">請登入以繼續</div>
     </div>
-    <input id="login-user" type="text" placeholder="帳號" autocomplete="username"
-      style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:8px 12px;color:#e6edf3;font-size:14px;outline:none;box-sizing:border-box;margin-bottom:10px;">
-    <input id="login-pass" type="password" placeholder="密碼" autocomplete="current-password"
-      style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:8px 12px;color:#e6edf3;font-size:14px;outline:none;box-sizing:border-box;margin-bottom:10px;">
-    <label style="display:flex;align-items:center;gap:6px;color:#8b949e;font-size:12px;margin-bottom:16px;cursor:pointer;">
-      <input type="checkbox" id="login-remember" style="cursor:pointer;"> 記住帳號密碼
-    </label>
-    <button onclick="doLogin()"
-      style="width:100%;background:#238636;border:none;border-radius:6px;padding:10px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;">登入</button>
-    <div id="login-err" style="color:#f85149;font-size:12px;text-align:center;margin-top:10px;display:none">帳號或密碼錯誤</div>
+
+    <div id="pane-email">
+      <input id="login-email" type="email" placeholder="your@email.com" autocomplete="email"
+        style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:8px 12px;color:#e6edf3;font-size:14px;outline:none;box-sizing:border-box;margin-bottom:10px;">
+      <input id="login-email-pass" type="password" placeholder="密碼（至少6碼）" autocomplete="current-password"
+        style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:8px 12px;color:#e6edf3;font-size:14px;outline:none;box-sizing:border-box;margin-bottom:10px;">
+      <label style="display:flex;align-items:center;gap:6px;color:#8b949e;font-size:12px;margin-bottom:12px;cursor:pointer;">
+        <input type="checkbox" id="login-remember-email" style="cursor:pointer;" checked> 保持登入
+      </label>
+      <button id="email-login-btn" onclick="doEmailLogin()"
+        style="width:100%;background:#238636;border:none;border-radius:6px;padding:10px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:8px;">登入</button>
+      <button id="email-register-btn" onclick="doEmailRegister()"
+        style="width:100%;background:none;border:1px solid #30363d;border-radius:6px;padding:9px;color:#8b949e;font-size:13px;cursor:pointer;">還沒有帳號？註冊新帳號</button>
+      <div style="text-align:center;margin-top:10px;">
+        <span onclick="doForgotPassword()" style="font-size:12px;color:#58a6ff;cursor:pointer;">忘記密碼？</span>
+      </div>
+      <div id="login-email-err" style="color:#f85149;font-size:12px;text-align:center;margin-top:10px;display:none">帳號或密碼錯誤</div>
+      <div id="login-email-msg" style="color:#3fb950;font-size:12px;text-align:center;margin-top:10px;display:none"></div>
+    </div>
+
   </div>
 </div>
 
 <script>
+// 管理者身分驗證改用Firebase ID token（見下方 adminFetch），不再靠寫死的字串
+// 管理者Email：這個Firebase帳號登入時會自動視為管理者，不需要GAS審核，直接放行並顯示管理面板
+var ADMIN_EMAIL = 'pinlie325@gmail.com';
+
 document.addEventListener('DOMContentLoaded', function(){
-  // 自動填入已儲存的帳號密碼
-  var saved = localStorage.getItem('twstock_login');
-  if(saved){
-    try {
-      var d = JSON.parse(saved);
-      document.getElementById('login-user').value = d.u || '';
-      document.getElementById('login-pass').value = d.p || '';
-      document.getElementById('login-remember').checked = true;
-    } catch(e){}
-  }
-  document.getElementById('login-pass').addEventListener('keydown', function(e){
-    if(e.key==='Enter') doLogin();
+  document.getElementById('login-email').addEventListener('keydown', function(e){
+    if(e.key==='Enter') document.getElementById('login-email-pass').focus();
   });
-  document.getElementById('login-user').addEventListener('keydown', function(e){
-    if(e.key==='Enter') document.getElementById('login-pass').focus();
+  document.getElementById('login-email-pass').addEventListener('keydown', function(e){
+    if(e.key==='Enter') doEmailLogin();
   });
 });
-function doLogin(){
-  var u = document.getElementById('login-user').value.trim();
-  var p = document.getElementById('login-pass').value;
-  if(u === 'pinlie' && p === '0325888'){
-    if(document.getElementById('login-remember').checked){
-      localStorage.setItem('twstock_login', JSON.stringify({u:u, p:p}));
-    } else {
-      localStorage.removeItem('twstock_login');
-    }
-    document.getElementById('login-screen').style.display = 'none';
-  } else {
-    document.getElementById('login-err').style.display = 'block';
-    document.getElementById('login-pass').value = '';
-    document.getElementById('login-pass').focus();
+
+// Firebase會自動記住登入狀態；只要之前登入過（管理者或審核通過的一般使用者），重新整理頁面就直接放行
+// 註冊流程進行中時，暫停「自動登入檢查」，避免跟註冊流程的登出動作搶時間
+var suppressAuthCheck = false;
+
+fbAuth.onAuthStateChanged(function(user){
+  if(user && !suppressAuthCheck){
+    checkApprovedAndEnter(user);
   }
+});
+
+// 把Firebase的錯誤代碼轉成中文訊息
+function fbErrorMessage(err){
+  var code = (err && err.code) || '';
+  var map = {
+    'auth/email-already-in-use': '此Email已經註冊過了，請直接登入或使用忘記密碼',
+    'auth/invalid-email': 'Email格式不正確',
+    'auth/weak-password': '密碼太簡單，至少需要6碼',
+    'auth/user-not-found': '帳號或密碼錯誤',
+    'auth/wrong-password': '帳號或密碼錯誤',
+    'auth/invalid-credential': '帳號或密碼錯誤',
+    'auth/too-many-requests': '嘗試次數過多，請稍後再試'
+  };
+  return map[code] || ('發生錯誤：' + ((err && err.message) || '未知錯誤'));
+}
+
+// 登入成功後，向GAS確認此Email是否已被管理員核准
+function checkApprovedAndEnter(user){
+  var errEl = document.getElementById('login-email-err');
+  var isAdmin = user.email && user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+  if(isAdmin){
+    localStorage.setItem('twstock_is_admin', '1');
+    document.getElementById('login-screen').style.display = 'none';
+    var ab = document.getElementById('admin-btn');
+    if(ab) ab.style.display = 'flex';
+    showLogoutButton();
+    return Promise.resolve();
+  }
+  return fetch(NOTE_GAS_URL + '?action=checkApproved&email=' + encodeURIComponent(user.email))
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if(res && res.ok){
+        localStorage.removeItem('twstock_is_admin');
+        document.getElementById('login-screen').style.display = 'none';
+        showLogoutButton();
+      } else {
+        fbAuth.signOut();
+        errEl.textContent = (res && res.pending) ? '帳號審核中，請等待管理員核准' : '此Email尚未獲得授權，請聯繫管理員';
+        errEl.style.display = 'block';
+      }
+    })
+    .catch(function(){
+      fbAuth.signOut();
+      errEl.textContent = '驗證失敗，請檢查網路連線後再試一次';
+      errEl.style.display = 'block';
+    });
+}
+
+function showLogoutButton(){
+  var lb = document.getElementById('logout-btn');
+  if(lb) lb.style.display = 'flex';
+}
+
+function doLogout(){
+  if(!confirm('確定要登出嗎？')) return;
+  fbAuth.signOut().then(function(){
+    localStorage.removeItem('twstock_is_admin');
+    location.reload(); // 重新整理，回到登入畫面並重置管理面板等狀態
+  });
+}
+
+function doEmailLogin(){
+  var email = document.getElementById('login-email').value.trim();
+  var pass = document.getElementById('login-email-pass').value;
+  var errEl = document.getElementById('login-email-err');
+  var msgEl = document.getElementById('login-email-msg');
+  var btn = document.getElementById('email-login-btn');
+  errEl.style.display = 'none';
+  msgEl.style.display = 'none';
+  if(!email || email.indexOf('@') === -1 || !pass){
+    errEl.textContent = '請輸入Email與密碼';
+    errEl.style.display = 'block';
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = '登入中...';
+  suppressAuthCheck = true; // 避免跟onAuthStateChanged重複觸發
+  var persistence = document.getElementById('login-remember-email').checked
+    ? firebase.auth.Auth.Persistence.LOCAL
+    : firebase.auth.Auth.Persistence.SESSION;
+  fbAuth.setPersistence(persistence)
+    .then(function(){ return fbAuth.signInWithEmailAndPassword(email, pass); })
+    .then(function(cred){ return checkApprovedAndEnter(cred.user); })
+    .catch(function(err){
+      errEl.textContent = fbErrorMessage(err);
+      errEl.style.display = 'block';
+    })
+    .finally(function(){
+      suppressAuthCheck = false;
+      btn.disabled = false;
+      btn.textContent = '登入';
+    });
+}
+
+function doEmailRegister(){
+  var email = document.getElementById('login-email').value.trim();
+  var pass = document.getElementById('login-email-pass').value;
+  var errEl = document.getElementById('login-email-err');
+  var msgEl = document.getElementById('login-email-msg');
+  var btn = document.getElementById('email-register-btn');
+  errEl.style.display = 'none';
+  msgEl.style.display = 'none';
+  if(!email || email.indexOf('@') === -1 || !pass || pass.length < 6){
+    errEl.textContent = '請輸入有效Email，密碼至少6碼';
+    errEl.style.display = 'block';
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = '註冊中...';
+  var isAdmin = email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+  suppressAuthCheck = true; // 註冊過程中暫停自動登入檢查，避免搶在登出前誤放行
+  fbAuth.createUserWithEmailAndPassword(email, pass)
+    .then(function(cred){
+      if(isAdmin){
+        // 管理者帳號不需要GAS審核，註冊完直接放行
+        suppressAuthCheck = false;
+        return checkApprovedAndEnter(cred.user);
+      }
+      // 一般使用者：通知GAS記一筆待審核申請；就算通知失敗也不擋註冊本身
+      return fetch(NOTE_GAS_URL + '?action=requestAccess&email=' + encodeURIComponent(email))
+        .catch(function(){})
+        .then(function(){ return fbAuth.signOut(); }) // 註冊完先登出，等審核通過再登入
+        .then(function(){
+          msgEl.textContent = '註冊成功！請等待管理員審核，審核通過後即可登入';
+          msgEl.style.display = 'block';
+        });
+    })
+    .catch(function(err){
+      errEl.textContent = fbErrorMessage(err);
+      errEl.style.display = 'block';
+    })
+    .finally(function(){
+      suppressAuthCheck = false;
+      btn.disabled = false;
+      btn.textContent = '還沒有帳號？註冊新帳號';
+    });
+}
+
+function doForgotPassword(){
+  var email = document.getElementById('login-email').value.trim();
+  var errEl = document.getElementById('login-email-err');
+  var msgEl = document.getElementById('login-email-msg');
+  errEl.style.display = 'none';
+  msgEl.style.display = 'none';
+  if(!email || email.indexOf('@') === -1){
+    errEl.textContent = '請先在上方輸入你的Email';
+    errEl.style.display = 'block';
+    return;
+  }
+  fbAuth.sendPasswordResetEmail(email)
+    .then(function(){
+      msgEl.textContent = '重設密碼信已寄出，請查看信箱';
+      msgEl.style.display = 'block';
+    })
+    .catch(function(err){
+      errEl.textContent = fbErrorMessage(err);
+      errEl.style.display = 'block';
+    });
+}
+
+/* ===== 管理者：使用者審核管理 ===== */
+function openAdminPanel(){
+  document.getElementById('admin-modal').style.display = 'flex';
+  adminLoadUsers();
+}
+function closeAdminPanel(){
+  document.getElementById('admin-modal').style.display = 'none';
+}
+
+// 統一的管理功能請求：自動附上目前登入者的Firebase身分令牌，GAS端會驗證這個令牌真的屬於管理者
+function adminFetch(action, params){
+  if(!fbAuth.currentUser){
+    return Promise.resolve({ok:false, error:'not_logged_in'});
+  }
+  return fbAuth.currentUser.getIdToken().then(function(idToken){
+    var qs = 'action=' + encodeURIComponent(action) + '&idToken=' + encodeURIComponent(idToken);
+    params = params || {};
+    for(var k in params){
+      qs += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
+    }
+    return fetch(NOTE_GAS_URL + '?' + qs).then(function(r){ return r.json(); });
+  });
+}
+
+function adminLoadUsers(){
+  var listEl = document.getElementById('admin-user-list');
+  listEl.innerHTML = '<div style="text-align:center;color:#8b949e;padding:20px;font-size:13px;">載入中...</div>';
+  adminFetch('adminList')
+    .then(function(res){
+      if(!res || !res.ok){
+        listEl.innerHTML = '<div style="text-align:center;color:#f85149;padding:20px;font-size:13px;">載入失敗</div>';
+        return;
+      }
+      if(!res.users || res.users.length === 0){
+        listEl.innerHTML = '<div style="text-align:center;color:#8b949e;padding:20px;font-size:13px;">尚無使用者資料</div>';
+        return;
+      }
+      listEl.innerHTML = '';
+      res.users.forEach(function(u){
+        var row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 4px;border-bottom:1px solid #21262d;gap:8px;';
+        var left = document.createElement('div');
+        left.style.cssText = 'min-width:0;flex:1;';
+        var span = document.createElement('div');
+        span.style.cssText = 'font-size:13px;color:#e6edf3;word-break:break-all;';
+        span.textContent = u.email;
+        var status = document.createElement('div');
+        var approved = u.status === 'approved';
+        status.style.cssText = 'font-size:11px;margin-top:2px;color:' + (approved ? '#3fb950' : '#d29922') + ';';
+        status.textContent = approved ? '✓ 已核准' : '⏳ 待審核';
+        left.appendChild(span);
+        left.appendChild(status);
+        row.appendChild(left);
+        if(!approved){
+          var appBtn = document.createElement('button');
+          appBtn.textContent = '核准';
+          appBtn.style.cssText = 'background:none;border:1px solid #3fb95055;border-radius:4px;color:#3fb950;font-size:12px;padding:4px 10px;cursor:pointer;flex-shrink:0;';
+          appBtn.onclick = function(){ adminApproveUser(u.email); };
+          row.appendChild(appBtn);
+        }
+        var delBtn = document.createElement('button');
+        delBtn.textContent = '移除';
+        delBtn.style.cssText = 'background:none;border:1px solid #f8514955;border-radius:4px;color:#f85149;font-size:12px;padding:4px 10px;cursor:pointer;flex-shrink:0;';
+        delBtn.onclick = function(){ adminRemoveUser(u.email); };
+        row.appendChild(delBtn);
+        listEl.appendChild(row);
+      });
+    })
+    .catch(function(){
+      listEl.innerHTML = '<div style="text-align:center;color:#f85149;padding:20px;font-size:13px;">載入失敗，請檢查網路連線</div>';
+    });
+}
+function adminAddUser(){
+  var email = document.getElementById('admin-new-email').value.trim().toLowerCase();
+  var msgEl = document.getElementById('admin-add-msg');
+  msgEl.style.display = 'none';
+  if(!email || email.indexOf('@') === -1){
+    msgEl.textContent = '請輸入有效Email';
+    msgEl.style.color = '#f85149';
+    msgEl.style.display = 'block';
+    return;
+  }
+  adminFetch('adminApprove', {email: email})
+    .then(function(res){
+      if(res && res.ok){
+        document.getElementById('admin-new-email').value = '';
+        adminLoadUsers();
+      } else {
+        msgEl.textContent = '新增失敗';
+        msgEl.style.color = '#f85149';
+        msgEl.style.display = 'block';
+      }
+    })
+    .catch(function(){
+      msgEl.textContent = '新增失敗，請檢查網路連線';
+      msgEl.style.color = '#f85149';
+      msgEl.style.display = 'block';
+    });
+}
+function adminApproveUser(email){
+  adminFetch('adminApprove', {email: email})
+    .then(function(){ adminLoadUsers(); })
+    .catch(function(){ alert('核准失敗，請檢查網路連線'); });
+}
+function adminRemoveUser(email){
+  if(!confirm(email + ' 確定要移除嗎？（僅移除授權清單，Firebase帳號本身不會被刪除）')) return;
+  adminFetch('adminRemove', {email: email})
+    .then(function(){ adminLoadUsers(); })
+    .catch(function(){ alert('移除失敗，請檢查網路連線'); });
 }
 </script>
+
+<!-- ADMIN FLOATING BUTTON (僅管理者登入後顯示) -->
+<button id="admin-btn" onclick="openAdminPanel()" style="display:none;position:fixed;right:10px;bottom:90px;z-index:900;background:#21262d;border:1px solid #30363d;border-radius:50%;color:#58a6ff;width:44px;height:44px;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px #0006;font-size:18px;">👤</button>
+
+<!-- LOGOUT BUTTON (登入成功後顯示) -->
+<button id="logout-btn" onclick="doLogout()" style="display:none;position:fixed;right:10px;bottom:40px;z-index:900;background:#21262d;border:1px solid #30363d;border-radius:50%;color:#f85149;width:44px;height:44px;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px #0006;font-size:16px;" title="登出">🚪</button>
+
+<!-- ADMIN MODAL -->
+<div id="admin-modal" style="display:none;position:fixed;inset:0;background:#000a;z-index:9998;align-items:center;justify-content:center;padding:16px;box-sizing:border-box">
+  <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;width:100%;max-width:380px;max-height:85vh;overflow-y:auto;padding:20px;box-sizing:border-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <span style="font-size:16px;font-weight:700;color:#58a6ff">👤 使用者審核管理</span>
+      <button onclick="closeAdminPanel()" style="background:none;border:none;color:#8b949e;font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <div style="font-size:12px;color:#6e7681;margin-bottom:12px;">申請中/已核准的Email登入使用者：</div>
+    <div id="admin-user-list" style="margin-bottom:16px;max-height:220px;overflow-y:auto;"></div>
+    <div style="border-top:1px solid #30363d;padding-top:14px;">
+      <div style="font-size:12px;color:#6e7681;margin-bottom:8px;">直接核准一個Email（此人之後可自行到「還沒有帳號？註冊新帳號」設定密碼）</div>
+      <input id="admin-new-email" type="email" placeholder="Email"
+        style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:8px 12px;color:#e6edf3;font-size:14px;outline:none;box-sizing:border-box;margin-bottom:8px;">
+      <button onclick="adminAddUser()"
+        style="width:100%;background:#238636;border:none;border-radius:6px;padding:9px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;">直接核准</button>
+      <div id="admin-add-msg" style="font-size:12px;text-align:center;margin-top:8px;display:none;"></div>
+    </div>
+  </div>
+</div>
 
 <!-- FLOATING TOP BUTTON -->
 <button id="float-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" style="position:fixed;left:10px;top:65%;transform:translateY(-50%);z-index:900;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#8b949e;font-size:14px;padding:10px 6px;cursor:pointer;box-shadow:0 2px 8px #0006">▲</button>
