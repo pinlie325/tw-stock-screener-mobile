@@ -241,20 +241,48 @@ var fbAuth = firebase.auth();
     </div>
 
     <div id="pane-email">
-      <input id="login-email" type="email" placeholder="your@email.com" autocomplete="email"
-        style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:8px 12px;color:#e6edf3;font-size:14px;outline:none;box-sizing:border-box;margin-bottom:10px;">
-      <input id="login-email-pass" type="password" placeholder="密碼（至少6碼）" autocomplete="current-password"
-        style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:8px 12px;color:#e6edf3;font-size:14px;outline:none;box-sizing:border-box;margin-bottom:10px;">
-      <label style="display:flex;align-items:center;gap:6px;color:#8b949e;font-size:12px;margin-bottom:12px;cursor:pointer;">
-        <input type="checkbox" id="login-remember-email" style="cursor:pointer;" checked> 保持登入
-      </label>
-      <button id="email-login-btn" onclick="doEmailLogin()"
-        style="width:100%;background:#238636;border:none;border-radius:6px;padding:10px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:8px;">登入</button>
-      <button id="email-register-btn" onclick="doEmailRegister()"
-        style="width:100%;background:none;border:1px solid #30363d;border-radius:6px;padding:9px;color:#8b949e;font-size:13px;cursor:pointer;">還沒有帳號？註冊新帳號</button>
-      <div style="text-align:center;margin-top:10px;">
-        <span onclick="doForgotPassword()" style="font-size:12px;color:#58a6ff;cursor:pointer;">忘記密碼？</span>
+      <div id="login-view">
+        <input id="login-account" type="text" placeholder="帳號名稱" autocomplete="username"
+          style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:8px 12px;color:#e6edf3;font-size:14px;outline:none;box-sizing:border-box;margin-bottom:10px;">
+        <input id="login-account-pass" type="password" placeholder="密碼" autocomplete="current-password"
+          style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:8px 12px;color:#e6edf3;font-size:14px;outline:none;box-sizing:border-box;margin-bottom:10px;">
+        <label style="display:flex;align-items:center;gap:6px;color:#8b949e;font-size:12px;margin-bottom:12px;cursor:pointer;">
+          <input type="checkbox" id="login-remember-email" style="cursor:pointer;" checked> 保持登入
+        </label>
+        <button id="email-login-btn" onclick="doEmailLogin()"
+          style="width:100%;background:#238636;border:none;border-radius:6px;padding:10px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:8px;">登入</button>
+        <button onclick="switchAuthView('register')"
+          style="width:100%;background:none;border:1px solid #30363d;border-radius:6px;padding:9px;color:#8b949e;font-size:13px;cursor:pointer;">還沒有帳號？註冊新帳號</button>
+        <div style="text-align:center;margin-top:10px;">
+          <span onclick="doForgotPassword()" style="font-size:12px;color:#58a6ff;cursor:pointer;">忘記密碼？</span>
+        </div>
       </div>
+
+      <div id="register-view" style="display:none;">
+        <input id="register-username" type="text" placeholder="帳號名稱（用來登入，不能重複）" autocomplete="username"
+          style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:8px 12px;color:#e6edf3;font-size:14px;outline:none;box-sizing:border-box;margin-bottom:10px;">
+        <input id="register-email" type="email" placeholder="your@email.com（用於驗證與救援密碼）" autocomplete="email"
+          style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:8px 12px;color:#e6edf3;font-size:14px;outline:none;box-sizing:border-box;margin-bottom:10px;">
+        <input id="register-pass" type="password" placeholder="密碼（至少6碼）" autocomplete="new-password"
+          style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:8px 12px;color:#e6edf3;font-size:14px;outline:none;box-sizing:border-box;margin-bottom:12px;">
+        <button id="email-register-btn" onclick="doEmailRegister()"
+          style="width:100%;background:#238636;border:none;border-radius:6px;padding:10px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:8px;">註冊新帳號</button>
+        <button onclick="switchAuthView('login')"
+          style="width:100%;background:none;border:1px solid #30363d;border-radius:6px;padding:9px;color:#8b949e;font-size:13px;cursor:pointer;">已經有帳號？登入</button>
+      </div>
+
+      <div id="verify-view" style="display:none;">
+        <div style="font-size:13px;color:#8b949e;margin-bottom:16px;line-height:1.6;">
+          驗證信已寄出，請先到信箱點擊連結完成驗證，再回來按下面的按鈕繼續。
+        </div>
+        <button id="verify-check-btn" onclick="doCheckEmailVerified()"
+          style="width:100%;background:#238636;border:none;border-radius:6px;padding:10px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:8px;">我已完成驗證，繼續</button>
+        <button onclick="doResendVerification()"
+          style="width:100%;background:none;border:1px solid #30363d;border-radius:6px;padding:9px;color:#8b949e;font-size:13px;cursor:pointer;margin-bottom:8px;">重新寄送驗證信</button>
+        <button onclick="cancelRegisterVerify()"
+          style="width:100%;background:none;border:none;color:#6e7681;font-size:12px;cursor:pointer;">取消，返回登入</button>
+      </div>
+
       <div id="login-email-err" style="color:#f85149;font-size:12px;text-align:center;margin-top:10px;display:none">帳號或密碼錯誤</div>
       <div id="login-email-msg" style="color:#3fb950;font-size:12px;text-align:center;margin-top:10px;display:none"></div>
     </div>
@@ -267,12 +295,29 @@ var fbAuth = firebase.auth();
 // 管理者Email：這個Firebase帳號登入時會自動視為管理者，不需要GAS審核，直接放行並顯示管理面板
 var ADMIN_EMAIL = 'pinlie325@gmail.com';
 
+function switchAuthView(which){
+  document.getElementById('login-view').style.display = (which === 'login') ? '' : 'none';
+  document.getElementById('register-view').style.display = (which === 'register') ? '' : 'none';
+  document.getElementById('verify-view').style.display = (which === 'verify') ? '' : 'none';
+  document.getElementById('login-email-err').style.display = 'none';
+  document.getElementById('login-email-msg').style.display = 'none';
+}
+
 document.addEventListener('DOMContentLoaded', function(){
-  document.getElementById('login-email').addEventListener('keydown', function(e){
-    if(e.key==='Enter') document.getElementById('login-email-pass').focus();
+  document.getElementById('login-account').addEventListener('keydown', function(e){
+    if(e.key==='Enter') document.getElementById('login-account-pass').focus();
   });
-  document.getElementById('login-email-pass').addEventListener('keydown', function(e){
+  document.getElementById('login-account-pass').addEventListener('keydown', function(e){
     if(e.key==='Enter') doEmailLogin();
+  });
+  document.getElementById('register-username').addEventListener('keydown', function(e){
+    if(e.key==='Enter') document.getElementById('register-email').focus();
+  });
+  document.getElementById('register-email').addEventListener('keydown', function(e){
+    if(e.key==='Enter') document.getElementById('register-pass').focus();
+  });
+  document.getElementById('register-pass').addEventListener('keydown', function(e){
+    if(e.key==='Enter') doEmailRegister();
   });
 });
 
@@ -296,7 +341,9 @@ function fbErrorMessage(err){
     'auth/user-not-found': '帳號或密碼錯誤',
     'auth/wrong-password': '帳號或密碼錯誤',
     'auth/invalid-credential': '帳號或密碼錯誤',
-    'auth/too-many-requests': '嘗試次數過多，請稍後再試'
+    'auth/too-many-requests': '嘗試次數過多，請稍後再試',
+    'custom/username-not-found': '找不到這個帳號名稱',
+    'custom/username-taken': '這個帳號名稱已經有人使用了，換一個試試'
   };
   return map[code] || ('發生錯誤：' + ((err && err.message) || '未知錯誤'));
 }
@@ -313,7 +360,7 @@ function checkApprovedAndEnter(user){
     showLogoutButton();
     return Promise.resolve();
   }
-  return fetch(NOTE_GAS_URL + '?action=checkApproved&email=' + encodeURIComponent(user.email))
+  return fetch(NOTE_GAS_URL + '?action=checkApproved&email=' + encodeURIComponent(user.email) + '&verified=' + (user.emailVerified ? '1' : '0'))
     .then(function(r){ return r.json(); })
     .then(function(res){
       if(res && res.ok){
@@ -347,27 +394,34 @@ function doLogout(){
 }
 
 function doEmailLogin(){
-  var email = document.getElementById('login-email').value.trim();
-  var pass = document.getElementById('login-email-pass').value;
+  var account = document.getElementById('login-account').value.trim();
+  var pass = document.getElementById('login-account-pass').value;
   var errEl = document.getElementById('login-email-err');
   var msgEl = document.getElementById('login-email-msg');
   var btn = document.getElementById('email-login-btn');
   errEl.style.display = 'none';
   msgEl.style.display = 'none';
-  if(!email || email.indexOf('@') === -1 || !pass){
-    errEl.textContent = '請輸入Email與密碼';
+  if(!account || !pass){
+    errEl.textContent = '請輸入帳號名稱與密碼';
     errEl.style.display = 'block';
     return;
   }
   btn.disabled = true;
   btn.textContent = '登入中...';
   suppressAuthCheck = true; // 避免跟onAuthStateChanged重複觸發
-  var persistence = document.getElementById('login-remember-email').checked
-    ? firebase.auth.Auth.Persistence.LOCAL
-    : firebase.auth.Auth.Persistence.SESSION;
-  fbAuth.setPersistence(persistence)
-    .then(function(){ return fbAuth.signInWithEmailAndPassword(email, pass); })
-    .then(function(cred){ return checkApprovedAndEnter(cred.user); })
+
+  resolveAccountToEmail(account)
+    .then(function(email){
+      if(!email){
+        return Promise.reject({code:'custom/username-not-found'});
+      }
+      var persistence = document.getElementById('login-remember-email').checked
+        ? firebase.auth.Auth.Persistence.LOCAL
+        : firebase.auth.Auth.Persistence.SESSION;
+      return fbAuth.setPersistence(persistence)
+        .then(function(){ return fbAuth.signInWithEmailAndPassword(email, pass); })
+        .then(function(cred){ return checkApprovedAndEnter(cred.user); });
+    })
     .catch(function(err){
       errEl.textContent = fbErrorMessage(err);
       errEl.style.display = 'block';
@@ -379,36 +433,137 @@ function doEmailLogin(){
     });
 }
 
+// 把「帳號名稱或Email」解析成真正的Email：
+// 含@視為Email本身；其餘一律向GAS查詢帳號名稱對照表（管理者也用同一套機制）
+function resolveAccountToEmail(account){
+  if(account.indexOf('@') !== -1){
+    return Promise.resolve(account);
+  }
+  return fetch(NOTE_GAS_URL + '?action=lookupEmail&username=' + encodeURIComponent(account))
+    .then(function(r){ return r.json(); })
+    .then(function(res){ return (res && res.ok) ? res.email : null; })
+    .catch(function(){ return null; });
+}
+
+var pendingRegUsername = '';
+var pendingRegEmail = '';
+var pendingRegIsAdmin = false;
+
 function doEmailRegister(){
-  var email = document.getElementById('login-email').value.trim();
-  var pass = document.getElementById('login-email-pass').value;
+  var username = document.getElementById('register-username').value.trim();
+  var email = document.getElementById('register-email').value.trim();
+  var pass = document.getElementById('register-pass').value;
   var errEl = document.getElementById('login-email-err');
   var msgEl = document.getElementById('login-email-msg');
   var btn = document.getElementById('email-register-btn');
   errEl.style.display = 'none';
   msgEl.style.display = 'none';
+  if(!username || username.indexOf('@') !== -1){
+    errEl.textContent = '請輸入帳號名稱（不能包含@）';
+    errEl.style.display = 'block';
+    return;
+  }
   if(!email || email.indexOf('@') === -1 || !pass || pass.length < 6){
     errEl.textContent = '請輸入有效Email，密碼至少6碼';
     errEl.style.display = 'block';
     return;
   }
   btn.disabled = true;
-  btn.textContent = '註冊中...';
-  var isAdmin = email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+  btn.textContent = '檢查帳號名稱中...';
+  pendingRegUsername = username;
+  pendingRegEmail = email;
+  pendingRegIsAdmin = (email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
   suppressAuthCheck = true; // 註冊過程中暫停自動登入檢查，避免搶在登出前誤放行
-  fbAuth.createUserWithEmailAndPassword(email, pass)
-    .then(function(cred){
-      if(isAdmin){
-        // 管理者帳號不需要GAS審核，註冊完直接放行
-        suppressAuthCheck = false;
-        return checkApprovedAndEnter(cred.user);
+
+  fetch(NOTE_GAS_URL + '?action=checkUsername&username=' + encodeURIComponent(username))
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if(!res || !res.ok){
+        return Promise.reject({code:'custom/username-taken'});
       }
-      // 一般使用者：通知GAS記一筆待審核申請；就算通知失敗也不擋註冊本身
-      return fetch(NOTE_GAS_URL + '?action=requestAccess&email=' + encodeURIComponent(email))
+      btn.textContent = '註冊中...';
+      return fbAuth.createUserWithEmailAndPassword(email, pass);
+    })
+    .then(function(cred){
+      // 建立帳號成功，寄出驗證信，接下來要等使用者完成驗證才算註冊完成
+      return cred.user.sendEmailVerification().catch(function(){}).then(function(){
+        switchAuthView('verify');
+      });
+    })
+    .catch(function(err){
+      suppressAuthCheck = false;
+      errEl.textContent = fbErrorMessage(err);
+      errEl.style.display = 'block';
+    })
+    .finally(function(){
+      btn.disabled = false;
+      btn.textContent = '註冊新帳號';
+    });
+}
+
+// 使用者點「重新寄送驗證信」
+function doResendVerification(){
+  var errEl = document.getElementById('login-email-err');
+  var msgEl = document.getElementById('login-email-msg');
+  errEl.style.display = 'none';
+  msgEl.style.display = 'none';
+  if(!fbAuth.currentUser){
+    errEl.textContent = '請重新註冊一次';
+    errEl.style.display = 'block';
+    switchAuthView('register');
+    return;
+  }
+  fbAuth.currentUser.sendEmailVerification()
+    .then(function(){
+      msgEl.textContent = '已重新寄出驗證信，請查看信箱';
+      msgEl.style.display = 'block';
+    })
+    .catch(function(err){
+      errEl.textContent = fbErrorMessage(err);
+      errEl.style.display = 'block';
+    });
+}
+
+// 使用者點「我已完成驗證，繼續」：確認真的驗證過了，才送出審核申請
+function doCheckEmailVerified(){
+  var errEl = document.getElementById('login-email-err');
+  var msgEl = document.getElementById('login-email-msg');
+  var btn = document.getElementById('verify-check-btn');
+  errEl.style.display = 'none';
+  msgEl.style.display = 'none';
+  if(!fbAuth.currentUser){
+    errEl.textContent = '請重新註冊一次';
+    errEl.style.display = 'block';
+    suppressAuthCheck = false;
+    switchAuthView('register');
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = '確認中...';
+  fbAuth.currentUser.reload()
+    .then(function(){
+      var user = fbAuth.currentUser;
+      if(!user.emailVerified){
+        errEl.textContent = '尚未完成驗證，請先到信箱點擊驗證連結';
+        errEl.style.display = 'block';
+        return;
+      }
+      if(pendingRegIsAdmin){
+        // 管理者不需要等審核，但一樣要把帳號名稱對照表寫進GAS，不然帳號名稱查不到
+        return fetch(NOTE_GAS_URL + '?action=requestAccess&email=' + encodeURIComponent(pendingRegEmail) + '&username=' + encodeURIComponent(pendingRegUsername))
+          .catch(function(){})
+          .then(function(){
+            suppressAuthCheck = false;
+            return checkApprovedAndEnter(user);
+          });
+      }
+      return fetch(NOTE_GAS_URL + '?action=requestAccess&email=' + encodeURIComponent(pendingRegEmail) + '&username=' + encodeURIComponent(pendingRegUsername))
         .catch(function(){})
-        .then(function(){ return fbAuth.signOut(); }) // 註冊完先登出，等審核通過再登入
+        .then(function(){ return fbAuth.signOut(); })
         .then(function(){
-          msgEl.textContent = '註冊成功！請等待管理員審核，審核通過後即可登入';
+          suppressAuthCheck = false;
+          switchAuthView('login');
+          msgEl.textContent = '驗證成功！已送出審核申請，請等待管理員核准';
           msgEl.style.display = 'block';
         });
     })
@@ -417,24 +572,34 @@ function doEmailRegister(){
       errEl.style.display = 'block';
     })
     .finally(function(){
-      suppressAuthCheck = false;
       btn.disabled = false;
-      btn.textContent = '還沒有帳號？註冊新帳號';
+      btn.textContent = '我已完成驗證，繼續';
     });
 }
 
+// 使用者放棄這次註冊
+function cancelRegisterVerify(){
+  if(fbAuth.currentUser) fbAuth.signOut();
+  suppressAuthCheck = false;
+  switchAuthView('login');
+}
+
 function doForgotPassword(){
-  var email = document.getElementById('login-email').value.trim();
+  var account = document.getElementById('login-account').value.trim();
   var errEl = document.getElementById('login-email-err');
   var msgEl = document.getElementById('login-email-msg');
   errEl.style.display = 'none';
   msgEl.style.display = 'none';
-  if(!email || email.indexOf('@') === -1){
-    errEl.textContent = '請先在上方輸入你的Email';
+  if(!account){
+    errEl.textContent = '請先在上方輸入你的帳號名稱';
     errEl.style.display = 'block';
     return;
   }
-  fbAuth.sendPasswordResetEmail(email)
+  resolveAccountToEmail(account)
+    .then(function(email){
+      if(!email) return Promise.reject({code:'custom/username-not-found'});
+      return fbAuth.sendPasswordResetEmail(email);
+    })
     .then(function(){
       msgEl.textContent = '重設密碼信已寄出，請查看信箱';
       msgEl.style.display = 'block';
@@ -490,11 +655,12 @@ function adminLoadUsers(){
         left.style.cssText = 'min-width:0;flex:1;';
         var span = document.createElement('div');
         span.style.cssText = 'font-size:13px;color:#e6edf3;word-break:break-all;';
-        span.textContent = u.email;
+        span.textContent = (u.username ? (u.username + '　') : '') + u.email;
         var status = document.createElement('div');
         var approved = u.status === 'approved';
+        var verified = u.verified === 'yes';
         status.style.cssText = 'font-size:11px;margin-top:2px;color:' + (approved ? '#3fb950' : '#d29922') + ';';
-        status.textContent = approved ? '✓ 已核准' : '⏳ 待審核';
+        status.textContent = (approved ? '✓ 已核准' : '⏳ 待審核') + ' · ' + (verified ? '📧 信箱已驗證' : '📧 信箱未驗證');
         left.appendChild(span);
         left.appendChild(status);
         row.appendChild(left);
