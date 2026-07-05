@@ -2134,8 +2134,55 @@ function openDrivePicker(){
   document.getElementById('gd-list').innerHTML='<div class="gd-loading">🔄 連線雲端...</div>';
   fetch(GAS_URL+'?action=list')
     .then(function(r){return r.json();})
-    .then(function(d){if(d.ok)renderGdFiles(d.files);else showGdError(d.error);})
+    .then(function(d){
+      if(d.ok){
+        _sortFilesByModified(d.files);
+        renderGdFiles(d.files);
+        if(d.files.length){
+          toast('⏳ 自動載入最新檔案：'+d.files[0].name,'#1f6feb');
+          loadGdFile(0, true);
+        }
+      } else {
+        showGdError(d.error);
+      }
+    })
     .catch(function(e){showGdError(e.message);});
+}
+
+function _sortFilesByModified(files){
+  files.sort(function(a,b){
+    var ta=a.modified?new Date(a.modified).getTime():0;
+    var tb=b.modified?new Date(b.modified).getTime():0;
+    return tb-ta;
+  });
+  return files;
+}
+
+// App開啟時靜默自動載入雲端最新的選股Excel（不彈出視窗，失敗也不打擾使用者）
+function autoLoadLatestStockFile(){
+  fetch(GAS_URL+'?action=list')
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(!d.ok || !d.files.length) return;
+      _sortFilesByModified(d.files);
+      gdFiles=d.files;
+      var f=d.files[0];
+      gdActiveId=f.id;
+      return fetch(GAS_URL+'?action=file&id='+f.id)
+        .then(function(r){return r.json();})
+        .then(function(fd){
+          if(!fd.ok) return;
+          var binary=atob(fd.base64);
+          var bytes=new Uint8Array(binary.length);
+          for(var i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+          var wb=XLSX.read(bytes.buffer,{type:'array'});
+          var ws=wb.Sheets[wb.SheetNames[0]];
+          var rows=XLSX.utils.sheet_to_json(ws,{defval:null});
+          processRows(rows,fd.name||f.name);
+          showToast('☁️ 已自動載入最新選股檔：'+(fd.name||f.name));
+        });
+    })
+    .catch(function(){}); // 靜默失敗，不打擾使用者；使用者仍可手動點☁️重試
 }
 
 function renderGdFiles(files){
@@ -2145,9 +2192,10 @@ function renderGdFiles(files){
     var mod=f.modified?new Date(f.modified):'';
     var d=mod?mod.toLocaleDateString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit'}):'';
     var isNew=mod&&(Date.now()-mod.getTime())<86400000;
-    return '<div class="gd-item" onclick="loadGdFile('+i+')">'
+    var isActive=(f.id===gdActiveId);
+    return '<div class="gd-item" onclick="loadGdFile('+i+',true)" style="'+(isActive?'background:#1f6feb22;':'')+'">'
       +'<span class="gd-icon">'+(f.isSheet?'📋':'📊')+'</span>'
-      +'<div class="gd-info"><div class="gd-name">'+f.name+(isNew?' 🆕':'')+'</div><div class="gd-meta">'+d+'</div></div>'
+      +'<div class="gd-info"><div class="gd-name">'+f.name+(isNew?' 🆕':'')+(isActive?' ✅':'')+'</div><div class="gd-meta">'+d+'</div></div>'
       +'<span class="gd-arr">›</span>'
     +'</div>';
   }).join('');
@@ -2159,9 +2207,16 @@ function showGdError(msg){
     +'<button onclick="openDrivePicker()" style="background:#21262d;border:1px solid #30363d;border-radius:6px;padding:8px 16px;color:#c9d1d9;font-size:13px;cursor:pointer">重試</button></div>';
 }
 
-function loadGdFile(i){
+var gdActiveId=null;
+
+function loadGdFile(i, keepOpen){
   var f=gdFiles[i];if(!f)return;
-  document.getElementById('gd-modal').classList.remove('on');
+  gdActiveId=f.id;
+  if(!keepOpen){
+    document.getElementById('gd-modal').classList.remove('on');
+  } else {
+    renderGdFiles(gdFiles); // 重新畫清單，標示目前使用中的檔案
+  }
   toast('⏳ 讀取中：'+f.name,'#1f6feb');
   fetch(GAS_URL+'?action=file&id='+f.id)
     .then(function(r){return r.json();})
@@ -2174,6 +2229,7 @@ function loadGdFile(i){
       var ws=wb.Sheets[wb.SheetNames[0]];
       var rows=XLSX.utils.sheet_to_json(ws,{defval:null});
       processRows(rows,d.name||f.name);
+      if(keepOpen) renderGdFiles(gdFiles);
     })
     .catch(function(e){toast('❌ 載入失敗：'+e.message,'#da3633');});
 }
@@ -2655,11 +2711,12 @@ function adjustPadding(){
   });
 })();
 
-// 頁面載入時自動載入備註與調整間距
+// 頁面載入時自動載入備註、策略標籤與最新選股資料
 window.addEventListener('load', function(){
   adjustPadding();
   autoLoadNotes();
   autoLoadStrategies();
+  autoLoadLatestStockFile();
 });
 window.addEventListener('resize', adjustPadding);
 </script>
