@@ -637,7 +637,9 @@ function adminFetch(action, params){
 
 function adminLoadUsers(){
   var listEl = document.getElementById('admin-user-list');
+  var countEl = document.getElementById('admin-user-count');
   listEl.innerHTML = '<div style="text-align:center;color:#8b949e;padding:20px;font-size:13px;">載入中...</div>';
+  countEl.textContent = '';
   adminFetch('adminList')
     .then(function(res){
       if(!res || !res.ok){
@@ -646,8 +648,12 @@ function adminLoadUsers(){
       }
       if(!res.users || res.users.length === 0){
         listEl.innerHTML = '<div style="text-align:center;color:#8b949e;padding:20px;font-size:13px;">尚無使用者資料</div>';
+        countEl.textContent = '共 0 人';
         return;
       }
+      var approvedCount = res.users.filter(function(u){ return u.status === 'approved'; }).length;
+      var pendingCount = res.users.length - approvedCount;
+      countEl.textContent = '共 ' + res.users.length + ' 人（✓ 已核准 ' + approvedCount + ' 人 · ⏳ 待審核 ' + pendingCount + ' 人）';
       listEl.innerHTML = '';
       res.users.forEach(function(u){
         var row = document.createElement('div');
@@ -737,7 +743,8 @@ function adminRemoveUser(email){
       <span style="font-size:16px;font-weight:700;color:#58a6ff">👤 使用者審核管理</span>
       <button onclick="closeAdminPanel()" style="background:none;border:none;color:#8b949e;font-size:20px;cursor:pointer">✕</button>
     </div>
-    <div style="font-size:12px;color:#6e7681;margin-bottom:12px;">申請中/已核准的Email登入使用者：</div>
+    <div style="font-size:12px;color:#6e7681;margin-bottom:4px;">申請中/已核准的Email登入使用者：</div>
+    <div id="admin-user-count" style="font-size:12px;color:#8b949e;margin-bottom:8px;"></div>
     <div id="admin-user-list" style="margin-bottom:16px;max-height:220px;overflow-y:auto;"></div>
     <div style="border-top:1px solid #30363d;padding-top:14px;">
       <div style="font-size:12px;color:#6e7681;margin-bottom:8px;">直接核准一個Email（此人之後可自行到「還沒有帳號？註冊新帳號」設定密碼）</div>
