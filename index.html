@@ -635,6 +635,7 @@ function adminFetch(action, params){
   });
 }
 
+var adminUsersCache = [];
 function adminLoadUsers(){
   var listEl = document.getElementById('admin-user-list');
   var countEl = document.getElementById('admin-user-count');
@@ -653,6 +654,7 @@ function adminLoadUsers(){
       }
       var approvedCount = res.users.filter(function(u){ return u.status === 'approved'; }).length;
       var pendingCount = res.users.length - approvedCount;
+      adminUsersCache = res.users;
       countEl.textContent = '共 ' + res.users.length + ' 人（✓ 已核准 ' + approvedCount + ' 人 · ⏳ 待審核 ' + pendingCount + ' 人）';
       listEl.innerHTML = '';
       res.users.forEach(function(u){
@@ -690,6 +692,42 @@ function adminLoadUsers(){
       listEl.innerHTML = '<div style="text-align:center;color:#f85149;padding:20px;font-size:13px;">載入失敗，請檢查網路連線</div>';
     });
 }
+function adminCopyUserList(){
+  if(!adminUsersCache.length){
+    toast('目前沒有資料可以複製','#da3633');
+    return;
+  }
+  var lines = ['帳號名稱\tEmail\t狀態\t信箱驗證'];
+  adminUsersCache.forEach(function(u){
+    var status = (u.status === 'approved') ? '已核准' : '待審核';
+    var verified = (u.verified === 'yes') ? '已驗證' : '未驗證';
+    lines.push((u.username||'') + '\t' + u.email + '\t' + status + '\t' + verified);
+  });
+  var text = lines.join('\n');
+  var done = function(){ toast('📋 已複製 ' + adminUsersCache.length + ' 筆到剪貼簿','#238636'); };
+  var fail = function(){
+    // 部分瀏覽器環境（例如非https）不支援navigator.clipboard，改用傳統做法
+    try{
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      done();
+    }catch(e){
+      toast('複製失敗，請手動選取','#da3633');
+    }
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(fail);
+  } else {
+    fail();
+  }
+}
+
 function adminAddUser(){
   var email = document.getElementById('admin-new-email').value.trim().toLowerCase();
   var msgEl = document.getElementById('admin-add-msg');
@@ -745,7 +783,9 @@ function adminRemoveUser(email){
     </div>
     <div style="font-size:12px;color:#6e7681;margin-bottom:4px;">申請中/已核准的Email登入使用者：</div>
     <div id="admin-user-count" style="font-size:12px;color:#8b949e;margin-bottom:8px;"></div>
-    <div id="admin-user-list" style="margin-bottom:16px;max-height:220px;overflow-y:auto;"></div>
+    <div id="admin-user-list" style="margin-bottom:8px;max-height:220px;overflow-y:auto;"></div>
+    <button onclick="adminCopyUserList()"
+      style="width:100%;background:none;border:1px solid #30363d;border-radius:6px;padding:8px;color:#58a6ff;font-size:12px;cursor:pointer;margin-bottom:16px;">📋 複製清單到剪貼簿</button>
     <div style="border-top:1px solid #30363d;padding-top:14px;">
       <div style="font-size:12px;color:#6e7681;margin-bottom:8px;">直接核准一個Email（此人之後可自行到「還沒有帳號？註冊新帳號」設定密碼）</div>
       <input id="admin-new-email" type="email" placeholder="Email"
