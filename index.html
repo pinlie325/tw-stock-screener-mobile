@@ -1366,8 +1366,12 @@ function cancelLongPress() {
   if (_lpTimer) { clearTimeout(_lpTimer); _lpTimer = null; }
 }
 
+var _screenshotModeOn = false;
+
 function cardScreenshot(e, el) {
   e.preventDefault(); e.stopPropagation();
+  if (_screenshotModeOn) return; // 已經在截圖模式了，忽略重複觸發，避免疊層
+  _screenshotModeOn = true;
 
   // 記住目前捲動位置
   var savedScroll = window.scrollY;
@@ -1401,6 +1405,7 @@ function cardScreenshot(e, el) {
   tip.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#238636;color:#fff;font-size:14px;padding:10px 24px;border-radius:24px;z-index:9999;font-family:sans-serif;white-space:nowrap;box-shadow:0 4px 16px #0008;cursor:pointer';
   tip.textContent = '📸 截圖模式　按此離開';
   tip.onclick = function() {
+    _screenshotModeOn = false;
     hidden.forEach(function(item) { item.el.style.display = item.disp; });
     document.body.style.paddingTop = savedPadding;
     document.body.removeChild(tip);
