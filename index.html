@@ -77,6 +77,8 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .card-cam{background:none;border:none;font-size:16px;cursor:pointer;padding:0;line-height:1;opacity:0.5;display:block;margin-left:auto;margin-bottom:2px}
 .card-cam:hover,.card-cam:active{opacity:1}
 .card-note-bar{background:#30363d;color:#e040fb;font-size:12px;padding:4px 8px;border-radius:4px;margin-bottom:6px;line-height:1.4}
+.card-group-bar{background:#30363d;color:#d29922;font-size:12px;padding:4px 8px;border-radius:4px;margin-bottom:6px;line-height:1.4}
+.card-group-bar span{cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
 .card-strategy-bar{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
 .stag{background:#1a2a3a;color:#58a6ff;border:1px solid #1f6feb55;border-radius:4px;font-size:11px;padding:2px 6px;white-space:nowrap}
 .card:active{border-color:#58a6ff;background:#1a2030}
@@ -945,6 +947,7 @@ function adminRemoveUser(email){
 <div class="cbar">
   <span>顯示 <b id="rc">0</b> 支</span>
   <div class="cbar-sts" id="csts"></div>
+  <span id="group-filter-chip" style="display:none;background:#30363d;color:#d29922;font-size:12px;padding:3px 10px;border-radius:12px;margin-left:8px;cursor:pointer;" onclick="clearGroupFilter()"></span>
 </div>
 
 <!-- CARDS -->
@@ -1242,6 +1245,7 @@ function getFilt(){
     });
   }
   if(noteFilterOn) d=d.filter(function(s){return noteMap[String(s.code)];});
+  if(groupFilter) d=d.filter(function(s){return (groupMap[String(s.code)]||[]).indexOf(groupFilter)>=0;});
   return d;
 }
 
@@ -1345,6 +1349,7 @@ function render(){
   if(cardsEl) cardsEl.scrollTop = scrollY; // 還原捲動位置
   if(Object.keys(noteMap).length) applyNotes(); // 重新套用備註
   if(Object.keys(strategyMap).length) applyStrategies(); // 重新套用策略
+  if(Object.keys(groupMap).length) applyGroups(); // 重新套用集團標籤
 }
 
 // ── TRADINGVIEW CHART ──
@@ -2283,6 +2288,8 @@ function loadGdFile(i, keepOpen){
 
 var STRATEGY_GAS_URL = 'https://script.google.com/macros/s/AKfycbzonSgY3uZ1Y7HU1Joh_ibrVqBgP5dDJ5k1KMiKu9TRee2Wtk0PT-2VnrnuaNjZ6cgjoA/exec';
 var strategyMap = {};
+var groupMap = {};
+var groupFilter = null;
 
 var NOTE_GAS_URL = 'https://script.google.com/macros/s/AKfycbz2qxVYgYeowc4wRACEjFpxyAlsQjJIVOPjmHBQI5RxqcgVADPbTeDaMkO5X0jkKvbeYw/exec';
 
@@ -2334,6 +2341,18 @@ function autoLoadNotes(){
       }
     })
     .catch(function(){});  // 靜默失敗，不打擾使用者
+}
+
+// 靜默載入集團對照表（不打擾使用者，失敗也沒關係，可重新整理再試）
+function autoLoadGroups(){
+  fetch(NOTE_GAS_URL+'?action=groups')
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(!d.ok) return;
+      groupMap = d.groups || {};
+      if(Object.keys(groupMap).length) applyGroups();
+    })
+    .catch(function(){});
 }
 
 function openNotePicker(){
@@ -2403,6 +2422,44 @@ function applyNotes(){
       card.insertBefore(bar,card.firstChild);
     }
   });
+}
+
+// 把集團標籤（灰底、橘字，跟備註同風格）套到卡片上，點名稱可篩選只看該集團
+function applyGroups(){
+  document.querySelectorAll('.card').forEach(function(card){
+    var codeEl=card.querySelector('.card-code');
+    if(!codeEl)return;
+    var code=codeEl.textContent.trim();
+    var groups=groupMap[code];
+    var existing=card.querySelector('.card-group-bar');
+    if(existing)existing.remove();
+    if(groups && groups.length){
+      var bar=document.createElement('div');
+      bar.className='card-group-bar';
+      bar.innerHTML='🏢 '+groups.map(function(g){
+        var safe=g.replace(/'/g,"\\'").replace(/"/g,'&quot;');
+        return '<span onclick="event.stopPropagation();filterByGroup(\''+safe+'\')">'+g+'</span>';
+      }).join('　');
+      card.insertBefore(bar,card.firstChild);
+    }
+  });
+}
+
+function filterByGroup(name){
+  groupFilter = name;
+  var chip=document.getElementById('group-filter-chip');
+  if(chip){
+    chip.textContent='🏢 '+name+' ✕';
+    chip.style.display='inline-block';
+  }
+  render();
+}
+
+function clearGroupFilter(){
+  groupFilter=null;
+  var chip=document.getElementById('group-filter-chip');
+  if(chip) chip.style.display='none';
+  render();
 }
 
 function toast(msg,color){
@@ -2758,11 +2815,12 @@ function adjustPadding(){
   });
 })();
 
-// 頁面載入時自動載入備註、策略標籤與最新選股資料
+// 頁面載入時自動載入備註、策略標籤、集團與最新選股資料
 window.addEventListener('load', function(){
   adjustPadding();
   autoLoadNotes();
   autoLoadStrategies();
+  autoLoadGroups();
   autoLoadLatestStockFile();
 });
 window.addEventListener('resize', adjustPadding);
