@@ -59,7 +59,9 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .btn-top:active{background:#21262d;color:#e6edf3}
 
 /* ── SORT BAR ── */
-.sbar{padding:7px 12px;display:flex;flex-wrap:wrap;gap:5px;background:#0d1117;border-bottom:1px solid #21262d;position:fixed;top:95px;left:0;right:0;z-index:98}
+.sbar{padding:7px 12px;display:flex;flex-wrap:nowrap;gap:5px;background:#0d1117;border-bottom:1px solid #21262d;position:fixed;top:95px;left:0;right:0;z-index:98;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.sbar::-webkit-scrollbar{display:none}
+.sbar .sbtn{flex-shrink:0}
 .sbtn{background:#21262d;border:1px solid #30363d;border-radius:16px;padding:5px 12px;font-size:12px;color:#8b949e;cursor:pointer;white-space:nowrap}
 .sbtn.on{background:#1f6feb22;border-color:#58a6ff;color:#58a6ff}
 
