@@ -933,6 +933,8 @@ function adminRemoveUser(email){
 <div id="fbar-tags-wrap" style="display:none;align-items:center;gap:5px;padding:0 12px 6px;flex-wrap:wrap">
   <button class="fbar-clear-all" id="fbar-clear-all" onclick="selAll()">✕ 清除全部</button>
   <div class="fbar-tags" id="fbar-tags" style="display:contents"></div>
+  <span id="group-filter-chip" style="display:none;background:#30363d;color:#d29922;font-size:12px;padding:3px 10px;border-radius:12px;cursor:pointer;" onclick="clearGroupFilter()"></span>
+  <span id="concept-filter-chip" style="display:none;background:#30363d;color:#39c5cf;font-size:12px;padding:3px 10px;border-radius:12px;cursor:pointer;" onclick="clearConceptFilter()"></span>
 </div>
 
 <!-- SORT BAR -->
@@ -952,8 +954,6 @@ function adminRemoveUser(email){
 <div class="cbar">
   <span>顯示 <b id="rc">0</b> 支</span>
   <div class="cbar-sts" id="csts"></div>
-  <span id="group-filter-chip" style="display:none;background:#30363d;color:#d29922;font-size:12px;padding:3px 10px;border-radius:12px;margin-left:8px;cursor:pointer;" onclick="clearGroupFilter()"></span>
-  <span id="concept-filter-chip" style="display:none;background:#30363d;color:#39c5cf;font-size:12px;padding:3px 10px;border-radius:12px;margin-left:8px;cursor:pointer;" onclick="clearConceptFilter()"></span>
 </div>
 
 <!-- CARDS -->
@@ -1154,8 +1154,9 @@ function renderSelTags(){
     var sp=e.target.closest('.fbar-sel-tag');
     if(sp) removeTag(sp.getAttribute('data-tag'));
   };
-  if(outer) outer.style.display=sel.length?'flex':'none';
-  if(btn) btn.style.display=sel.length?'inline-flex':'none';
+  var anyFilter = sel.length || groupFilter || conceptFilter;
+  if(outer) outer.style.display=anyFilter?'flex':'none';
+  if(btn) btn.style.display=anyFilter?'inline-flex':'none';
 }
 function removeTag(tag){
   var i=sel.indexOf(tag);
@@ -1183,6 +1184,10 @@ function cTag(el,tag){
 
 function selAll(){
   sel=[];
+  groupFilter=null;
+  conceptFilter=null;
+  var gc=document.getElementById('group-filter-chip'); if(gc) gc.style.display='none';
+  var cc=document.getElementById('concept-filter-chip'); if(cc) cc.style.display='none';
   document.querySelectorAll('.dtag').forEach(function(el){el.classList.remove('on');});
   document.getElementById('dall').classList.add('on');
   document.getElementById('fbtn').classList.remove('on');
@@ -2490,6 +2495,7 @@ function filterByGroup(name){
     chip.textContent='🏢 '+name+' ✕';
     chip.style.display='inline-block';
   }
+  renderSelTags();
   render();
 }
 
@@ -2497,6 +2503,7 @@ function clearGroupFilter(){
   groupFilter=null;
   var chip=document.getElementById('group-filter-chip');
   if(chip) chip.style.display='none';
+  renderSelTags();
   render();
 }
 
@@ -2528,6 +2535,7 @@ function filterByConcept(name){
     chip.textContent='💡 '+name+' ✕';
     chip.style.display='inline-block';
   }
+  renderSelTags();
   render();
 }
 
@@ -2535,6 +2543,7 @@ function clearConceptFilter(){
   conceptFilter=null;
   var chip=document.getElementById('concept-filter-chip');
   if(chip) chip.style.display='none';
+  renderSelTags();
   render();
 }
 
