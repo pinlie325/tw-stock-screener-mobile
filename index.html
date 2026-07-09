@@ -81,6 +81,8 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .card-note-bar{background:#30363d;color:#e040fb;font-size:12px;padding:4px 8px;border-radius:4px;margin-bottom:6px;line-height:1.4}
 .card-group-bar{background:#30363d;color:#d29922;font-size:12px;padding:4px 8px;border-radius:4px;margin-bottom:6px;line-height:1.4}
 .card-group-bar span{cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
+.card-concept-bar{background:#30363d;color:#39c5cf;font-size:12px;padding:4px 8px;border-radius:4px;margin-bottom:6px;line-height:1.4}
+.card-concept-bar span{cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
 .card-strategy-bar{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
 .stag{background:#1a2a3a;color:#58a6ff;border:1px solid #1f6feb55;border-radius:4px;font-size:11px;padding:2px 6px;white-space:nowrap}
 .card:active{border-color:#58a6ff;background:#1a2030}
@@ -950,6 +952,7 @@ function adminRemoveUser(email){
   <span>顯示 <b id="rc">0</b> 支</span>
   <div class="cbar-sts" id="csts"></div>
   <span id="group-filter-chip" style="display:none;background:#30363d;color:#d29922;font-size:12px;padding:3px 10px;border-radius:12px;margin-left:8px;cursor:pointer;" onclick="clearGroupFilter()"></span>
+  <span id="concept-filter-chip" style="display:none;background:#30363d;color:#39c5cf;font-size:12px;padding:3px 10px;border-radius:12px;margin-left:8px;cursor:pointer;" onclick="clearConceptFilter()"></span>
 </div>
 
 <!-- CARDS -->
@@ -1248,6 +1251,7 @@ function getFilt(){
   }
   if(noteFilterOn) d=d.filter(function(s){return noteMap[String(s.code)];});
   if(groupFilter) d=d.filter(function(s){return (groupMap[String(s.code)]||[]).indexOf(groupFilter)>=0;});
+  if(conceptFilter) d=d.filter(function(s){return (conceptMap[String(s.code)]||[]).indexOf(conceptFilter)>=0;});
   return d;
 }
 
@@ -1352,6 +1356,7 @@ function render(){
   if(Object.keys(noteMap).length) applyNotes(); // 重新套用備註
   if(Object.keys(strategyMap).length) applyStrategies(); // 重新套用策略
   if(Object.keys(groupMap).length) applyGroups(); // 重新套用集團標籤
+  if(Object.keys(conceptMap).length) applyConcepts(); // 重新套用概念股標籤
 }
 
 // ── TRADINGVIEW CHART ──
@@ -2297,6 +2302,8 @@ var STRATEGY_GAS_URL = 'https://script.google.com/macros/s/AKfycbzonSgY3uZ1Y7HU1
 var strategyMap = {};
 var groupMap = {};
 var groupFilter = null;
+var conceptMap = {};
+var conceptFilter = null;
 
 var NOTE_GAS_URL = 'https://script.google.com/macros/s/AKfycbz2qxVYgYeowc4wRACEjFpxyAlsQjJIVOPjmHBQI5RxqcgVADPbTeDaMkO5X0jkKvbeYw/exec';
 
@@ -2358,6 +2365,18 @@ function autoLoadGroups(){
       if(!d.ok) return;
       groupMap = d.groups || {};
       if(Object.keys(groupMap).length) applyGroups();
+    })
+    .catch(function(){});
+}
+
+// 靜默載入概念股對照表（不打擾使用者，失敗也沒關係，可重新整理再試）
+function autoLoadConcepts(){
+  fetch(NOTE_GAS_URL+'?action=concepts')
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(!d.ok) return;
+      conceptMap = d.concepts || {};
+      if(Object.keys(conceptMap).length) applyConcepts();
     })
     .catch(function(){});
 }
@@ -2465,6 +2484,44 @@ function filterByGroup(name){
 function clearGroupFilter(){
   groupFilter=null;
   var chip=document.getElementById('group-filter-chip');
+  if(chip) chip.style.display='none';
+  render();
+}
+
+// 把概念股標籤（灰底、青字）套到卡片上，點名稱可篩選只看該概念股
+function applyConcepts(){
+  document.querySelectorAll('.card').forEach(function(card){
+    var codeEl=card.querySelector('.card-code');
+    if(!codeEl)return;
+    var code=codeEl.textContent.trim();
+    var concepts=conceptMap[code];
+    var existing=card.querySelector('.card-concept-bar');
+    if(existing)existing.remove();
+    if(concepts && concepts.length){
+      var bar=document.createElement('div');
+      bar.className='card-concept-bar';
+      bar.innerHTML='💡 '+concepts.map(function(g){
+        var safe=g.replace(/'/g,"\\'").replace(/"/g,'&quot;');
+        return '<span onclick="event.stopPropagation();filterByConcept(\''+safe+'\')">'+g+'</span>';
+      }).join('　');
+      card.insertBefore(bar,card.firstChild);
+    }
+  });
+}
+
+function filterByConcept(name){
+  conceptFilter = name;
+  var chip=document.getElementById('concept-filter-chip');
+  if(chip){
+    chip.textContent='💡 '+name+' ✕';
+    chip.style.display='inline-block';
+  }
+  render();
+}
+
+function clearConceptFilter(){
+  conceptFilter=null;
+  var chip=document.getElementById('concept-filter-chip');
   if(chip) chip.style.display='none';
   render();
 }
@@ -2822,12 +2879,13 @@ function adjustPadding(){
   });
 })();
 
-// 頁面載入時自動載入備註、策略標籤、集團與最新選股資料
+// 頁面載入時自動載入備註、策略標籤、集團、概念股與最新選股資料
 window.addEventListener('load', function(){
   adjustPadding();
   autoLoadNotes();
   autoLoadStrategies();
   autoLoadGroups();
+  autoLoadConcepts();
   autoLoadLatestStockFile();
 });
 window.addEventListener('resize', adjustPadding);
