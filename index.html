@@ -79,9 +79,10 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .card-cam{background:none;border:none;font-size:16px;cursor:pointer;padding:0;line-height:1;opacity:0.5;display:block;margin-left:auto;margin-bottom:2px}
 .card-cam:hover,.card-cam:active{opacity:1}
 .card-note-bar{background:#30363d;color:#e040fb;font-size:12px;padding:4px 8px;border-radius:4px;margin-bottom:6px;line-height:1.4}
-.card-group-bar{background:#30363d;color:#d29922;font-size:12px;padding:4px 8px;border-radius:4px;margin-bottom:6px;line-height:1.4}
+.card-tags-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;}
+.card-group-bar{background:#30363d;color:#d29922;font-size:12px;padding:4px 8px;border-radius:4px;line-height:1.4}
 .card-group-bar span{cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
-.card-concept-bar{background:#30363d;color:#39c5cf;font-size:12px;padding:4px 8px;border-radius:4px;margin-bottom:6px;line-height:1.4}
+.card-concept-bar{background:#30363d;color:#39c5cf;font-size:12px;padding:4px 8px;border-radius:4px;line-height:1.4}
 .card-concept-bar span{cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
 .card-strategy-bar{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
 .stag{background:#1a2a3a;color:#58a6ff;border:1px solid #1f6feb55;border-radius:4px;font-size:11px;padding:2px 6px;white-space:nowrap}
@@ -2451,6 +2452,17 @@ function applyNotes(){
 }
 
 // 把集團標籤（灰底、橘字，跟備註同風格）套到卡片上，點名稱可篩選只看該集團
+// 取得（或建立）集團/概念股共用的橫向標籤列，讓兩種標籤並排顯示在同一排
+function getOrCreateTagsRow(card){
+  var row = card.querySelector('.card-tags-row');
+  if(!row){
+    row = document.createElement('div');
+    row.className = 'card-tags-row';
+    card.insertBefore(row, card.firstChild);
+  }
+  return row;
+}
+
 function applyGroups(){
   document.querySelectorAll('.card').forEach(function(card){
     var codeEl=card.querySelector('.card-code');
@@ -2458,7 +2470,7 @@ function applyGroups(){
     var code=codeEl.textContent.trim();
     var groups=groupMap[code];
     var existing=card.querySelector('.card-group-bar');
-    if(existing)existing.remove();
+    if(existing){var pr=existing.parentNode;existing.remove();if(pr&&pr.classList.contains('card-tags-row')&&!pr.children.length)pr.remove();}
     if(groups && groups.length){
       var bar=document.createElement('div');
       bar.className='card-group-bar';
@@ -2466,7 +2478,7 @@ function applyGroups(){
         var safe=g.replace(/'/g,"\\'").replace(/"/g,'&quot;');
         return '<span onclick="event.stopPropagation();filterByGroup(\''+safe+'\')">'+g+'</span>';
       }).join('　');
-      card.insertBefore(bar,card.firstChild);
+      getOrCreateTagsRow(card).appendChild(bar);
     }
   });
 }
@@ -2496,7 +2508,7 @@ function applyConcepts(){
     var code=codeEl.textContent.trim();
     var concepts=conceptMap[code];
     var existing=card.querySelector('.card-concept-bar');
-    if(existing)existing.remove();
+    if(existing){var pr2=existing.parentNode;existing.remove();if(pr2&&pr2.classList.contains('card-tags-row')&&!pr2.children.length)pr2.remove();}
     if(concepts && concepts.length){
       var bar=document.createElement('div');
       bar.className='card-concept-bar';
@@ -2504,7 +2516,7 @@ function applyConcepts(){
         var safe=g.replace(/'/g,"\\'").replace(/"/g,'&quot;');
         return '<span onclick="event.stopPropagation();filterByConcept(\''+safe+'\')">'+g+'</span>';
       }).join('　');
-      card.insertBefore(bar,card.firstChild);
+      getOrCreateTagsRow(card).appendChild(bar);
     }
   });
 }
