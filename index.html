@@ -119,7 +119,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .card-avg span{color:#c9d1d9}
 
 /* Card stats grid */
-.card-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:5px;margin-bottom:8px}
+.card-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-bottom:8px}
 .cg-item{background:#0d1117;border-radius:6px;padding:4px 6px}
 .cg-lbl{font-size:10px;color:#6e7681;margin-bottom:2px}
 .cg-val{font-size:14px;font-weight:600;color:#c9d1d9}
@@ -137,6 +137,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 
 /* Card position */
 .card-pos{font-size:14px;color:#c9d1d9;font-weight:500;line-height:1.5;margin-top:4px}
+.card-news{font-size:12px;color:#8b949e;line-height:1.5;margin-top:4px}
 
 /* Card links */
 .card-links{display:flex;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid #21262d}
@@ -1316,6 +1317,7 @@ function render(){
             +'<span class="card-name">'+s.name+'</span>'
           +'<div class="card-pattern" id="pattern-'+s.code+'"></div>'
           +(s.position?'<div class="card-pos">'+s.position+'</div>':'')
+          +(s.news?'<div class="card-news">📰 '+s.news+'</div>':'')
         +'</div>'
         +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;max-width:45%">'
           +'<button class="card-cam" onclick="event.stopPropagation();cardScreenshot(event,this.closest(\'.card\'))">📷</button>'
@@ -1343,6 +1345,7 @@ function render(){
         +'<div class="cg-item"><div class="cg-lbl">RS%</div><div class="cg-val '+rsc+'">'+(s.rs!==null?s.rs.toFixed(1):'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">外大單%</div><div class="cg-val" style="color:'+(s.bigbuy!==null&&s.bigbuy!==undefined?'#e040fb':'#c9d1d9')+'">'+(s.bigbuy!==null&&s.bigbuy!==undefined?s.bigbuy.toFixed(1)+'%':'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">毛利率</div><div class="cg-val '+gmc+'">'+(s.grossmargin!==null?s.grossmargin.toFixed(1)+'%':'--')+'</div></div>'
+        +(function(){var rg=s.revgrowth;var rgc=rg!==null?(rg>0?'up':rg<0?'dn':''):'';return '<div class="cg-item"><div class="cg-lbl">營收年增%</div><div class="cg-val '+rgc+'">'+(rg!==null?((rg>0?'+':'')+rg.toFixed(1)+'%'):'--')+'</div></div>';})()
         +'<div class="cg-item"><div class="cg-lbl">單季EPS</div><div class="cg-val '+epsc+'">'+(s.eps!==null?s.eps.toFixed(2):'--')+'</div></div>'
         +(function(){var annEps=s.eps!==null?s.eps*4/0.6:null;var pe=(annEps&&annEps>0&&s.volume!==null)?(s.volume/(annEps)).toFixed(1):null;var pec=pe!==null?(parseFloat(pe)<15?'ok':parseFloat(pe)<30?'mid':'warn'):'';return '<div class="cg-item"><div class="cg-lbl">本益比(估)</div><div class="cg-val '+pec+'">'+(pe!==null?pe:'--')+'</div></div>';})()
       +'</div>'
@@ -2182,7 +2185,7 @@ function parseXL(file){
 function processRows(rows,filename){
   var keys=Object.keys(rows[0]);
   function fc(arr){for(var i=0;i<arr.length;i++)for(var j=0;j<keys.length;j++)if(keys[j].indexOf(arr[i])>=0)return keys[j];return null;}
-  var COL={code:fc(['代碼']),name:fc(['商品','名稱']),close:fc(['昨收']),pct:fc(['漲幅']),avg:fc(['均價']),volume:fc(['成交']),turnover:fc(['換手率']),turnval:fc(['成交值']),capital:fc(['股本']),margin:fc(['融資維持']),ind:fc(['所有細產業','細產業','產業']),pos:fc(['產業地位']),rs:fc(['RS%']),grossmargin:fc(['毛利率']),eps:fc(['盈餘(單)','單季','EPS']),bigbuy:fc(['外盤特大單%','外盤特大單','特大單%'])};
+  var COL={code:fc(['代碼']),name:fc(['商品','名稱']),close:fc(['昨收']),pct:fc(['漲幅']),avg:fc(['均價']),volume:fc(['成交']),turnover:fc(['換手率']),turnval:fc(['成交值']),capital:fc(['股本']),margin:fc(['融資維持']),ind:fc(['所有細產業','細產業','產業']),pos:fc(['產業地位']),rs:fc(['RS%']),grossmargin:fc(['毛利率']),eps:fc(['盈餘(單)','單季','EPS']),bigbuy:fc(['外盤特大單%','外盤特大單','特大單%']),revgrowth:fc(['營收年增率','營收年增']),news:fc(['公司動態'])};
   function sf(v){if(v===null||v===undefined||v===''||v==='--')return null;var n=parseFloat(v);return isNaN(n)?null:n;}
   var nd=[];
   rows.forEach(function(r){
@@ -2191,7 +2194,7 @@ function processRows(rows,filename){
     // 代碼欄可能是數字(2302)、帶空格(' 2302 ')或小數('2302.0')，統一正規化為4位字串
     var rawCode=String(r[COL.code]).trim().replace(/\.0+$/,'');
     var cleanCode=/^\d+$/.test(rawCode)?rawCode.padStart(4,'0'):rawCode;
-    nd.push({code:cleanCode,name:COL.name?String(r[COL.name]||'').trim():'',close:COL.close?sf(r[COL.close]):null,pct:COL.pct?sf(r[COL.pct]):null,avg:COL.avg?sf(r[COL.avg]):null,volume:COL.volume?sf(r[COL.volume]):null,turnover:COL.turnover?sf(r[COL.turnover]):null,turnval:COL.turnval?sf(r[COL.turnval]):null,capital:COL.capital?sf(r[COL.capital]):null,margin:COL.margin?sf(r[COL.margin]):null,position:COL.pos&&r[COL.pos]?String(r[COL.pos]).trim():'',tags:ts,rs:COL.rs?sf(r[COL.rs]):null,grossmargin:COL.grossmargin?sf(r[COL.grossmargin]):null,eps:COL.eps?sf(r[COL.eps]):null,bigbuy:COL.bigbuy?sf(r[COL.bigbuy]):null});
+    nd.push({code:cleanCode,name:COL.name?String(r[COL.name]||'').trim():'',close:COL.close?sf(r[COL.close]):null,pct:COL.pct?sf(r[COL.pct]):null,avg:COL.avg?sf(r[COL.avg]):null,volume:COL.volume?sf(r[COL.volume]):null,turnover:COL.turnover?sf(r[COL.turnover]):null,turnval:COL.turnval?sf(r[COL.turnval]):null,capital:COL.capital?sf(r[COL.capital]):null,margin:COL.margin?sf(r[COL.margin]):null,position:COL.pos&&r[COL.pos]?String(r[COL.pos]).trim():'',tags:ts,rs:COL.rs?sf(r[COL.rs]):null,grossmargin:COL.grossmargin?sf(r[COL.grossmargin]):null,eps:COL.eps?sf(r[COL.eps]):null,bigbuy:COL.bigbuy?sf(r[COL.bigbuy]):null,revgrowth:COL.revgrowth?sf(r[COL.revgrowth]):null,news:COL.news&&r[COL.news]?String(r[COL.news]).trim():''});
   });
   if(!nd.length){alert('沒有讀到有效資料');return;}
   D=nd;
