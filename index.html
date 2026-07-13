@@ -312,6 +312,12 @@ function switchAuthView(which){
 }
 
 document.addEventListener('DOMContentLoaded', function(){
+  // 自動帶入記住的帳號名稱（不含密碼，密碼交給瀏覽器自己的密碼管理器）
+  var rememberedAccount = localStorage.getItem('twstock_remember_account');
+  if(rememberedAccount){
+    document.getElementById('login-account').value = rememberedAccount;
+    document.getElementById('login-account-pass').focus();
+  }
   document.getElementById('login-account').addEventListener('keydown', function(e){
     if(e.key==='Enter') document.getElementById('login-account-pass').focus();
   });
@@ -417,6 +423,12 @@ function doEmailLogin(){
   btn.disabled = true;
   btn.textContent = '登入中...';
   suppressAuthCheck = true; // 避免跟onAuthStateChanged重複觸發
+  var remember = document.getElementById('login-remember-email').checked;
+  if(remember){
+    localStorage.setItem('twstock_remember_account', account);
+  } else {
+    localStorage.removeItem('twstock_remember_account');
+  }
 
   resolveAccountToEmail(account)
     .then(function(email){
