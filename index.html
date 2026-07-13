@@ -74,7 +74,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 /* ── CARDS ── */
 .cards{flex:1;padding:8px 10px;display:grid;grid-template-columns:1fr;gap:8px;overflow-y:auto;align-content:start}
 @media(min-width:600px){.cards{grid-template-columns:1fr 1fr;padding:10px 12px}}
-.card{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:12px 14px;cursor:pointer;transition:border-color .15s}
+.card{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:14px 16px;cursor:pointer;transition:border-color .15s}
 .card.capturing{outline:2px solid #58a6ff}
 .card-cam{background:none;border:none;font-size:16px;cursor:pointer;padding:0;line-height:1;opacity:0.5;display:block;margin-left:auto;margin-bottom:2px}
 .card-cam:hover,.card-cam:active{opacity:1}
@@ -103,9 +103,10 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .cpat-neu{background:#21262d;color:#8b949e;border:1px solid #30363d}
 .cpat-vol{background:#1a1a3a;color:#79c0ff;border:1px solid #79c0ff55}
 .cpat-666{background:#3a2a00;color:#ffd700;border:1px solid #ffd70088;font-weight:700}
-.card-cnyes{font-size:11px;color:#58a6ff;text-decoration:none;background:#1f6feb22;border:1px solid #1f6feb44;border-radius:4px;padding:2px 6px;white-space:nowrap;flex-shrink:0;align-self:center}
-.card-cnyes:active{background:#1f6feb44}
-.card-line{font-size:11px;color:#fff;text-decoration:none;background:#06C755;border:1px solid #06C755;border-radius:4px;padding:2px 6px;white-space:nowrap;flex-shrink:0;align-self:center}
+.card-cnyes{font-size:11px;color:#8b949e;text-decoration:none;background:#21262d;border:1px solid #30363d;border-radius:4px;padding:2px 6px;white-space:nowrap;flex-shrink:0;align-self:center}
+.card-cnyes:active{background:#30363d}
+.card-line{font-size:11px;color:#8b949e;text-decoration:none;background:#21262d;border:1px solid #30363d;border-radius:4px;padding:2px 6px;white-space:nowrap;flex-shrink:0;align-self:center}
+.card-line:active{background:#30363d}
 .card-line:active{background:#05a847}
 .card-pct{font-size:16px;font-weight:700;padding:3px 10px;border-radius:6px}
 .card-pct.up{color:#f85149;background:#f8514918}
@@ -119,10 +120,10 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .card-avg span{color:#c9d1d9}
 
 /* Card stats grid */
-.card-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-bottom:8px}
-.cg-item{background:#0d1117;border-radius:6px;padding:4px 6px}
-.cg-lbl{font-size:10px;color:#6e7681;margin-bottom:2px}
-.cg-val{font-size:14px;font-weight:600;color:#c9d1d9}
+.card-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:6px;margin-bottom:10px}
+.cg-item{background:#0d1117;border-radius:6px;padding:6px 8px}
+.cg-lbl{font-size:11px;color:#8b949e;margin-bottom:3px}
+.cg-val{font-size:15px;font-weight:600;color:#e6edf3;line-height:1.3}
 .cg-val.up{color:#f85149}
 .cg-val.dn{color:#3fb950}
 .cg-val.warn{color:#f85149}
@@ -1301,9 +1302,9 @@ function render(){
   document.getElementById('cards').innerHTML=data.map(function(s){
     var pct=s.pct,pc=pct>0?'up':pct<0?'dn':'fl';
     var ps=pct!==null?(pct>0?'+':'')+pct.toFixed(2)+'%':'--';
-    var mc=s.margin!==null?(s.margin<160?'warn':'ok'):'';
-    var rsc=s.rs!==null?(s.rs>=80?'hi':s.rs>=50?'mid':''):'';
-    var gmc=s.grossmargin!==null?(s.grossmargin>=40?'ok':s.grossmargin>=20?'mid':''):'';
+    var mc=s.margin!==null?(s.margin<160?'warn':''):'';
+    var rsc='';
+    var gmc='';
     var epsc=s.eps!==null?(s.eps>0?'up':s.eps<0?'dn':''):'';
     var hiTags=s.tags.filter(function(t){return sel.indexOf(t)>=0;});
     var showTags=s.tags.slice(0,4);
@@ -1332,22 +1333,22 @@ function render(){
 
         +(s.close!==null?'<span class="card-avg">昨收 <span>'+s.close.toFixed(1)+'</span></span>':'')
         +(s.avg!==null?'<span class="card-avg">均價 <span>'+s.avg.toFixed(1)+'</span></span>':'')
+        +(s.turnval!==null?'<span class="card-avg">成交值 <span>'+s.turnval.toFixed(2)+'億</span></span>':'')
         +'<a class="card-cnyes" style="margin-left:auto" href="https://www.cmoney.tw/forum/stock/'+s.code+'" target="_blank" onclick="event.stopPropagation()">CM</a>'
         +(function(){var p=s.volume!==null?s.volume:'';var pc=s.pct!==null?(s.pct>0?'+':'')+s.pct.toFixed(2)+'%':'';var eps=s.eps!==null?s.eps.toFixed(2):'--';var rs=s.rs!==null?s.rs.toFixed(1):'--';var txt=s.code+' '+s.name+' '+p+'('+pc+') RS'+rs+' EPS'+eps;var url='https://social-plugins.line.me/lineit/share?url='+encodeURIComponent('https://www.cmoney.tw/forum/stock/'+s.code)+'&text='+encodeURIComponent(txt);return '<a class="card-line" href="'+url+'" target="_blank" onclick="event.stopPropagation()">LINE</a>';})()
       +'</div>'
       +'<div class="card-grid">'
 
         +(function(){var bias=s.pct!==null?s.pct:null;var biasc=bias!==null?(bias>0?'up':bias<0?'dn':''):'';return '<div class="cg-item"><div class="cg-lbl">漲跌幅</div><div class="cg-val '+biasc+'">'+(bias!==null?((bias>0?'+':'')+bias.toFixed(1)+'%'):'--')+'</div></div>';})()
-        +'<div class="cg-item"><div class="cg-lbl">成交值(億)</div><div class="cg-val">'+(s.turnval!==null?s.turnval.toFixed(2):'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">股本(億)</div><div class="cg-val">'+(s.capital!==null?s.capital.toFixed(1):'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">融資維持%</div><div class="cg-val '+mc+'">'+(s.margin!==null?s.margin.toFixed(1):'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">換手率</div><div class="cg-val">'+(s.turnover!==null?s.turnover.toFixed(2)+'%':'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">RS%</div><div class="cg-val '+rsc+'">'+(s.rs!==null?s.rs.toFixed(1):'--')+'</div></div>'
-        +'<div class="cg-item"><div class="cg-lbl">外大單%</div><div class="cg-val" style="color:'+(s.bigbuy!==null&&s.bigbuy!==undefined?'#e040fb':'#c9d1d9')+'">'+(s.bigbuy!==null&&s.bigbuy!==undefined?s.bigbuy.toFixed(1)+'%':'--')+'</div></div>'
+        +'<div class="cg-item"><div class="cg-lbl">外大單%</div><div class="cg-val">'+(s.bigbuy!==null&&s.bigbuy!==undefined?s.bigbuy.toFixed(1)+'%':'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">毛利率</div><div class="cg-val '+gmc+'">'+(s.grossmargin!==null?s.grossmargin.toFixed(1)+'%':'--')+'</div></div>'
         +(function(){var rg=s.revgrowth;var rgc=rg!==null?(rg>0?'up':rg<0?'dn':''):'';return '<div class="cg-item"><div class="cg-lbl">營收年增%</div><div class="cg-val '+rgc+'">'+(rg!==null?((rg>0?'+':'')+rg.toFixed(1)+'%'):'--')+'</div></div>';})()
         +'<div class="cg-item"><div class="cg-lbl">單季EPS</div><div class="cg-val '+epsc+'">'+(s.eps!==null?s.eps.toFixed(2):'--')+'</div></div>'
-        +(function(){var annEps=s.eps!==null?s.eps*4/0.6:null;var pe=(annEps&&annEps>0&&s.volume!==null)?(s.volume/(annEps)).toFixed(1):null;var pec=pe!==null?(parseFloat(pe)<15?'ok':parseFloat(pe)<30?'mid':'warn'):'';return '<div class="cg-item"><div class="cg-lbl">本益比(估)</div><div class="cg-val '+pec+'">'+(pe!==null?pe:'--')+'</div></div>';})()
+        +(function(){var annEps=s.eps!==null?s.eps*4/0.6:null;var pe=(annEps&&annEps>0&&s.volume!==null)?(s.volume/(annEps)).toFixed(1):null;return '<div class="cg-item"><div class="cg-lbl">本益比(估)</div><div class="cg-val">'+(pe!==null?pe:'--')+'</div></div>';})()
       +'</div>'
       // Yahoo K線圖區塊
       +'<div class="yf-wrap" id="yf-'+s.code+'">'
@@ -1773,6 +1774,18 @@ function drawKChart(canvas, data){
 
   // 最後一根最高價標示（動態位置，在最高點正上方）
   var lastCandle = show[n-1];
+  // 如果K線最後一筆資料不是今天，代表盤中還沒更新，加提示避免誤會成即時價
+  if(lastCandle && lastCandle.d){
+    var todayStr = new Date().toISOString().slice(0,10);
+    if(lastCandle.d < todayStr){
+      ctx.save();
+      ctx.fillStyle='#d29922';
+      ctx.font='11px sans-serif';
+      ctx.textAlign='right';
+      ctx.fillText('⚠ 非即時 '+lastCandle.d, W-PAD.r, 12);
+      ctx.restore();
+    }
+  }
   if(lastCandle){
     ctx.save();
     ctx.fillStyle='#ffffff'; ctx.font='bold 16px sans-serif'; ctx.textAlign='right';
