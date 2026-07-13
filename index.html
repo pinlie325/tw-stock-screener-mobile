@@ -2328,6 +2328,22 @@ function autoLoadStrategies(){
     .catch(function(){});
 }
 
+// 卡片上方各種標籤列的固定顯示順序：集團/概念股 → 策略標籤 → 備註
+// 不管非同步載入的先後順序為何，永遠依照這個順序排版
+var CARD_BAR_ORDER = ['card-tags-row','card-strategy-bar','card-note-bar'];
+function insertCardBar(card, el, className){
+  var idx = CARD_BAR_ORDER.indexOf(className);
+  for(var i=idx+1;i<CARD_BAR_ORDER.length;i++){
+    var sibling = card.querySelector('.'+CARD_BAR_ORDER[i]);
+    if(sibling){ card.insertBefore(el, sibling); return; }
+  }
+  for(var j=idx-1;j>=0;j--){
+    var prev = card.querySelector('.'+CARD_BAR_ORDER[j]);
+    if(prev){ prev.after(el); return; }
+  }
+  card.insertBefore(el, card.firstChild);
+}
+
 function applyStrategies(){
   document.querySelectorAll('.card').forEach(function(card){
     var code = String(card.getAttribute('data-code')||'').trim();
@@ -2341,9 +2357,7 @@ function applyStrategies(){
       bar.innerHTML = tags.map(function(t){
         return '<span class="stag">'+t+'</span>';
       }).join('');
-      var noteBar = card.querySelector('.card-note-bar');
-      if(noteBar) noteBar.after(bar);
-      else card.insertBefore(bar, card.firstChild);
+      insertCardBar(card, bar, 'card-strategy-bar');
     }
   });
 }
@@ -2451,7 +2465,7 @@ function applyNotes(){
       var bar=document.createElement('div');
       bar.className='card-note-bar';
       bar.textContent='📝 '+note;
-      card.insertBefore(bar,card.firstChild);
+      insertCardBar(card, bar, 'card-note-bar');
     }
   });
 }
@@ -2463,7 +2477,7 @@ function getOrCreateTagsRow(card){
   if(!row){
     row = document.createElement('div');
     row.className = 'card-tags-row';
-    card.insertBefore(row, card.firstChild);
+    insertCardBar(card, row, 'card-tags-row');
   }
   return row;
 }
@@ -2483,7 +2497,8 @@ function applyGroups(){
         var safe=g.replace(/'/g,"\\'").replace(/"/g,'&quot;');
         return '<span onclick="event.stopPropagation();filterByGroup(\''+safe+'\')">'+g+'</span>';
       }).join('　');
-      getOrCreateTagsRow(card).appendChild(bar);
+      var row=getOrCreateTagsRow(card);
+      row.insertBefore(bar, row.firstChild); // 集團永遠排在最前面
     }
   });
 }
