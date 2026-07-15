@@ -74,6 +74,12 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 /* ── CARDS ── */
 .cards{flex:1;padding:8px 10px;display:grid;grid-template-columns:1fr;gap:8px;overflow-y:auto;align-content:start}
 @media(min-width:600px){.cards{grid-template-columns:1fr 1fr;padding:10px 12px}}
+@media(max-width:480px){
+  .cg-item{padding:4px 6px;min-height:36px}
+  .cg-lbl{font-size:10px;white-space:nowrap}
+  .cg-val{font-size:13px}
+  .card-price{flex-wrap:wrap;row-gap:2px}
+}
 .card{background:#0d1117;border:1px solid #30363d;border-radius:10px;padding:14px 16px;cursor:pointer;transition:border-color .15s}
 .card.capturing{outline:2px solid #58a6ff}
 .card-cam{background:none;border:none;font-size:16px;cursor:pointer;padding:0;line-height:1;opacity:0.5;display:block;margin-left:auto;margin-bottom:2px}
@@ -1333,7 +1339,7 @@ function render(){
 
         +(s.close!==null?'<span class="card-avg">昨收 <span>'+s.close.toFixed(1)+'</span></span>':'')
         +(s.avg!==null?'<span class="card-avg">均價 <span>'+s.avg.toFixed(1)+'</span></span>':'')
-        +(s.turnval!==null?'<span class="card-avg">成交值 <span>'+s.turnval.toFixed(2)+'億</span></span>':'')
+        +(s.turnval!==null?'<span class="card-avg">成交值 <span>'+s.turnval.toFixed(1)+'億</span></span>':'')
         +'<a class="card-cnyes" style="margin-left:auto" href="https://www.cmoney.tw/forum/stock/'+s.code+'" target="_blank" onclick="event.stopPropagation()">CM</a>'
         +(function(){var p=s.volume!==null?s.volume:'';var pc=s.pct!==null?(s.pct>0?'+':'')+s.pct.toFixed(2)+'%':'';var eps=s.eps!==null?s.eps.toFixed(2):'--';var rs=s.rs!==null?s.rs.toFixed(1):'--';var txt=s.code+' '+s.name+' '+p+'('+pc+') RS'+rs+' EPS'+eps;var url='https://social-plugins.line.me/lineit/share?url='+encodeURIComponent('https://www.cmoney.tw/forum/stock/'+s.code)+'&text='+encodeURIComponent(txt);return '<a class="card-line" href="'+url+'" target="_blank" onclick="event.stopPropagation()">LINE</a>';})()
       +'</div>'
@@ -1341,14 +1347,14 @@ function render(){
 
         +(function(){var bias=s.pct!==null?s.pct:null;var biasc=bias!==null?(bias>0?'up':bias<0?'dn':''):'';return '<div class="cg-item"><div class="cg-lbl">漲跌幅</div><div class="cg-val '+biasc+'">'+(bias!==null?((bias>0?'+':'')+bias.toFixed(1)+'%'):'--')+'</div></div>';})()
         +'<div class="cg-item"><div class="cg-lbl">股本(億)</div><div class="cg-val">'+(s.capital!==null?s.capital.toFixed(1):'--')+'</div></div>'
-        +'<div class="cg-item"><div class="cg-lbl">融資維持%</div><div class="cg-val '+mc+'">'+(s.margin!==null?s.margin.toFixed(1):'--')+'</div></div>'
+        +'<div class="cg-item"><div class="cg-lbl">融資%</div><div class="cg-val '+mc+'">'+(s.margin!==null?s.margin.toFixed(1):'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">換手率</div><div class="cg-val">'+(s.turnover!==null?s.turnover.toFixed(2)+'%':'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">RS%</div><div class="cg-val '+rsc+'">'+(s.rs!==null?s.rs.toFixed(1):'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">外大單%</div><div class="cg-val">'+(s.bigbuy!==null&&s.bigbuy!==undefined?s.bigbuy.toFixed(1)+'%':'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">毛利率</div><div class="cg-val '+gmc+'">'+(s.grossmargin!==null?s.grossmargin.toFixed(1)+'%':'--')+'</div></div>'
-        +(function(){var rg=s.revgrowth;var rgc=rg!==null?(rg>0?'up':rg<0?'dn':''):'';return '<div class="cg-item"><div class="cg-lbl">營收年增%</div><div class="cg-val '+rgc+'">'+(rg!==null?((rg>0?'+':'')+rg.toFixed(1)+'%'):'--')+'</div></div>';})()
+        +(function(){var rg=s.revgrowth;var rgc=rg!==null?(rg>0?'up':rg<0?'dn':''):'';return '<div class="cg-item"><div class="cg-lbl">營收增%</div><div class="cg-val '+rgc+'">'+(rg!==null?((rg>0?'+':'')+rg.toFixed(1)+'%'):'--')+'</div></div>';})()
         +'<div class="cg-item"><div class="cg-lbl">單季EPS</div><div class="cg-val '+epsc+'">'+(s.eps!==null?s.eps.toFixed(2):'--')+'</div></div>'
-        +(function(){var annEps=s.eps!==null?s.eps*4/0.6:null;var pe=(annEps&&annEps>0&&s.volume!==null)?(s.volume/(annEps)).toFixed(1):null;return '<div class="cg-item"><div class="cg-lbl">本益比(估)</div><div class="cg-val">'+(pe!==null?pe:'--')+'</div></div>';})()
+        +(function(){var annEps=s.eps!==null?s.eps*4/0.6:null;var pe=(annEps&&annEps>0&&s.volume!==null)?(s.volume/(annEps)).toFixed(1):null;return '<div class="cg-item"><div class="cg-lbl">本益比</div><div class="cg-val">'+(pe!==null?pe:'--')+'</div></div>';})()
       +'</div>'
       // Yahoo K線圖區塊
       +'<div class="yf-wrap" id="yf-'+s.code+'">'
@@ -1962,9 +1968,11 @@ function tvLoad(code, interval){
 
     // 左右滑動支援
     var dragStartX = null;
+    var dragStartY = null;
     var dragOffset = 0;
     var barW = canvas.offsetWidth / kBars;
     var didDrag = false;
+    var touchIntent = null; // 'h'=左右拖圖表, 'v'=上下捲頁面, null=還沒判斷
 
     function onDragStart(x){ dragStartX=x; dragOffset=kOffset; didDrag=false; }
     function onDragMove(x){
@@ -1975,11 +1983,30 @@ function tvLoad(code, interval){
       kOffset = Math.max(0, Math.min(data.length-kBars, dragOffset+shift));
       drawKChart(canvas, data);
     }
-    function onDragEnd(){ dragStartX=null; }
+    function onDragEnd(){ dragStartX=null; dragStartY=null; touchIntent=null; }
 
-    // 觸控
-    canvas.addEventListener('touchstart', function(e){ onDragStart(e.touches[0].clientX); }, {passive:true});
-    canvas.addEventListener('touchmove',  function(e){ e.preventDefault(); onDragMove(e.touches[0].clientX); }, {passive:false});
+    // 觸控：先判斷手指主要是左右移動還是上下移動，上下移動時不要攔截，讓頁面正常捲動
+    canvas.addEventListener('touchstart', function(e){
+      dragStartY = e.touches[0].clientY;
+      touchIntent = null;
+      onDragStart(e.touches[0].clientX);
+    }, {passive:true});
+    canvas.addEventListener('touchmove', function(e){
+      var x = e.touches[0].clientX;
+      var y = e.touches[0].clientY;
+      if(touchIntent===null && dragStartX!==null && dragStartY!==null){
+        var adx = Math.abs(x - dragStartX);
+        var ady = Math.abs(y - dragStartY);
+        if(adx > 6 || ady > 6){
+          touchIntent = adx > ady ? 'h' : 'v';
+        }
+      }
+      if(touchIntent === 'v'){
+        return; // 上下滑動：不攔截，讓頁面正常捲動
+      }
+      e.preventDefault();
+      onDragMove(x);
+    }, {passive:false});
     canvas.addEventListener('touchend',   function(e){ onDragEnd(); });
     // 滑鼠
     canvas.addEventListener('mousedown',  function(e){ onDragStart(e.clientX); });
