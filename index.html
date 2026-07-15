@@ -74,7 +74,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 /* ── CARDS ── */
 .cards{flex:1;padding:8px 10px;display:grid;grid-template-columns:1fr;gap:8px;overflow-y:auto;align-content:start}
 @media(min-width:600px){.cards{grid-template-columns:1fr 1fr;padding:10px 12px}}
-.card{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:14px 16px;cursor:pointer;transition:border-color .15s}
+.card{background:#0d1117;border:1px solid #30363d;border-radius:10px;padding:14px 16px;cursor:pointer;transition:border-color .15s}
 .card.capturing{outline:2px solid #58a6ff}
 .card-cam{background:none;border:none;font-size:16px;cursor:pointer;padding:0;line-height:1;opacity:0.5;display:block;margin-left:auto;margin-bottom:2px}
 .card-cam:hover,.card-cam:active{opacity:1}
@@ -121,7 +121,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 
 /* Card stats grid */
 .card-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:5px;margin-bottom:8px}
-.cg-item{background:#0d1117;border-radius:6px;padding:5px 8px;display:flex;flex-direction:column;justify-content:space-between;min-height:44px}
+.cg-item{background:#161b22;border-radius:6px;padding:5px 8px;display:flex;flex-direction:column;justify-content:space-between;min-height:44px}
 .cg-lbl{font-size:11px;color:#8b949e;text-align:left}
 .cg-val{font-size:15px;font-weight:600;color:#e6edf3;line-height:1.2;text-align:right}
 .cg-val.up{color:#f85149}
@@ -167,10 +167,10 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .dcat-btn.on{color:#58a6ff}
 .dcat-n{background:#21262d;border-radius:8px;padding:1px 7px;font-size:11px;color:#8b949e}
 .dcat-btn.on .dcat-n{background:#1f6feb44;color:#79c0ff}
-.dtag-selall{background:none;border:1px solid #388bfd55;border-radius:4px;padding:3px 8px;font-size:12px;color:#58a6ff;cursor:pointer;white-space:nowrap}
+.dtag-selall{background:none;border:1px solid #388bfd55;border-radius:4px;padding:3px 8px;font-size:12px;color:#58a6ff;cursor:pointer;white-space:nowrap;display:inline-block;margin:3px 4px 3px 0;vertical-align:middle}
 .dtag-selall:active{background:#1f6feb22}
 .dtags.on{display:flex}
-.dtag{background:#21262d;border:1px solid #30363d;border-radius:4px;padding:4px 10px;font-size:12px;color:#8b949e;cursor:pointer}
+.dtag{background:#21262d;border:1px solid #30363d;border-radius:5px;padding:6px 13px;font-size:13.5px;color:#8b949e;cursor:pointer;display:inline-block;margin:3px 4px 3px 0;line-height:1.3}
 .dtag.on{background:#1f6feb22;border-color:#58a6ff;color:#58a6ff}
 
 /* ── EMPTY / LOADING ── */
@@ -916,7 +916,7 @@ function adminRemoveUser(email){
 <div class="xq-banner" id="xq-banner">
   <span class="xq-code" id="xq-code"></span>
   <span class="xq-name" id="xq-name"></span>
-  <span class="xq-hint">已複製 → 貼到XQ</span>
+  <span class="xq-hint">已複製 → 貼到選股軟體</span>
   <span class="xq-x" onclick="closeXqBanner()">✕</span>
 </div>
 
