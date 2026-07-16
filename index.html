@@ -1340,7 +1340,7 @@ function render(){
 
         +(s.close!==null?'<span class="card-avg">昨收 <span>'+s.close.toFixed(1)+'</span></span>':'')
         +(s.avg!==null?'<span class="card-avg">均價 <span>'+s.avg.toFixed(1)+'</span></span>':'')
-        +(s.turnval!==null?'<span class="card-avg">成交值 <span>'+s.turnval.toFixed(1)+'億</span></span>':'')
+        +(s.rs!==null?'<span class="card-avg">RS% <span>'+s.rs.toFixed(1)+'</span></span>':'')
         +'<a class="card-cnyes" style="margin-left:auto" href="https://www.cmoney.tw/forum/stock/'+s.code+'" target="_blank" onclick="event.stopPropagation()">CM</a>'
         +(function(){var p=s.volume!==null?s.volume:'';var pc=s.pct!==null?(s.pct>0?'+':'')+s.pct.toFixed(2)+'%':'';var eps=s.eps!==null?s.eps.toFixed(2):'--';var rs=s.rs!==null?s.rs.toFixed(1):'--';var txt=s.code+' '+s.name+' '+p+'('+pc+') RS'+rs+' EPS'+eps;var url='https://social-plugins.line.me/lineit/share?url='+encodeURIComponent('https://www.cmoney.tw/forum/stock/'+s.code)+'&text='+encodeURIComponent(txt);return '<a class="card-line" href="'+url+'" target="_blank" onclick="event.stopPropagation()">LINE</a>';})()
       +'</div>'
@@ -1350,7 +1350,7 @@ function render(){
         +'<div class="cg-item"><div class="cg-lbl">股本(億)</div><div class="cg-val">'+(s.capital!==null?s.capital.toFixed(1):'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">融資%</div><div class="cg-val '+mc+'">'+(s.margin!==null?s.margin.toFixed(1):'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">換手率</div><div class="cg-val">'+(s.turnover!==null?s.turnover.toFixed(2)+'%':'--')+'</div></div>'
-        +'<div class="cg-item"><div class="cg-lbl">RS%</div><div class="cg-val '+rsc+'">'+(s.rs!==null?s.rs.toFixed(1):'--')+'</div></div>'
+        +'<div class="cg-item"><div class="cg-lbl">成交值(億)</div><div class="cg-val">'+(s.turnval!==null?s.turnval.toFixed(1):'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">外大單%</div><div class="cg-val">'+(s.bigbuy!==null&&s.bigbuy!==undefined?s.bigbuy.toFixed(1)+'%':'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">毛利率</div><div class="cg-val '+gmc+'">'+(s.grossmargin!==null?s.grossmargin.toFixed(1)+'%':'--')+'</div></div>'
         +(function(){var rg=s.revgrowth;var rgc=rg!==null?(rg>0?'up':rg<0?'dn':''):'';return '<div class="cg-item"><div class="cg-lbl">營收增%</div><div class="cg-val '+rgc+'">'+(rg!==null?((rg>0?'+':'')+rg.toFixed(1)+'%'):'--')+'</div></div>';})()
