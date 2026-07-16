@@ -98,7 +98,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .card:active{border-color:#58a6ff;background:#1a2030}
 
 /* Card header */
-.card-hd{display:flex;align-items:flex-start;gap:8px;margin-bottom:8px}
+.card-hd{display:flex;align-items:flex-start;gap:8px;margin-bottom:6px}
 .card-left{min-width:0;flex:1}
 .card-code{font-family:monospace;font-size:21px;font-weight:700;color:#79c0ff}
 .card-exch{font-size:10px;font-weight:600;text-align:center;border-radius:3px;padding:1px 5px;margin-top:2px;white-space:nowrap}
@@ -129,8 +129,8 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .card-avg span{color:#c9d1d9}
 
 /* Card stats grid */
-.card-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:5px;margin-bottom:8px}
-.cg-item{background:#161b22;border-radius:6px;padding:5px 8px;display:flex;flex-direction:column;justify-content:space-between;min-height:44px;min-width:0;overflow:hidden}
+.card-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:5px;margin-bottom:4px}
+.cg-item{background:#161b22;border-radius:6px;padding:4px 7px;display:flex;flex-direction:column;justify-content:space-between;min-height:40px;min-width:0;overflow:hidden}
 .cg-lbl{font-size:11px;color:#8b949e;text-align:left}
 .cg-val{font-size:15px;font-weight:600;color:#e6edf3;line-height:1.2;text-align:right}
 .cg-val.up{color:#f85149}
@@ -1337,14 +1337,15 @@ function render(){
           }).join(''):'')
         +'</div>'
       +'</div>'
-      +'<div class="card-price">'
+      +'<div class="card-price" style="margin-bottom:2px">'
         +'<span class="card-close" style="color:'+(s.volume!==null&&s.close!==null?(s.volume>s.close?'#f85149':s.volume<s.close?'#3fb950':'#e6edf3'):'#e6edf3')+'">'+(s.volume!==null?s.volume.toLocaleString():'--')+'</span>'
-
-        +(s.close!==null?'<span class="card-avg">昨收 <span>'+s.close.toFixed(1)+'</span></span>':'')
-        +(s.avg!==null?'<span class="card-avg">均價 <span>'+s.avg.toFixed(1)+'</span></span>':'')
-        +(s.rs!==null?'<span class="card-avg">RS% <span>'+s.rs.toFixed(1)+'</span></span>':'')
         +'<a class="card-cnyes" style="margin-left:auto" href="https://www.cmoney.tw/forum/stock/'+s.code+'" target="_blank" onclick="event.stopPropagation()">CM</a>'
         +(function(){var p=s.volume!==null?s.volume:'';var pc=s.pct!==null?(s.pct>0?'+':'')+s.pct.toFixed(2)+'%':'';var eps=s.eps!==null?s.eps.toFixed(2):'--';var rs=s.rs!==null?s.rs.toFixed(1):'--';var txt=s.code+' '+s.name+' '+p+'('+pc+') RS'+rs+' EPS'+eps;var url='https://social-plugins.line.me/lineit/share?url='+encodeURIComponent('https://www.cmoney.tw/forum/stock/'+s.code)+'&text='+encodeURIComponent(txt);return '<a class="card-line" href="'+url+'" target="_blank" onclick="event.stopPropagation()">LINE</a>';})()
+      +'</div>'
+      +'<div class="card-price" style="margin-bottom:6px">'
+        +(s.close!==null?'<span class="card-avg">昨收 <span>'+s.close.toFixed(1)+'</span></span>':'')
+        +(s.avg!==null?'<span class="card-avg">均價 <span>'+s.avg.toFixed(1)+'</span></span>':'')
+        +(s.turnval!==null?'<span class="card-avg">成交值 <span>'+s.turnval.toFixed(1)+'億</span></span>':'')
       +'</div>'
       +'<div class="card-grid">'
 
@@ -1352,7 +1353,7 @@ function render(){
         +'<div class="cg-item"><div class="cg-lbl">股本(億)</div><div class="cg-val">'+(s.capital!==null?s.capital.toFixed(1):'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">融資%</div><div class="cg-val '+mc+'">'+(s.margin!==null?s.margin.toFixed(1):'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">換手率</div><div class="cg-val">'+(s.turnover!==null?s.turnover.toFixed(2)+'%':'--')+'</div></div>'
-        +'<div class="cg-item"><div class="cg-lbl">成交值(億)</div><div class="cg-val">'+(s.turnval!==null?s.turnval.toFixed(1):'--')+'</div></div>'
+        +'<div class="cg-item"><div class="cg-lbl">RS%</div><div class="cg-val">'+(s.rs!==null?s.rs.toFixed(1):'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">外大單%</div><div class="cg-val">'+(s.bigbuy!==null&&s.bigbuy!==undefined?s.bigbuy.toFixed(1)+'%':'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">毛利率</div><div class="cg-val '+gmc+'">'+(s.grossmargin!==null?s.grossmargin.toFixed(1)+'%':'--')+'</div></div>'
         +(function(){var rg=s.revgrowth;var rgc=rg!==null?(rg>0?'up':rg<0?'dn':''):'';return '<div class="cg-item"><div class="cg-lbl">營收增%</div><div class="cg-val '+rgc+'">'+(rg!==null?((rg>0?'+':'')+rg.toFixed(1)+'%'):'--')+'</div></div>';})()
