@@ -83,7 +83,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
   .card-price .card-close{flex-shrink:0}
   .card-avg{font-size:11px}
 }
-.card{background:#0d1117;border:1px solid #30363d;border-radius:10px;padding:14px 16px;cursor:pointer;transition:border-color .15s}
+.card{background:#0d1117;border:1px solid #30363d;border-radius:10px;padding:14px 16px;cursor:pointer;transition:border-color .15s;overflow-x:hidden;max-width:100%;box-sizing:border-box}
 .card.capturing{outline:2px solid #58a6ff}
 .card-cam{background:none;border:none;font-size:16px;cursor:pointer;padding:0;line-height:1;opacity:0.5;display:block;margin-left:auto;margin-bottom:2px}
 .card-cam:hover,.card-cam:active{opacity:1}
@@ -130,7 +130,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 
 /* Card stats grid */
 .card-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:5px;margin-bottom:8px}
-.cg-item{background:#161b22;border-radius:6px;padding:5px 8px;display:flex;flex-direction:column;justify-content:space-between;min-height:44px}
+.cg-item{background:#161b22;border-radius:6px;padding:5px 8px;display:flex;flex-direction:column;justify-content:space-between;min-height:44px;min-width:0;overflow:hidden}
 .cg-lbl{font-size:11px;color:#8b949e;text-align:left}
 .cg-val{font-size:15px;font-weight:600;color:#e6edf3;line-height:1.2;text-align:right}
 .cg-val.up{color:#f85149}
@@ -142,7 +142,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 
 /* Card tags */
 .card-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
-.ctag{background:#21262d;border-radius:4px;padding:3px 8px;font-size:12px;color:#8b949e;text-align:center;white-space:nowrap}
+.ctag{background:#21262d;border-radius:4px;padding:3px 8px;font-size:12px;color:#8b949e;text-align:center;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;box-sizing:border-box}
 .ctag.hi{background:#1f6feb22;color:#58a6ff}
 
 /* Card position */
@@ -1329,7 +1329,7 @@ function render(){
           +(s.position?'<div class="card-pos">'+s.position+'</div>':'')
           +(s.news?'<div class="card-news">📰 '+s.news+'</div>':'')
         +'</div>'
-        +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;max-width:45%">'
+        +'<div style="display:flex;flex-direction:column;align-items:flex-end;flex-wrap:wrap;gap:3px;flex-shrink:1;min-width:0;max-width:45%">'
           +'<button class="card-cam" onclick="event.stopPropagation();cardScreenshot(event,this.closest(\'.card\'))">📷</button>'
           +(showTags.length?showTags.map(function(t){
             var h=hiTags.indexOf(t)>=0;
