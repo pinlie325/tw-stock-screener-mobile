@@ -1422,10 +1422,12 @@ function cardScreenshot(e, el) {
   var statsRow = document.querySelector('.cbar');
   var tagRow = document.getElementById('fbar-tags-wrap');
   var floatBtn = document.getElementById('float-top');
+  var adminBtn = document.getElementById('admin-btn');
+  var logoutBtn = document.getElementById('logout-btn');
   var otherCards = document.querySelectorAll('.card');
 
   var hidden = [];
-  [hdr, fbar, sbar, statsRow, tagRow, floatBtn].forEach(function(el2) {
+  [hdr, fbar, sbar, statsRow, tagRow, floatBtn, adminBtn, logoutBtn].forEach(function(el2) {
     if (el2) { hidden.push({el:el2, disp:el2.style.display}); el2.style.display='none'; }
   });
   otherCards.forEach(function(c) {
@@ -1435,6 +1437,11 @@ function cardScreenshot(e, el) {
   // body padding 清零讓卡片貼頂
   var savedPadding = document.body.style.paddingTop;
   document.body.style.paddingTop = '8px';
+
+  // 底部留白，避免下面的提示banner擋住卡片內容（例如K線圖的日期軸）
+  var cardsEl2 = document.querySelector('.cards');
+  var savedCardsPadBottom = cardsEl2 ? cardsEl2.style.paddingBottom : '';
+  if (cardsEl2) cardsEl2.style.paddingBottom = '70px';
 
   // 捲到最頂
   window.scrollTo(0, 0);
@@ -1447,6 +1454,7 @@ function cardScreenshot(e, el) {
     _screenshotModeOn = false;
     hidden.forEach(function(item) { item.el.style.display = item.disp; });
     document.body.style.paddingTop = savedPadding;
+    if (cardsEl2) cardsEl2.style.paddingBottom = savedCardsPadBottom;
     document.body.removeChild(tip);
     // 還原捲動位置
     setTimeout(function(){ window.scrollTo(0, savedScroll); adjustPadding(); }, 30);
