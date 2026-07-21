@@ -1381,13 +1381,8 @@ function render(){
           +'</div>'
           +'<div style="display:flex;align-items:center;gap:6px">'
             +'<div class="yf-intervals">'
-              
               +'<button class="yf-int on" data-iv="D" onclick="event.stopPropagation();yfSetRange(\''+s.code+'\',\'D\',this)">日</button>'
-            +'</div>'
-            +'<div class="yf-kbars">'
-              +'<button class="yf-kbar" onclick="event.stopPropagation();setKBars(30,this)">30</button>'
-              +'<button class="yf-kbar on" onclick="event.stopPropagation();setKBars(60,this)">60</button>'
-              +'<button class="yf-kbar" onclick="event.stopPropagation();setKBars(120,this)">120</button>'
+              +'<button class="yf-int" data-iv="W" onclick="event.stopPropagation();yfSetRange(\''+s.code+'\',\'W\',this)">週</button>'
             +'</div>'
             +'<span class="yf-close" onclick="event.stopPropagation();closeChart(\''+s.code+'\')">✕</span>'
           +'</div>'
@@ -1622,6 +1617,7 @@ function openChart(e, code, name){
   if(currentChart && currentChart!==code) closeChart(currentChart);
 
   currentChart=code;
+  currentInterval='D';
   wrap.classList.add('on');
   wrap.scrollIntoView({behavior:'smooth', block:'nearest'});
   tvLoad(code, 'D');
@@ -1664,10 +1660,16 @@ function closeChart(code){
   }
 }
 
+var currentInterval = 'D';
 function yfSetRange(code, interval, btn){
+  if(interval === '60'){
+    toast('⚠ 60分鐘圖尚未支援（資料來源限制），請改用日線或週線', '#d29922');
+    return;
+  }
   var wrap=document.getElementById('yf-'+code);
   if(wrap) wrap.querySelectorAll('.yf-int').forEach(function(b){b.classList.remove('on');});
   btn.classList.add('on');
+  currentInterval = interval;
   kOffset=0; // 重置偏移
   tvLoad(code, interval);
 }
@@ -1715,7 +1717,9 @@ function fetchKData(code, interval, cb){
   if(kCache[key]){ cb(kCache[key]); return; }
   // FinMind API
   var now = new Date();
-  var from = new Date(now); from.setMonth(from.getMonth()-6);
+  var from = new Date(now);
+  if(interval==='W') from.setFullYear(from.getFullYear()-2);
+  else from.setMonth(from.getMonth()-6);
   var fmt = function(d){ return d.toISOString().slice(0,10); };
   var url = 'https://api.finmindtrade.com/api/v4/data'
     +'?dataset=TaiwanStockPrice'
@@ -1775,14 +1779,17 @@ function drawKChart(canvas, data){
     ctx.fillStyle='#8b949e'; ctx.font='13px sans-serif'; ctx.textAlign='center';
     ctx.fillText('無法取得資料（請確認 API Key 及網路）', W/2, H/2); return;
   }
-  // 先對完整資料計算MA，再截切，確保任何kBars下MA都能畫齊
-  var ma13Full = calcMA(data, 13);
-  var ma60Full = calcMA(data, 60);
+  // 依目前選擇的頻率決定要畫哪幾條均線：
+  // 日線：SMA60、SMA20、SMA10、SMA5
+  // 週線：SMA20
+  var maPeriods;
+  if(currentInterval === 'W') maPeriods = [20];
+  else maPeriods = [60,20,10,5];
+  var maFulls = maPeriods.map(function(p){ return calcMA(data, p); });
   var end = kOffset>0 ? data.length-kOffset : data.length;
   var start = Math.max(0, end-kBars);
   var show = data.slice(start, end), n = show.length;
-  var ma13Show = ma13Full.slice(start, end);
-  var ma60Show = ma60Full.slice(start, end);
+  var maShows = maFulls.map(function(f){ return f.slice(start, end); });
   var PAD = {t:22, b:18, l:60, r:8};
   var volH = Math.floor((H-PAD.t-PAD.b)*0.20);
   var kH = H-PAD.t-PAD.b-volH-6;
@@ -1859,7 +1866,10 @@ function drawKChart(canvas, data){
     ctx.fillRect(x-barW/2, vTop+volH-2-vh, barW, vh);
   });
   // MA線
-  var mas = [[ma13Show,'#00bcd4','MA13'],[ma60Show,'#f0c040','MA60']];
+  var maColors = {5:'#e91e63',10:'#ab47bc',20:'#00bcd4',60:'#f0c040'};
+  var mas = maPeriods.map(function(p,idx){
+    return [maShows[idx], maColors[p]||'#00bcd4', 'MA'+p];
+  });
   mas.forEach(function(m){
     ctx.strokeStyle=m[1]; ctx.lineWidth=1.5; ctx.beginPath();
     var s=false;
@@ -1875,7 +1885,7 @@ function drawKChart(canvas, data){
     var last=m[0].filter(function(v){return v!==null;}).slice(-1)[0];
     if(!last) return;
     ctx.fillStyle=m[1]; ctx.font='bold 9px sans-serif'; ctx.textAlign='left';
-    ctx.fillText(m[2]+' '+last.toFixed(last<10?2:1), lx, PAD.t-6); lx+=62;
+    ctx.fillText(m[2]+' '+last.toFixed(last<10?2:1), lx, PAD.t-6); lx+=54;
   });
   // X軸日期（底部 PAD.b 區域內）
   ctx.fillStyle='#8b949e'; ctx.font='9px sans-serif'; ctx.textAlign='center';
