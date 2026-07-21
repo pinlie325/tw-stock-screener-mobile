@@ -867,10 +867,22 @@ function adminRemoveUser(email){
     <button onclick="location.reload()" style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
       🔄 重新整理網頁
     </button>
-    <button onclick="showAddToHome()" style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:15px;padding:12px;cursor:pointer;text-align:left">
+    <button onclick="showAddToHome()" style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
       📲 加入主畫面（iOS）
     </button>
+    <button onclick="openMarginReport()" style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:15px;padding:12px;cursor:pointer;text-align:left">
+      📊 各族群融資維持率報表
+    </button>
   </div>
+</div>
+
+<!-- MARGIN REPORT MODAL -->
+<div id="margin-report-modal" style="display:none;position:fixed;inset:0;background:#0d1117;z-index:9999;flex-direction:column">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #30363d;background:#161b22;flex-shrink:0">
+    <span style="font-size:16px;font-weight:700;color:#e6edf3">📊 各族群融資維持率</span>
+    <button onclick="document.getElementById('margin-report-modal').style.display='none'" style="background:none;border:none;color:#8b949e;font-size:22px;cursor:pointer">✕</button>
+  </div>
+  <div id="margin-report-body" style="flex:1;overflow-y:auto;padding:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;align-content:start"></div>
 </div>
 
 <!-- ADD TO HOME GUIDE -->
@@ -2949,6 +2961,48 @@ function showHelpModal(){
 
 function openSettings(){
   document.getElementById('settings-modal').style.display = 'flex';
+}
+
+// 融資維持率報表：用現有的細產業標籤分組，色階跟XQ的報表邏輯類似
+function marginColor(pct){
+  if(pct===null||pct===undefined) return {bg:'#21262d',fg:'#8b949e'};
+  if(pct>=150) return {bg:'#f8514933',fg:'#f85149'};
+  if(pct>=120) return {bg:'#d2992233',fg:'#d29922'};
+  return {bg:'#3fb95033',fg:'#3fb950'};
+}
+function openMarginReport(){
+  document.getElementById('settings-modal').style.display = 'none';
+  var groups = {};
+  D.forEach(function(s){
+    if(s.margin===null || s.margin===undefined) return;
+    var tags = (s.tags && s.tags.length) ? s.tags : ['未分類'];
+    tags.forEach(function(t){
+      if(!groups[t]) groups[t] = [];
+      groups[t].push(s);
+    });
+  });
+  var groupNames = Object.keys(groups).sort(function(a,b){ return groups[b].length - groups[a].length; });
+  var body = document.getElementById('margin-report-body');
+  if(!groupNames.length){
+    body.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#8b949e;padding:40px;">目前沒有融資維持率資料，請先載入選股Excel</div>';
+  } else {
+    body.innerHTML = groupNames.map(function(name){
+      var rows = groups[name].slice().sort(function(a,b){ return (b.margin||0)-(a.margin||0); });
+      var rowsHtml = rows.map(function(s){
+        var c = marginColor(s.margin);
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;border-radius:4px;background:'+c.bg+';margin-bottom:3px;font-size:12px;">'
+          +'<span style="color:#8b949e;font-family:monospace;">'+s.code+'</span>'
+          +'<span style="color:#e6edf3;flex:1;margin:0 6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+s.name+'</span>'
+          +'<span style="color:'+c.fg+';font-weight:700;">'+s.margin.toFixed(1)+'%</span>'
+        +'</div>';
+      }).join('');
+      return '<div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:10px;">'
+        +'<div style="font-size:13px;font-weight:700;color:#58a6ff;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #30363d;">'+name+'（'+rows.length+'）</div>'
+        +rowsHtml
+      +'</div>';
+    }).join('');
+  }
+  document.getElementById('margin-report-modal').style.display = 'flex';
 }
 
 function showAddToHome(){
