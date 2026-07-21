@@ -846,8 +846,8 @@ function adminRemoveUser(email){
       <p style="margin:0 0 12px">點擊卡片：展開 K 線圖<br>K 線圖左右滑動：查看歷史走勢<br>📷 圖示：截圖模式<br>CM / LINE：跳轉外部連結</p>
       <p style="color:#f0c040;font-weight:700;margin:0 0 6px">📈 技術型態（點開K線後顯示）</p>
       <p style="margin:0 0 12px">
-        <span style="color:#f85149">多頭趨勢 / 突破MA60 / 三連紅 / 長紅K / 價量齊揚</span><br>
-        <span style="color:#3fb950">空頭趨勢 / 跌破MA60 / 三連黑 / 長黑K</span><br>
+        <span style="color:#f85149">趨勢偏多 / 突破MA60 / 三連紅 / 長紅K / 價量齊揚</span><br>
+        <span style="color:#3fb950">趨勢偏空 / 跌破MA60 / 三連黑 / 長黑K</span><br>
         <span style="color:#8b949e">均線糾結 / 量縮回測</span><br>
         <span style="color:#ffd700">進場訊號：站上MA60+MA13，RSI>50向上，MA60向上，量能放大</span>
       </p>
@@ -2086,11 +2086,11 @@ function analyzePattern(data){
   if(score>=5){
     tags.push({cls:'cpat-bull',txt:'強勢多頭'});
   } else if(score>=3 && score>bscore){
-    tags.push({cls:'cpat-bull',txt:'多頭趨勢'});
+    tags.push({cls:'cpat-bull',txt:'趨勢偏多'});
   } else if(bscore>=5){
     tags.push({cls:'cpat-bear',txt:'強勢空頭'});
   } else if(bscore>=3 && bscore>score){
-    tags.push({cls:'cpat-bear',txt:'空頭趨勢'});
+    tags.push({cls:'cpat-bear',txt:'趨勢偏空'});
   }
 
   // ── 細部型態 ──
@@ -2713,7 +2713,8 @@ function showCompactList(){
   data.forEach(function(s){
     var pct = s.pct!==null?(s.pct>0?'+':'')+s.pct.toFixed(2)+'%':'--';
     var pc = s.pct>0?'#f85149':s.pct<0?'#3fb950':'#8b949e';
-    var itags = s.tags ? s.tags.slice(0,2).map(function(t){
+    var stags = strategyMap[s.code] || strategyMap[String(parseInt(s.code))] || [];
+    var itags = stags.length ? stags.slice(0,2).map(function(t){
       return '<span style="background:#21262d;color:#8b949e;border-radius:3px;font-size:10px;padding:1px 5px">'+t+'</span>';
     }).join('') : '';
     var price = s.volume!==null?s.volume:'--';
@@ -2790,9 +2791,12 @@ function showCompactList(){
         var pct = s.pct!==null?(s.pct>0?'+':'')+s.pct.toFixed(2)+'%':'--';
         var pc = s.pct>0?'#f85149':s.pct<0?'#3fb950':'#8b949e';
         var price = s.volume!==null?s.volume:'--';
-        var itags = s.tags ? s.tags.slice(0,2).map(function(t){
-          return '<span style="background:#21262d;color:#8b949e;border-radius:3px;font-size:10px;padding:1px 5px">'+t+'</span>';
-        }).join('') : '';
+        var itags = (function(){
+          var stags = strategyMap[s.code] || strategyMap[String(parseInt(s.code))] || [];
+          return stags.length ? stags.slice(0,2).map(function(t){
+            return '<span style="background:#21262d;color:#8b949e;border-radius:3px;font-size:10px;padding:1px 5px">'+t+'</span>';
+          }).join('') : '';
+        })();
         newList += '<div class="citem2" data-code="'+s.code+'" style="display:flex;align-items:center;gap:8px;padding:7px 16px;border-bottom:1px solid #21262d;cursor:pointer">'
           +'<span style="color:#58a6ff;font-weight:700;font-size:13px;min-width:42px">'+s.code+'</span>'
           +'<span style="color:#e6edf3;font-size:13px;min-width:55px">'+s.name+'</span>'
