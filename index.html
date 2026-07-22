@@ -884,8 +884,10 @@ function adminRemoveUser(email){
     <button onclick="document.getElementById('margin-report-modal').style.display='none'" style="background:none;border:none;color:#8b949e;font-size:22px;cursor:pointer">✕</button>
   </div>
   <div id="margin-report-nav" style="display:flex;gap:6px;padding:8px 12px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:#161b22;border-bottom:1px solid #30363d;flex-shrink:0;cursor:grab"></div>
-  <div id="margin-report-body" style="flex:1;overflow-y:auto;padding:12px 12px calc(90px + env(safe-area-inset-bottom)) 12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;align-content:start"></div>
-  <button id="mgroup-float-collapse" onclick="showAllMarginGroups()" style="display:none;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom));background:#f85149;border:none;border-radius:28px;color:#fff;font-size:18px;font-weight:700;padding:16px 34px;min-height:52px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,0.5);z-index:10000;">✕ 收起</button>
+  <div id="margin-report-body" style="flex:1;overflow-y:auto;padding:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;align-content:start"></div>
+  <div id="mgroup-collapse-bar" style="display:none;flex-shrink:0;padding:10px 12px calc(10px + env(safe-area-inset-bottom)) 12px;background:#161b22;border-top:1px solid #30363d;">
+    <button id="mgroup-float-collapse" onclick="showAllMarginGroups()" style="width:100%;background:#f8514922;border:1px solid #f85149;border-radius:10px;color:#f85149;font-size:15px;font-weight:700;padding:12px;min-height:44px;cursor:pointer;">✕ 收起</button>
+  </div>
 </div>
 
 <!-- ADD TO HOME GUIDE -->
@@ -3059,8 +3061,8 @@ function focusMarginGroup(gi){
       if(toggleBtn) toggleBtn.style.display = 'none';
     }
   });
-  var floatBtn = document.getElementById('mgroup-float-collapse');
-  if(floatBtn) floatBtn.style.display = 'block';
+  var collapseBar = document.getElementById('mgroup-collapse-bar');
+  if(collapseBar) collapseBar.style.display = 'block';
   document.querySelectorAll('[id^="mgroup-nav-"]').forEach(function(btn){
     var active = btn.id === 'mgroup-nav-'+gi;
     btn.style.background = active ? '#1f6feb22' : '#21262d';
@@ -3084,8 +3086,8 @@ function showAllMarginGroups(){
   document.querySelectorAll('[id$="-toggle"]').forEach(function(el){
     if(el.id.indexOf('mgroup-') === 0) el.style.display = '';
   });
-  var floatBtn = document.getElementById('mgroup-float-collapse');
-  if(floatBtn) floatBtn.style.display = 'none';
+  var collapseBar = document.getElementById('mgroup-collapse-bar');
+  if(collapseBar) collapseBar.style.display = 'none';
   document.querySelectorAll('[id^="mgroup-nav-"]').forEach(function(btn){
     btn.style.background = '#21262d'; btn.style.borderColor = '#30363d'; btn.style.color = '#8b949e';
   });
