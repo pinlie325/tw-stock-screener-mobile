@@ -59,7 +59,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .btn-top:active{background:#21262d;color:#e6edf3}
 
 /* ── SORT BAR ── */
-.sbar{padding:7px 12px;display:flex;flex-wrap:nowrap;gap:5px;background:#0d1117;border-bottom:1px solid #21262d;position:fixed;top:95px;left:0;right:0;z-index:98;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.sbar{padding:7px 12px;display:flex;flex-wrap:nowrap;gap:5px;background:#0d1117;border-bottom:1px solid #21262d;position:fixed;top:95px;left:0;right:0;z-index:98;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;cursor:grab}
 .sbar::-webkit-scrollbar{display:none}
 .sbar .sbtn{flex-shrink:0}
 .sbtn{background:#21262d;border:1px solid #30363d;border-radius:16px;padding:5px 12px;font-size:12px;color:#8b949e;cursor:pointer;white-space:nowrap}
@@ -83,15 +83,16 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
   .card-price .card-close{flex-shrink:0}
   .card-avg{font-size:11px}
 }
-.card{background:#0d1117;border:1px solid #30363d;border-radius:10px;padding:14px 16px;cursor:pointer;transition:border-color .15s;overflow-x:hidden;max-width:100%;box-sizing:border-box}
+.card{background:#0d1117;border:1px solid #30363d;border-radius:10px;padding:14px 16px;cursor:pointer;transition:border-color .15s;overflow-x:hidden;max-width:100%;box-sizing:border-box;position:relative}
 .card.capturing{outline:2px solid #58a6ff}
-.card-cam{background:none;border:none;font-size:16px;cursor:pointer;padding:0;line-height:1;opacity:0.5;display:block;margin-left:auto;margin-bottom:2px}
+.card-cam{background:none;border:none;font-size:14px;cursor:pointer;padding:0;line-height:1;opacity:0.5}
 .card-cam:hover,.card-cam:active{opacity:1}
 .card-note-bar{background:#30363d;color:#e040fb;font-size:12px;padding:4px 8px;border-radius:4px;margin-bottom:6px;line-height:1.4}
-.card-tags-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;}
-.card-group-bar{background:#30363d;color:#d29922;font-size:12px;padding:4px 8px;border-radius:4px;line-height:1.4}
+.card-tags-row{display:flex;flex-wrap:nowrap;gap:6px;margin-bottom:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;cursor:grab}
+.card-tags-row::-webkit-scrollbar{display:none}
+.card-group-bar{background:#30363d;color:#d29922;font-size:12px;padding:4px 8px;border-radius:4px;line-height:1.4;flex-shrink:0}
 .card-group-bar span{cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
-.card-concept-bar{background:#30363d;color:#39c5cf;font-size:12px;padding:4px 8px;border-radius:4px;line-height:1.4}
+.card-concept-bar{background:#30363d;color:#39c5cf;font-size:12px;padding:4px 8px;border-radius:4px;line-height:1.4;flex-shrink:0}
 .card-concept-bar span{cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
 .card-strategy-bar{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
 .stag{background:#1a2a3a;color:#58a6ff;border:1px solid #1f6feb55;border-radius:4px;font-size:11px;padding:2px 6px;white-space:nowrap}
@@ -1332,17 +1333,16 @@ function render(){
     return '<div class="card" data-code="'+s.code+'" data-pct="'+(s.pct!==null?s.pct:'')+'" data-volume="'+(s.volume!==null?s.volume:'')+'" oncontextmenu="cardScreenshot(event,this)" ontouchstart="startLongPress(event,this)" ontouchend="cancelLongPress()" ontouchmove="cancelLongPress()" onclick="openChart(event,\''+s.code+'\',\''+s.name.replace(/'/g,"\\'")+'\')">'
       +'<div class="card-hd">'
         +'<div class="card-left">'
-          +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">'
+          +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;flex-wrap:wrap">'
               +'<span class="card-code">'+s.code+'</span>'
               +(function(){var e=getExchLabel(s.code);return '<span class="card-exch '+e.cls+'">'+e.txt+'</span>';})()
+              +'<span class="card-name">'+s.name+'</span>'
+              +'<button class="card-cam" onclick="event.stopPropagation();cardScreenshot(event,this.closest(\'.card\'))">📷</button>'
             +'</div>'
-            +'<span class="card-name">'+s.name+'</span>'
           +'<div class="card-pattern" id="pattern-'+s.code+'"></div>'
           +(s.position?'<div class="card-pos">'+s.position+'</div>':'')
-          +(s.news?'<div class="card-news">📰 '+s.news+'</div>':'')
         +'</div>'
-        +'<div style="display:flex;flex-direction:column;align-items:flex-end;flex-wrap:wrap;gap:3px;flex-shrink:1;min-width:0;max-width:45%">'
-          +'<button class="card-cam" onclick="event.stopPropagation();cardScreenshot(event,this.closest(\'.card\'))">📷</button>'
+        +'<div class="card-industry-tags" style="display:grid;grid-template-columns:repeat(2,auto);justify-content:end;gap:3px;flex-shrink:0;max-width:55%">'
           +(showTags.length?showTags.map(function(t){
             var h=hiTags.indexOf(t)>=0;
             return '<span class="ctag'+(h?' hi':'')+'" onclick="event.stopPropagation();tapTag(\''+t.replace(/'/g,"\\'")+'\')" data-t="'+t.replace(/"/g,'&quot;')+'">'+t+'</span>';
@@ -1351,6 +1351,7 @@ function render(){
       +'</div>'
       +'<div class="card-price" style="margin-bottom:2px">'
         +'<span class="card-close" style="color:'+(s.volume!==null&&s.close!==null?(s.volume>s.close?'#f85149':s.volume<s.close?'#3fb950':'#e6edf3'):'#e6edf3')+'">'+(s.volume!==null?s.volume.toLocaleString():'--')+'</span>'
+        +(s.news?'<span class="card-news" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0">📰 '+s.news+'</span>':'')
         +'<a class="card-cnyes" style="margin-left:auto" href="https://www.cmoney.tw/forum/stock/'+s.code+'" target="_blank" onclick="event.stopPropagation()">CM</a>'
         +(function(){var p=s.volume!==null?s.volume:'';var pc=s.pct!==null?(s.pct>0?'+':'')+s.pct.toFixed(2)+'%':'';var eps=s.eps!==null?s.eps.toFixed(2):'--';var rs=s.rs!==null?s.rs.toFixed(1):'--';var txt=s.code+' '+s.name+' '+p+'('+pc+') RS'+rs+' EPS'+eps;var url='https://social-plugins.line.me/lineit/share?url='+encodeURIComponent('https://www.cmoney.tw/forum/stock/'+s.code)+'&text='+encodeURIComponent(txt);return '<a class="card-line" href="'+url+'" target="_blank" onclick="event.stopPropagation()">LINE</a>';})()
       +'</div>'
@@ -2424,21 +2425,35 @@ function insertCardBar(card, el, className){
   card.insertBefore(el, card.firstChild);
 }
 
+function getOrCreateStrategyBar(card){
+  var bar = card.querySelector('.card-strategy-bar');
+  if(!bar){
+    bar = document.createElement('div');
+    bar.className = 'card-strategy-bar';
+    insertCardBar(card, bar, 'card-strategy-bar');
+  }
+  return bar;
+}
+
 function applyStrategies(){
   document.querySelectorAll('.card').forEach(function(card){
     var code = String(card.getAttribute('data-code')||'').trim();
     if(!code) return;
     var tags = strategyMap[code] || strategyMap[String(parseInt(code))] || [];
-    var existing = card.querySelector('.card-strategy-bar');
-    if(existing) existing.remove();
+    // 只移除舊的策略標籤（.stag），不動集團徽章（.card-group-badge）
+    card.querySelectorAll('.card-strategy-bar > .stag:not(.card-group-badge)').forEach(function(el){ el.remove(); });
     if(tags && tags.length){
-      var bar = document.createElement('div');
-      bar.className = 'card-strategy-bar';
-      bar.innerHTML = tags.map(function(t){
-        return '<span class="stag">'+t+'</span>';
-      }).join('');
-      insertCardBar(card, bar, 'card-strategy-bar');
+      var bar = getOrCreateStrategyBar(card);
+      tags.forEach(function(t){
+        var span = document.createElement('span');
+        span.className = 'stag';
+        span.textContent = t;
+        bar.appendChild(span);
+      });
     }
+    // 如果策略列已經空了（沒有策略標籤也沒有集團徽章），順手清掉空列
+    var emptyBar = card.querySelector('.card-strategy-bar');
+    if(emptyBar && !emptyBar.children.length) emptyBar.remove();
   });
 }
 
@@ -2568,17 +2583,18 @@ function applyGroups(){
     if(!codeEl)return;
     var code=codeEl.textContent.trim();
     var groups=groupMap[code];
-    var existing=card.querySelector('.card-group-bar');
-    if(existing){var pr=existing.parentNode;existing.remove();if(pr&&pr.classList.contains('card-tags-row')&&!pr.children.length)pr.remove();}
+    var existing=card.querySelector('.card-group-badge');
+    if(existing) existing.remove();
     if(groups && groups.length){
-      var bar=document.createElement('div');
-      bar.className='card-group-bar';
-      bar.innerHTML='🏢 '+groups.map(function(g){
+      var badge=document.createElement('span');
+      badge.className='stag card-group-badge';
+      badge.style.cssText='background:#3a2f1a;color:#d29922;border-color:#d2992255;';
+      badge.innerHTML='🏢 '+groups.map(function(g){
         var safe=g.replace(/'/g,"\\'").replace(/"/g,'&quot;');
         return '<span onclick="event.stopPropagation();filterByGroup(\''+safe+'\')">'+g+'</span>';
       }).join('　');
-      var row=getOrCreateTagsRow(card);
-      row.insertBefore(bar, row.firstChild); // 集團永遠排在最前面
+      var bar=getOrCreateStrategyBar(card);
+      bar.insertBefore(badge, bar.firstChild); // 集團永遠排在策略標籤最前面
     }
   });
 }
@@ -3039,6 +3055,56 @@ function adjustPadding(){
       sbar.style.transform = 'translateY(-100%)';
     }
   });
+})();
+
+// 電腦滑鼠拖曳橫向捲動（手機本來就能用手指滑，這裡補上滑鼠版本）
+(function(){
+  function enableDragScroll(el){
+    if(!el) return;
+    var isDown = false, startX = 0, scrollLeftStart = 0, moved = false;
+    el.addEventListener('mousedown', function(e){
+      isDown = true; moved = false;
+      startX = e.pageX;
+      scrollLeftStart = el.scrollLeft;
+      el.style.cursor = 'grabbing';
+    });
+    window.addEventListener('mouseup', function(){
+      isDown = false;
+      el.style.cursor = '';
+    });
+    window.addEventListener('mousemove', function(e){
+      if(!isDown) return;
+      var dx = e.pageX - startX;
+      if(Math.abs(dx) > 3) moved = true;
+      el.scrollLeft = scrollLeftStart - dx;
+    });
+    // 拖曳過程中如果有明顯移動，攔截接下來的click，避免誤觸按鈕
+    el.addEventListener('click', function(e){
+      if(moved){ e.stopPropagation(); e.preventDefault(); moved = false; }
+    }, true);
+  }
+  enableDragScroll(document.getElementById('sbar'));
+
+  // 卡片標籤列（集團/概念股）是動態產生的，用事件委派統一處理拖曳捲動
+  (function(){
+    var dragEl = null, startX = 0, scrollLeftStart = 0, moved = false;
+    document.addEventListener('mousedown', function(e){
+      var row = e.target.closest && e.target.closest('.card-tags-row');
+      if(!row) return;
+      dragEl = row; startX = e.pageX; scrollLeftStart = row.scrollLeft; moved = false;
+    });
+    document.addEventListener('mousemove', function(e){
+      if(!dragEl) return;
+      var dx = e.pageX - startX;
+      if(Math.abs(dx) > 3) moved = true;
+      dragEl.scrollLeft = scrollLeftStart - dx;
+    });
+    document.addEventListener('mouseup', function(){ dragEl = null; });
+    document.addEventListener('click', function(e){
+      var row = e.target.closest && e.target.closest('.card-tags-row');
+      if(row && moved){ e.stopPropagation(); e.preventDefault(); moved = false; }
+    }, true);
+  })();
 })();
 
 // 頁面載入時自動載入備註、策略標籤、集團、概念股與最新選股資料
