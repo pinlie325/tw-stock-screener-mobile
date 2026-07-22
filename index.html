@@ -883,7 +883,9 @@ function adminRemoveUser(email){
     <span style="font-size:16px;font-weight:700;color:#e6edf3">📊 各族群融資維持率</span>
     <button onclick="document.getElementById('margin-report-modal').style.display='none'" style="background:none;border:none;color:#8b949e;font-size:22px;cursor:pointer">✕</button>
   </div>
+  <div id="margin-report-nav" style="display:flex;gap:6px;padding:8px 12px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:#161b22;border-bottom:1px solid #30363d;flex-shrink:0;cursor:grab"></div>
   <div id="margin-report-body" style="flex:1;overflow-y:auto;padding:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;align-content:start"></div>
+  <button id="mgroup-float-collapse" onclick="showAllMarginGroups()" style="display:none;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom));background:#f85149;border:none;border-radius:28px;color:#fff;font-size:18px;font-weight:700;padding:16px 34px;min-height:52px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,0.5);z-index:10000;">✕ 收起</button>
 </div>
 
 <!-- ADD TO HOME GUIDE -->
@@ -3006,24 +3008,91 @@ function openMarginReport(){
   var body = document.getElementById('margin-report-body');
   if(!groupNames.length){
     body.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#8b949e;padding:40px;">目前沒有融資維持率資料，請先載入選股Excel</div>';
+    document.getElementById('margin-report-nav').innerHTML = '';
   } else {
-    body.innerHTML = groupNames.map(function(name){
+    body.innerHTML = groupNames.map(function(name, gi){
       var rows = groups[name].slice().sort(function(a,b){ return (b.margin||0)-(a.margin||0); });
-      var rowsHtml = rows.map(function(s){
+      var LIMIT = 10;
+      var hasMore = rows.length > LIMIT;
+      var visibleRows = rows.slice(0, LIMIT);
+      var hiddenRows = rows.slice(LIMIT);
+      function rowHtml(s){
         var c = marginColor(s.margin);
-        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;border-radius:4px;background:'+c.bg+';margin-bottom:3px;font-size:12px;">'
-          +'<span style="color:#8b949e;font-family:monospace;">'+s.code+'</span>'
-          +'<span style="color:#e6edf3;flex:1;margin:0 6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+s.name+'</span>'
-          +'<span style="color:'+c.fg+';font-weight:700;">'+s.margin.toFixed(1)+'%</span>'
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 6px;border-radius:4px;background:'+c.bg+';font-size:11px;min-width:0;">'
+          +'<span style="color:#8b949e;font-family:monospace;flex-shrink:0;">'+s.code+'</span>'
+          +'<span style="color:#e6edf3;flex:1;margin:0 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+s.name+'</span>'
+          +'<span style="color:'+c.fg+';font-weight:700;flex-shrink:0;">'+s.margin.toFixed(1)+'%</span>'
         +'</div>';
-      }).join('');
-      return '<div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:10px;">'
+      }
+      var visibleHtml = visibleRows.map(rowHtml).join('');
+      var hiddenHtml = hiddenRows.map(rowHtml).join('');
+      var groupId = 'mgroup-'+gi;
+      return '<div id="'+groupId+'-section" class="mgroup-card" style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:10px;">'
         +'<div style="font-size:13px;font-weight:700;color:#58a6ff;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #30363d;">'+name+'（'+rows.length+'）</div>'
-        +rowsHtml
+        +'<div class="mgroup-rows" style="display:grid;grid-template-columns:1fr;gap:3px;">'+visibleHtml+'</div>'
+        +(hasMore?'<div id="'+groupId+'-more" style="display:none;margin-top:4px;">'
+            +'<div class="mgroup-rows" style="display:grid;grid-template-columns:1fr;gap:3px;">'+hiddenHtml+'</div>'
+          +'</div>':'')
+        +(hasMore?'<button id="'+groupId+'-toggle" onclick="focusMarginGroup('+gi+')" style="width:100%;background:none;border:1px solid #30363d;border-radius:4px;color:#58a6ff;font-size:11px;padding:5px;margin-top:4px;cursor:pointer;">顯示全部（還有'+hiddenRows.length+'檔）</button>':'')
       +'</div>';
+    }).join('');
+    // 上方快速導覽列：點群組名稱只顯示該族群（滿版），其他先隱藏；再點一次恢復顯示全部
+    var navEl = document.getElementById('margin-report-nav');
+    navEl.innerHTML = '<button id="mgroup-nav-all" onclick="showAllMarginGroups()" style="flex-shrink:0;background:#1f6feb22;border:1px solid #58a6ff;border-radius:14px;color:#58a6ff;font-size:12px;padding:5px 12px;cursor:pointer;white-space:nowrap;">全部</button>'
+      + groupNames.map(function(name, gi){
+      return '<button id="mgroup-nav-'+gi+'" onclick="focusMarginGroup('+gi+')" style="flex-shrink:0;background:#21262d;border:1px solid #30363d;border-radius:14px;color:#8b949e;font-size:12px;padding:5px 12px;cursor:pointer;white-space:nowrap;">'+name+'</button>';
     }).join('');
   }
   document.getElementById('margin-report-modal').style.display = 'flex';
+}
+
+// 只顯示點選的那個族群，滿版呈現，其他先隱藏
+function focusMarginGroup(gi){
+  document.querySelectorAll('.mgroup-card').forEach(function(el, idx){
+    var isTarget = el.id === 'mgroup-'+gi+'-section';
+    el.style.display = isTarget ? '' : 'none';
+    if(isTarget){
+      el.style.gridColumn = '1 / -1';
+      el.querySelectorAll('.mgroup-rows').forEach(function(r){ r.style.gridTemplateColumns = 'repeat(3,1fr)'; });
+      var moreDiv = document.getElementById('mgroup-'+gi+'-more');
+      var toggleBtn = document.getElementById('mgroup-'+gi+'-toggle');
+      if(moreDiv) moreDiv.style.display = 'block';
+      if(toggleBtn) toggleBtn.style.display = 'none';
+    }
+  });
+  var floatBtn = document.getElementById('mgroup-float-collapse');
+  if(floatBtn) floatBtn.style.display = 'block';
+  document.querySelectorAll('[id^="mgroup-nav-"]').forEach(function(btn){
+    var active = btn.id === 'mgroup-nav-'+gi;
+    btn.style.background = active ? '#1f6feb22' : '#21262d';
+    btn.style.borderColor = active ? '#58a6ff' : '#30363d';
+    btn.style.color = active ? '#58a6ff' : '#8b949e';
+  });
+  var allBtn = document.getElementById('mgroup-nav-all');
+  if(allBtn){ allBtn.style.background = '#21262d'; allBtn.style.borderColor = '#30363d'; allBtn.style.color = '#8b949e'; }
+  document.getElementById('margin-report-body').scrollTop = 0;
+}
+
+// 恢復顯示全部族群
+function showAllMarginGroups(){
+  document.querySelectorAll('.mgroup-card').forEach(function(el){
+    el.style.display = '';
+    el.style.gridColumn = '';
+    el.querySelectorAll('.mgroup-rows').forEach(function(r){ r.style.gridTemplateColumns = '1fr'; });
+  });
+  document.querySelectorAll('[id$="-more"]').forEach(function(el){
+    if(el.id.indexOf('mgroup-') === 0) el.style.display = 'none';
+  });
+  document.querySelectorAll('[id$="-toggle"]').forEach(function(el){
+    if(el.id.indexOf('mgroup-') === 0) el.style.display = '';
+  });
+  var floatBtn = document.getElementById('mgroup-float-collapse');
+  if(floatBtn) floatBtn.style.display = 'none';
+  document.querySelectorAll('[id^="mgroup-nav-"]').forEach(function(btn){
+    btn.style.background = '#21262d'; btn.style.borderColor = '#30363d'; btn.style.color = '#8b949e';
+  });
+  var allBtn = document.getElementById('mgroup-nav-all');
+  if(allBtn){ allBtn.style.background = '#1f6feb22'; allBtn.style.borderColor = '#58a6ff'; allBtn.style.color = '#58a6ff'; }
 }
 
 function showAddToHome(){
@@ -3084,6 +3153,7 @@ function adjustPadding(){
     }, true);
   }
   enableDragScroll(document.getElementById('sbar'));
+  enableDragScroll(document.getElementById('margin-report-nav'));
 
   // 卡片標籤列（集團/概念股）是動態產生的，用事件委派統一處理拖曳捲動
   (function(){
