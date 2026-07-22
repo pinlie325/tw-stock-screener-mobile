@@ -3029,9 +3029,9 @@ function openMarginReport(){
       var groupId = 'mgroup-'+gi;
       return '<div id="'+groupId+'-section" class="mgroup-card" style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:10px;">'
         +'<div style="font-size:13px;font-weight:700;color:#58a6ff;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #30363d;">'+name+'（'+rows.length+'）</div>'
-        +'<div class="mgroup-rows" style="display:grid;grid-template-columns:1fr;gap:3px;">'+visibleHtml+'</div>'
+        +'<div class="mgroup-rows" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:3px;">'+visibleHtml+'</div>'
         +(hasMore?'<div id="'+groupId+'-more" style="display:none;margin-top:4px;">'
-            +'<div class="mgroup-rows" style="display:grid;grid-template-columns:1fr;gap:3px;">'+hiddenHtml+'</div>'
+            +'<div class="mgroup-rows" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:3px;">'+hiddenHtml+'</div>'
           +'</div>':'')
         +(hasMore?'<button id="'+groupId+'-toggle" onclick="focusMarginGroup('+gi+')" style="width:100%;background:none;border:1px solid #30363d;border-radius:4px;color:#58a6ff;font-size:11px;padding:5px;margin-top:4px;cursor:pointer;">顯示全部（還有'+hiddenRows.length+'檔）</button>':'')
       +'</div>';
@@ -3053,7 +3053,6 @@ function focusMarginGroup(gi){
     el.style.display = isTarget ? '' : 'none';
     if(isTarget){
       el.style.gridColumn = '1 / -1';
-      el.querySelectorAll('.mgroup-rows').forEach(function(r){ r.style.gridTemplateColumns = 'repeat(3,1fr)'; });
       var moreDiv = document.getElementById('mgroup-'+gi+'-more');
       var toggleBtn = document.getElementById('mgroup-'+gi+'-toggle');
       if(moreDiv) moreDiv.style.display = 'block';
@@ -3078,7 +3077,6 @@ function showAllMarginGroups(){
   document.querySelectorAll('.mgroup-card').forEach(function(el){
     el.style.display = '';
     el.style.gridColumn = '';
-    el.querySelectorAll('.mgroup-rows').forEach(function(r){ r.style.gridTemplateColumns = '1fr'; });
   });
   document.querySelectorAll('[id$="-more"]').forEach(function(el){
     if(el.id.indexOf('mgroup-') === 0) el.style.display = 'none';
