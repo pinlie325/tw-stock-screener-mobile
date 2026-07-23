@@ -3484,10 +3484,17 @@ function valCalc(){
     }
 
     var upsideHighEl = document.getElementById('val-rr-upsideHigh');
+    var upsideHighLabelEl = document.getElementById('val-rr-upsideHigh-label');
     var upsideHighPct = null;
     if(yearHigh!==null){
       upsideHighPct = (yearHigh - buyPrice) / buyPrice * 100;
-      upsideHighEl.innerHTML = 'NT$ '+valFmt(yearHigh)+'（'+(upsideHighPct>=0?'+':'')+upsideHighPct.toFixed(1)+'%）';
+      if(upsideHighPct>=0){
+        upsideHighLabelEl.textContent = '上檔空間（到近一年高點）';
+        upsideHighEl.innerHTML = 'NT$ '+valFmt(yearHigh)+'（+'+upsideHighPct.toFixed(1)+'%）';
+      } else {
+        upsideHighLabelEl.textContent = '已超過近一年高點';
+        upsideHighEl.innerHTML = 'NT$ '+valFmt(yearHigh)+'（高出 '+Math.abs(upsideHighPct).toFixed(1)+'%）';
+      }
       upsideHighEl.style.color = upsideHighPct>=0 ? UP_COLOR : DN_COLOR;
     } else {
       upsideHighEl.textContent = '未填近一年最高價';
@@ -3495,8 +3502,15 @@ function valCalc(){
     }
 
     var upsideFairEl = document.getElementById('val-rr-upsideFair');
+    var upsideFairLabelEl = document.getElementById('val-rr-upsideFair-label');
     var upsideFairPct = (fairValue - buyPrice) / buyPrice * 100;
-    upsideFairEl.innerHTML = 'NT$ '+valFmt(fairValue)+'（'+(upsideFairPct>=0?'+':'')+upsideFairPct.toFixed(1)+'%）';
+    if(upsideFairPct>=0){
+      upsideFairLabelEl.textContent = '上檔空間（到折現合理價）';
+      upsideFairEl.innerHTML = 'NT$ '+valFmt(fairValue)+'（+'+upsideFairPct.toFixed(1)+'%）';
+    } else {
+      upsideFairLabelEl.textContent = '已超過折現合理價';
+      upsideFairEl.innerHTML = 'NT$ '+valFmt(fairValue)+'（高出 '+Math.abs(upsideFairPct).toFixed(1)+'%）';
+    }
     upsideFairEl.style.color = upsideFairPct>=0 ? UP_COLOR : DN_COLOR;
 
     var targetRow = document.getElementById('val-rr-target-row');
@@ -3504,7 +3518,14 @@ function valCalc(){
     if(target!==null && target>0){
       upsideTargetPct = (target - buyPrice) / buyPrice * 100;
       var upsideTargetEl = document.getElementById('val-rr-upsideTarget');
-      upsideTargetEl.innerHTML = 'NT$ '+valFmt(target)+'（'+(upsideTargetPct>=0?'+':'')+upsideTargetPct.toFixed(1)+'%）';
+      var upsideTargetLabelEl = document.getElementById('val-rr-upsideTarget-label');
+      if(upsideTargetPct>=0){
+        upsideTargetLabelEl.textContent = '上檔空間（到法人目標價）';
+        upsideTargetEl.innerHTML = 'NT$ '+valFmt(target)+'（+'+upsideTargetPct.toFixed(1)+'%）';
+      } else {
+        upsideTargetLabelEl.textContent = '已超過法人目標價';
+        upsideTargetEl.innerHTML = 'NT$ '+valFmt(target)+'（高出 '+Math.abs(upsideTargetPct).toFixed(1)+'%）';
+      }
       upsideTargetEl.style.color = upsideTargetPct>=0 ? UP_COLOR : DN_COLOR;
       targetRow.style.display = '';
     } else {
