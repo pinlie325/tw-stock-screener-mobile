@@ -907,7 +907,7 @@ function adminRemoveUser(email){
     <span id="val-title" style="font-size:18px;font-weight:700;color:#e6edf3">🎯 股價合理性評估</span>
     <button onclick="closeValuationTool()" style="background:none;border:none;color:#8b949e;font-size:28px;cursor:pointer">✕</button>
   </div>
-  <div id="val-modal-scroll" style="flex:1;overflow-y:auto;padding:14px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;">
+  <div id="val-modal-scroll" style="flex:1;overflow-y:auto;padding:14px;overscroll-behavior:contain;">
     <p style="font-size:13px;color:#6e7681;line-height:1.6;margin:0 0 10px;">已自動帶入現價／EPS／融資維持率／股本／RS%／本益比。成長率、折現率、均線、KD 請自行確認或輸入（此 app 資料沒有歷史均線與KD）。</p>
     <p style="font-size:13px;color:#d29922;line-height:1.6;margin:0 0 14px;background:#d2992215;border:1px solid #d2992244;border-radius:8px;padding:8px 10px;">⚠️ 成長率／折現率下方已根據營收年增率、毛利率、本益比自動給建議值與說明（藍字），但這只是規則式的粗略猜測，不是精算，務必自行判斷後再調整，算出來的合理價也建議跟法人target互相印證。</p>
 
@@ -3333,6 +3333,18 @@ function suggestValuationParams(s, pe){
   return {g1:g1, g2:g2, r:r, gt:gt, reason:reason};
 }
 
+// App從背景切回前景時，對評估視窗的捲動區塊做一個極小的nudge，
+// 避免iOS在背景/前景切換後捲動位置卡住或跑掉（比webkit-overflow-scrolling更不容易誤吃按鈕點擊）
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState === 'visible'){
+    var el = document.getElementById('val-modal-scroll');
+    if(el && document.getElementById('valuation-modal').style.display !== 'none'){
+      var t = el.scrollTop;
+      el.scrollTop = t + 1;
+      el.scrollTop = t;
+    }
+  }
+});
 function closeValuationTool(){
   document.getElementById('valuation-modal').style.display = 'none';
 }
