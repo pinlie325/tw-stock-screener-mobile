@@ -249,6 +249,17 @@ var fbAuth = firebase.auth();
 
 </head>
 <body>
+<!-- LOAD PROGRESS SCREEN -->
+<div id="load-progress-screen" style="position:fixed;inset:0;background:#0d1117;z-index:99998;display:flex;align-items:center;justify-content:center;">
+  <div style="text-align:center;width:240px;">
+    <div style="font-size:32px;margin-bottom:10px;">📈</div>
+    <div style="font-size:16px;font-weight:700;color:#e6edf3;margin-bottom:18px;">台股選股平台</div>
+    <div style="width:100%;height:6px;background:#21262d;border-radius:3px;overflow:hidden;">
+      <div id="load-progress-bar" style="width:0%;height:100%;background:#58a6ff;border-radius:3px;transition:width 0.35s ease;"></div>
+    </div>
+    <div id="load-progress-text" style="font-size:12px;color:#8b949e;margin-top:10px;">載入中...</div>
+  </div>
+</div>
 
 <!-- LOGIN SCREEN -->
 <div id="login-screen" style="position:fixed;inset:0;background:#0d1117;z-index:99999;display:flex;align-items:center;justify-content:center;">
@@ -890,6 +901,123 @@ function adminRemoveUser(email){
   </div>
 </div>
 
+<!-- VALUATION MODAL -->
+<div id="valuation-modal" style="display:none;position:fixed;inset:0;background:#0d1117;z-index:9999;flex-direction:column">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #30363d;background:#161b22;flex-shrink:0">
+    <span id="val-title" style="font-size:18px;font-weight:700;color:#e6edf3">🎯 股價合理性評估</span>
+    <button onclick="document.getElementById('valuation-modal').style.display='none'" style="background:none;border:none;color:#8b949e;font-size:28px;cursor:pointer">✕</button>
+  </div>
+  <div style="flex:1;overflow-y:auto;padding:14px;">
+    <p style="font-size:13px;color:#6e7681;line-height:1.6;margin:0 0 10px;">已自動帶入現價／EPS／融資維持率／股本／RS%／本益比。成長率、折現率、均線、KD 請自行確認或輸入（此 app 資料沒有歷史均線與KD）。</p>
+    <p style="font-size:13px;color:#d29922;line-height:1.6;margin:0 0 14px;background:#d2992215;border:1px solid #d2992244;border-radius:8px;padding:8px 10px;">⚠️ 成長率／折現率下方已根據營收年增率、毛利率、本益比自動給建議值與說明（藍字），但這只是規則式的粗略猜測，不是精算，務必自行判斷後再調整，算出來的合理價也建議跟法人target互相印證。</p>
+
+    <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:12px;margin-bottom:12px;">
+      <div style="font-size:15px;font-weight:700;color:#58a6ff;margin-bottom:10px;">① 估值（折現模型）</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div><label style="display:block;font-size:13px;color:#8b949e;margin-bottom:4px;">目前股價 <span onclick="toggleValInfo('price')" style="cursor:pointer;color:#58a6ff;font-size:12px;border:1px solid #58a6ff77;border-radius:50%;width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;">i</span></label><input type="number" id="val-price" style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:18px;padding:10px;box-sizing:border-box;"><div id="val-glossary-price" style="display:none;font-size:12px;color:#8b949e;line-height:1.5;margin-top:4px;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:7px 10px;"></div></div>
+        <div><label style="display:block;font-size:13px;color:#8b949e;margin-bottom:4px;">每股基準值(年化EPS) <span onclick="toggleValInfo('base')" style="cursor:pointer;color:#58a6ff;font-size:12px;border:1px solid #58a6ff77;border-radius:50%;width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;">i</span></label><input type="number" id="val-base" style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:18px;padding:10px;box-sizing:border-box;"><div id="val-glossary-base" style="display:none;font-size:12px;color:#8b949e;line-height:1.5;margin-top:4px;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:7px 10px;"></div></div>
+        <div><label style="display:block;font-size:13px;color:#8b949e;margin-bottom:4px;">1–5年成長率% <span onclick="toggleValInfo('g1')" style="cursor:pointer;color:#58a6ff;font-size:12px;border:1px solid #58a6ff77;border-radius:50%;width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;">i</span></label><input type="number" id="val-g1" style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:18px;padding:10px;box-sizing:border-box;"><div id="val-g1-hint" style="font-size:12px;color:#58a6ff;line-height:1.5;margin-top:4px;"></div><div id="val-glossary-g1" style="display:none;font-size:12px;color:#8b949e;line-height:1.5;margin-top:4px;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:7px 10px;"></div></div>
+        <div><label style="display:block;font-size:13px;color:#8b949e;margin-bottom:4px;">6–10年成長率% <span onclick="toggleValInfo('g2')" style="cursor:pointer;color:#58a6ff;font-size:12px;border:1px solid #58a6ff77;border-radius:50%;width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;">i</span></label><input type="number" id="val-g2" style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:18px;padding:10px;box-sizing:border-box;"><div id="val-g2-hint" style="font-size:12px;color:#58a6ff;line-height:1.5;margin-top:4px;"></div><div id="val-glossary-g2" style="display:none;font-size:12px;color:#8b949e;line-height:1.5;margin-top:4px;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:7px 10px;"></div></div>
+        <div><label style="display:block;font-size:13px;color:#8b949e;margin-bottom:4px;">折現率% <span onclick="toggleValInfo('r')" style="cursor:pointer;color:#58a6ff;font-size:12px;border:1px solid #58a6ff77;border-radius:50%;width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;">i</span></label><input type="number" id="val-r" value="10" style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:18px;padding:10px;box-sizing:border-box;"><div id="val-r-hint" style="font-size:12px;color:#58a6ff;line-height:1.5;margin-top:4px;"></div><div id="val-glossary-r" style="display:none;font-size:12px;color:#8b949e;line-height:1.5;margin-top:4px;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:7px 10px;"></div></div>
+        <div><label style="display:block;font-size:13px;color:#8b949e;margin-bottom:4px;">永續成長率% <span onclick="toggleValInfo('gt')" style="cursor:pointer;color:#58a6ff;font-size:12px;border:1px solid #58a6ff77;border-radius:50%;width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;">i</span></label><input type="number" id="val-gt" value="2" style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:18px;padding:10px;box-sizing:border-box;"><div id="val-gt-hint" style="font-size:12px;color:#58a6ff;line-height:1.5;margin-top:4px;"></div><div id="val-glossary-gt" style="display:none;font-size:12px;color:#8b949e;line-height:1.5;margin-top:4px;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:7px 10px;"></div></div>
+        <div><label style="display:block;font-size:13px;color:#8b949e;margin-bottom:4px;">目前本益比 PE <span onclick="toggleValInfo('pe')" style="cursor:pointer;color:#58a6ff;font-size:12px;border:1px solid #58a6ff77;border-radius:50%;width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;">i</span></label><input type="number" id="val-pe" style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:18px;padding:10px;box-sizing:border-box;"><div id="val-glossary-pe" style="display:none;font-size:12px;color:#8b949e;line-height:1.5;margin-top:4px;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:7px 10px;"></div></div>
+        <div><label style="display:block;font-size:13px;color:#8b949e;margin-bottom:4px;">法人目標價（選填）</label><input type="number" id="val-target" placeholder="例如 215" style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:18px;padding:10px;box-sizing:border-box;"></div>
+      </div>
+    </div>
+
+    <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:12px;margin-bottom:12px;">
+      <div style="font-size:15px;font-weight:700;color:#58a6ff;margin-bottom:10px;">② 風險</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div><label style="display:block;font-size:13px;color:#8b949e;margin-bottom:4px;">融資維持率%</label><input type="number" id="val-marginRatio" style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:18px;padding:10px;box-sizing:border-box;"></div>
+        <div><label style="display:block;font-size:13px;color:#8b949e;margin-bottom:4px;">股本(億)</label><input type="number" id="val-capital" style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:18px;padding:10px;box-sizing:border-box;"></div>
+      </div>
+    </div>
+
+    <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:12px;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="font-size:15px;font-weight:700;color:#58a6ff;">③ 動能（技術面）</div>
+        <button id="val-fetch-btn" onclick="fetchValuationTechnical()" style="background:#1f6feb22;border:1px solid #58a6ff;color:#58a6ff;font-size:13px;padding:5px 10px;border-radius:14px;cursor:pointer;white-space:nowrap;">🔄 自動抓取 SMA/KD/年高低</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div><label style="display:block;font-size:13px;color:#8b949e;margin-bottom:4px;">SMA20</label><input type="number" id="val-sma20" style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:18px;padding:10px;box-sizing:border-box;"></div>
+        <div><label style="display:block;font-size:13px;color:#8b949e;margin-bottom:4px;">SMA60</label><input type="number" id="val-sma60" style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:18px;padding:10px;box-sizing:border-box;"></div>
+        <div><label style="display:block;font-size:13px;color:#8b949e;margin-bottom:4px;">KD值 K</label><input type="number" id="val-kdK" style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:18px;padding:10px;box-sizing:border-box;"></div>
+        <div><label style="display:block;font-size:13px;color:#8b949e;margin-bottom:4px;">KD值 D</label><input type="number" id="val-kdD" style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:18px;padding:10px;box-sizing:border-box;"></div>
+        <div style="grid-column:1/-1;"><label style="display:block;font-size:13px;color:#8b949e;margin-bottom:4px;">RS%</label><input type="number" id="val-rs" style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:18px;padding:10px;box-sizing:border-box;"></div>
+      </div>
+    </div>
+
+    <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:12px;margin-bottom:12px;">
+      <div style="font-size:15px;font-weight:700;color:#58a6ff;margin-bottom:10px;">④ 買入風險／報酬評估</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div style="grid-column:1/-1;"><label style="display:block;font-size:13px;color:#8b949e;margin-bottom:4px;">模擬買入價位（空白＝用目前股價）</label><input type="number" id="val-buyprice" placeholder="例如 173.5" style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:18px;padding:10px;box-sizing:border-box;"></div>
+        <div><label style="display:block;font-size:13px;color:#8b949e;margin-bottom:4px;">近一年最高價</label><input type="number" id="val-yearHigh" style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:18px;padding:10px;box-sizing:border-box;"></div>
+        <div><label style="display:block;font-size:13px;color:#8b949e;margin-bottom:4px;">近一年最低價</label><input type="number" id="val-yearLow" style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:18px;padding:10px;box-sizing:border-box;"></div>
+      </div>
+      <div style="font-size:12px;color:#6e7681;line-height:1.5;margin-top:8px;">下檔風險用「買入價到近一年最低價」估，上檔空間用「買入價到近一年最高價／折現合理價／法人目標價」估，都只是參考區間，不是絕對支撐壓力。</div>
+    </div>
+
+    <div id="val-warn" style="display:none;background:#f8514922;border:1px solid #f85149;color:#f85149;font-size:15px;padding:8px 10px;border-radius:8px;margin-bottom:12px;"></div>
+    <button onclick="valCalc()" style="width:100%;padding:14px;border-radius:12px;border:none;background:#58a6ff;color:#0d1117;font-size:18px;font-weight:800;cursor:pointer;margin-bottom:18px;">⚡ 一鍵計算合理性</button>
+
+    <div id="val-result" style="display:none;">
+      <div style="text-align:center;padding:18px 12px;border-radius:12px;margin-bottom:12px;background:#1c2129;border:1px solid #30363d;">
+        <div id="val-verdictTag" style="display:inline-block;font-size:25px;font-weight:800;padding:6px 16px;border-radius:20px;margin-bottom:8px;">-</div>
+        <div id="val-verdictDesc" style="font-size:17px;color:#8b949e;line-height:1.6;">-</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
+        <div style="background:#1c2129;border:1px solid #30363d;border-radius:10px;padding:10px;text-align:center;">
+          <div style="font-size:13px;color:#8b949e;margin-bottom:4px;">折現合理價</div>
+          <div id="val-fairValue" style="font-size:18px;font-weight:700;">-</div>
+        </div>
+        <div style="background:#1c2129;border:1px solid #30363d;border-radius:10px;padding:10px;text-align:center;">
+          <div style="font-size:13px;color:#8b949e;margin-bottom:4px;">折溢價</div>
+          <div id="val-premium" style="font-size:18px;font-weight:700;">-</div>
+        </div>
+        <div style="background:#1c2129;border:1px solid #30363d;border-radius:10px;padding:10px;text-align:center;">
+          <div style="font-size:13px;color:#8b949e;margin-bottom:4px;">PEG</div>
+          <div id="val-peg" style="font-size:18px;font-weight:700;">-</div>
+        </div>
+      </div>
+      <div id="val-target-compare" style="display:none;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:12px;margin-bottom:12px;">
+        <div style="font-size:15px;font-weight:700;color:#58a6ff;margin-bottom:6px;">跟法人目標價比較</div>
+        <div id="val-target-text" style="font-size:17px;color:#e6edf3;"></div>
+      </div>
+      <div id="val-riskreward-box" style="display:none;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:12px;margin-bottom:12px;">
+        <div style="font-size:15px;font-weight:700;color:#58a6ff;margin-bottom:8px;">買入風險／報酬（買入價 NT$ <span id="val-rr-buyprice">-</span>）</div>
+        <div id="val-rr-chart" style="display:none;position:relative;height:64px;margin:4px 0 18px;"></div>
+        <table style="width:100%;border-collapse:collapse;font-size:15px;">
+          <tr><td style="padding:5px 0;color:#8b949e;">下檔風險（到近一年低點）</td><td id="val-rr-downside" style="text-align:right;">-</td></tr>
+          <tr><td style="padding:5px 0;color:#8b949e;">上檔空間（到近一年高點）</td><td id="val-rr-upsideHigh" style="text-align:right;">-</td></tr>
+          <tr><td style="padding:5px 0;color:#8b949e;">上檔空間（到折現合理價）</td><td id="val-rr-upsideFair" style="text-align:right;">-</td></tr>
+          <tr id="val-rr-target-row" style="display:none;"><td style="padding:5px 0;color:#8b949e;">上檔空間（到法人目標價）</td><td id="val-rr-upsideTarget" style="text-align:right;">-</td></tr>
+        </table>
+        <div style="margin-top:8px;padding-top:8px;border-top:1px solid #30363d;display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:15px;color:#8b949e;">風險報酬比（用近一年高點估）</span>
+          <span id="val-rr-ratio" style="font-size:20px;font-weight:800;">-</span>
+        </div>
+        <div id="val-rr-note" style="font-size:13px;color:#6e7681;line-height:1.6;margin-top:8px;"></div>
+      </div>
+      <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:12px;margin-bottom:12px;">
+        <div style="font-size:15px;font-weight:700;color:#58a6ff;margin-bottom:8px;">風險燈號</div>
+        <table style="width:100%;border-collapse:collapse;font-size:15px;">
+          <tr><td style="padding:5px 0;"><span id="val-marginLight" style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;"></span>融資維持率</td><td id="val-marginVal" style="text-align:right;">-</td></tr>
+          <tr><td style="padding:5px 0;"><span id="val-capitalLight" style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;"></span>股本規模</td><td id="val-capitalVal" style="text-align:right;">-</td></tr>
+        </table>
+      </div>
+      <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:12px;">
+        <div style="font-size:15px;font-weight:700;color:#58a6ff;margin-bottom:8px;">動能燈號</div>
+        <table style="width:100%;border-collapse:collapse;font-size:15px;">
+          <tr><td style="padding:5px 0;"><span id="val-trendLight" style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;"></span>股價 vs 均線</td><td id="val-trendVal" style="text-align:right;">-</td></tr>
+          <tr><td style="padding:5px 0;"><span id="val-kdLight" style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;"></span>KD 訊號</td><td id="val-kdVal" style="text-align:right;">-</td></tr>
+          <tr><td style="padding:5px 0;"><span id="val-rsLight" style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;"></span>RS%</td><td id="val-rsVal" style="text-align:right;">-</td></tr>
+        </table>
+      </div>
+      <p style="font-size:13px;color:#6e7681;line-height:1.6;margin-top:14px;">折溢價 = (折現合理價−目前股價)÷目前股價，正值代表相對折現模型便宜。PEG = PE÷1–5年成長率，&lt;1通常代表用成長性換來的本益比不貴。動能只反映短中期技術面強弱，跟估值是否便宜是兩件事，請一起看。僅供參考，非投資建議。</p>
+    </div>
+  </div>
+</div>
+
 <!-- ADD TO HOME GUIDE -->
 <div id="add-home-modal" style="display:none;position:fixed;inset:0;background:#000a;z-index:9999;align-items:center;justify-content:center;padding:16px;box-sizing:border-box">
   <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;width:100%;max-width:340px;padding:20px">
@@ -1194,7 +1322,7 @@ function renderSelTags(){
     var sp=e.target.closest('.fbar-sel-tag');
     if(sp) removeTag(sp.getAttribute('data-tag'));
   };
-  var anyFilter = sel.length || groupFilter || conceptFilter;
+  var anyFilter = sel.length || groupFilter || conceptFilter || (window._hcatCodes && window._hcatCodes.length);
   if(outer) outer.style.display=anyFilter?'flex':'none';
   if(btn) btn.style.display=anyFilter?'inline-flex':'none';
 }
@@ -1226,6 +1354,8 @@ function selAll(){
   sel=[];
   groupFilter=null;
   conceptFilter=null;
+  window._hcatCodes=null;
+  var hc=document.querySelector('.dtag-selected'); if(hc) hc.remove();
   var gc=document.getElementById('group-filter-chip'); if(gc) gc.style.display='none';
   var cc=document.getElementById('concept-filter-chip'); if(cc) cc.style.display='none';
   document.querySelectorAll('.dtag').forEach(function(el){el.classList.remove('on');});
@@ -1358,6 +1488,7 @@ function render(){
         +(s.news?'<span class="card-news" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0">📰 '+s.news+'</span>':'')
         +'<a class="card-cnyes" style="margin-left:auto" href="https://www.cmoney.tw/forum/stock/'+s.code+'" target="_blank" onclick="event.stopPropagation()">CM</a>'
         +(function(){var p=s.volume!==null?s.volume:'';var pc=s.pct!==null?(s.pct>0?'+':'')+s.pct.toFixed(2)+'%':'';var eps=s.eps!==null?s.eps.toFixed(2):'--';var rs=s.rs!==null?s.rs.toFixed(1):'--';var txt=s.code+' '+s.name+' '+p+'('+pc+') RS'+rs+' EPS'+eps;var url='https://social-plugins.line.me/lineit/share?url='+encodeURIComponent('https://www.cmoney.tw/forum/stock/'+s.code)+'&text='+encodeURIComponent(txt);return '<a class="card-line" href="'+url+'" target="_blank" onclick="event.stopPropagation()">LINE</a>';})()
+        +'<button class="card-line" style="background:#1f6feb22;border-color:#58a6ff;color:#58a6ff;cursor:pointer;" onclick="event.stopPropagation();openValuationTool(\''+s.code+'\')">🎯評估</button>'
       +'</div>'
       +'<div class="card-price" style="margin-bottom:6px">'
         +(s.close!==null?'<span class="card-avg">昨收 <span>'+s.close.toFixed(1)+'</span></span>':'')
@@ -2314,6 +2445,31 @@ function _sortFilesByModified(files){
 }
 
 // App開啟時靜默自動載入雲端最新的選股Excel（不彈出視窗，失敗也不打擾使用者）
+// ── 開場載入進度條 ──
+var _loadSteps = {stockfile:false, notes:false, strategies:false, groups:false, concepts:false};
+function _reportLoadStep(name){
+  if(_loadSteps[name]) return;
+  _loadSteps[name] = true;
+  var total = Object.keys(_loadSteps).length;
+  var done = Object.keys(_loadSteps).filter(function(k){ return _loadSteps[k]; }).length;
+  var pct = Math.round(done/total*100);
+  var bar = document.getElementById('load-progress-bar');
+  var txt = document.getElementById('load-progress-text');
+  if(bar) bar.style.width = pct+'%';
+  if(txt) txt.textContent = done<total ? ('載入中...（'+done+'/'+total+'）') : '完成！';
+  if(done>=total) _hideLoadProgress();
+}
+function _hideLoadProgress(){
+  var el = document.getElementById('load-progress-screen');
+  if(!el || el.dataset.hidden) return;
+  el.dataset.hidden = '1';
+  el.style.transition = 'opacity 0.3s ease';
+  el.style.opacity = '0';
+  setTimeout(function(){ el.style.display = 'none'; }, 320);
+}
+// 保險：就算某個載入卡住沒回應，12秒後還是強制把進度畫面收起來，不擋住使用者
+setTimeout(_hideLoadProgress, 12000);
+
 function autoLoadLatestStockFile(){
   fetch(GAS_URL+'?action=list')
     .then(function(r){return r.json();})
@@ -2337,7 +2493,8 @@ function autoLoadLatestStockFile(){
           showToast('☁️ 已自動載入最新選股檔：'+(fd.name||f.name));
         });
     })
-    .catch(function(){}); // 靜默失敗，不打擾使用者；使用者仍可手動點☁️重試
+    .catch(function(){}) // 靜默失敗，不打擾使用者；使用者仍可手動點☁️重試
+    .finally(function(){ _reportLoadStep('stockfile'); });
 }
 
 function renderGdFiles(files){
@@ -2410,7 +2567,8 @@ function autoLoadStrategies(){
         showToast('📊 已載入 '+count+' 支策略股');
       }
     })
-    .catch(function(){});
+    .catch(function(){})
+    .finally(function(){ _reportLoadStep('strategies'); });
 }
 
 // 卡片上方各種標籤列的固定顯示順序：集團/概念股 → 策略標籤 → 備註
@@ -2473,7 +2631,8 @@ function autoLoadNotes(){
         showToast('📝 已自動載入 '+count+' 筆備註');
       }
     })
-    .catch(function(){});  // 靜默失敗，不打擾使用者
+    .catch(function(){})  // 靜默失敗，不打擾使用者
+    .finally(function(){ _reportLoadStep('notes'); });
 }
 
 // 靜默載入集團對照表（不打擾使用者，失敗也沒關係，可重新整理再試）
@@ -2485,7 +2644,8 @@ function autoLoadGroups(){
       groupMap = d.groups || {};
       if(Object.keys(groupMap).length) applyGroups();
     })
-    .catch(function(){});
+    .catch(function(){})
+    .finally(function(){ _reportLoadStep('groups'); });
 }
 
 // 靜默載入概念股對照表（不打擾使用者，失敗也沒關係，可重新整理再試）
@@ -2497,7 +2657,8 @@ function autoLoadConcepts(){
       conceptMap = d.concepts || {};
       if(Object.keys(conceptMap).length) applyConcepts();
     })
-    .catch(function(){});
+    .catch(function(){})
+    .finally(function(){ _reportLoadStep('concepts'); });
 }
 
 function openNotePicker(){
@@ -3093,6 +3254,432 @@ function showAllMarginGroups(){
   });
   var allBtn = document.getElementById('mgroup-nav-all');
   if(allBtn){ allBtn.style.background = '#1f6feb22'; allBtn.style.borderColor = '#58a6ff'; allBtn.style.color = '#58a6ff'; }
+}
+
+// ══════════ 股價合理性一鍵評估 ══════════
+// 依營收年增率／毛利率／本益比等現有欄位，粗略猜測成長率、折現率的起始值
+// 這只是規則式的參考建議，不是精算，使用者仍應自行判斷調整
+var VAL_GLOSSARY = {
+  price: '目前股票的市場價格，是計算折溢價、風險報酬比的基準值，會即時反映在下面所有比較上。',
+  base: '用最近一季EPS年化推算出來的每股盈餘，是DCF現金流預測的起點。這是粗略估算，如果你手上有更準確的近四季實際EPS或法人預估EPS，建議直接覆蓋這個欄位。',
+  g1: '未來1~5年，你預期這家公司每股盈餘的年成長率。這是DCF模型最關鍵的假設之一，抓太高會讓算出來的合理價嚴重高估，尤其是景氣循環股。',
+  g2: '第6~10年的成長率，通常會比前5年低，因為公司規模變大、成長動能自然趨緩（基期效應）。',
+  r: '折現率：把未來的錢換算成「現在值多少」的年化比率，反映時間成本＋風險溢酬。通常抓公司要求報酬率8%~12%，風險越高（景氣循環、小型股、財務體質差）就抓越高。折現率越高，算出來的合理價越低。',
+  gt: '永續成長率：假設公司從第10年以後，會「永遠」以這個速度成長，用在終值(Terminal Value)的計算上。長期不會超過整體經濟成長速度，通常抓2%左右，抓太高會讓終值不合理放大、扭曲整個合理價。',
+  pe: '本益比(PE) = 股價 ÷ 每股盈餘，反映市場願意用幾倍的獲利去買這家公司。這裡是拿目前股價除以年化EPS概估，跟法人研究報告用「近四季實際EPS」算出來的本益比可能會有落差，可以手動修正。也用來判斷成長股/循環股/一般股分類，以及算PEG。'
+};
+function toggleValInfo(key){
+  var el = document.getElementById('val-glossary-'+key);
+  if(!el) return;
+  var showing = el.style.display === 'block';
+  if(showing){
+    el.style.display = 'none';
+  } else {
+    el.textContent = VAL_GLOSSARY[key] || '';
+    el.style.display = 'block';
+  }
+}
+function suggestValuationParams(s, pe){
+  var rg = s.revgrowth;
+  var gm = s.grossmargin;
+  var g1, g2, r = 10, gt = 2;
+  var reason = {};
+
+  // 只用「營收年增率極端到不合理」當作循環股訊號（不管毛利率或本益比），
+  // 因為沒有公司能連續5年維持100%以上的成長，這一定是基期效應／景氣循環反彈。
+  // 原本還想用「本益比異常低＋營收暴增」當第二個訊號，但這在ODM/EMS/組裝代工
+  // 這類本來就是低毛利、低本益比的產業（緯創、廣達、鴻海...）會誤判——那些公司
+  // 本益比長期都在8~15倍，跟循環股在高點被打折完全是兩回事，所以拿掉這條規則。
+  var extremeGrowth = (rg!==null && rg>=100);
+  var cyclical = extremeGrowth;
+  var richGrowth = !cyclical && (pe!==null && pe>=40) && (gm!==null && gm>=40);
+  // ODM／EMS／組裝代工這類低毛利、資本密集的產業（緯創、廣達、鴻海這類），
+  // 就算營收成長率不算誇張，也要格外保守：這類公司賺的EPS要繼續成長，通常得
+  // 靠不斷擴廠、囤料、墊高應收帳款，真正能自由運用的現金流會比帳面EPS成長打折很多，
+  // 直接拿EPS複利10年很容易高估，法人給的目標價通常也遠比單純EPS-DCF算出來的保守。
+  var lowMarginCapex = !cyclical && !richGrowth && (gm!==null && gm<15);
+
+  if(cyclical){
+    g1 = 0; g2 = 3; r = 12;
+    reason.g1 = '💡 營收年增'+rg.toFixed(0)+'%已經是不合理的高速度，沒有公司能連續5年維持，很像基期效應／景氣循環反彈剛好在高點，先假設獲利不再往上衝比較保守（毛利率就算目前偏高也一樣，循環高點時毛利率通常也會同步衝高，不代表能延續）。';
+    reason.g2 = '💡 景氣正常化後給溫和成長。';
+    reason.r  = '💡 循環股風險較高，多要求一點風險溢酬。';
+  } else if(richGrowth){
+    var g1raw = rg!==null ? Math.min(rg*0.4, 35) : 15;
+    g1 = Math.round(g1raw);
+    g2 = Math.round(g1/2);
+    r = 12.5;
+    reason.g1 = '💡 本益比'+pe.toFixed(0)+'倍、毛利率'+gm.toFixed(0)+'%都偏高，像資產輕的成長型公司，目前'+(rg!==null?rg.toFixed(0)+'%':'很高')+'的營收年增很難連續5年維持，抓打折後的數字比較合理。';
+    reason.g2 = '💡 題材成熟、對手追上後成長通常會收斂。';
+    reason.r  = '💡 高本益比代表股價對成長預期敏感、多半客戶或題材集中度也較高，折現率多抓一點。';
+  } else if(lowMarginCapex){
+    var g1c = rg!==null ? Math.max(0, Math.min(rg*0.3, 10)) : 5;
+    g1 = Math.round(g1c);
+    g2 = Math.round(g1/2);
+    r = 11;
+    reason.g1 = '💡 毛利率只有'+gm.toFixed(1)+'%，像ODM／EMS／組裝代工這類資本密集產業，EPS要繼續成長通常得不斷擴廠墊高資本支出，真正的自由現金流會比帳面EPS成長打折很多，直接把EPS複利10年容易高估，這裡先打比較大的折扣，抓保守一點的數字。';
+    reason.g2 = '💡 產業本來就競爭激烈、毛利率很難提升，長期成長更保守看待。';
+    reason.r  = '💡 資本密集、自由現金流轉換率較低，多要求一點風險溢酬。';
+  } else {
+    var g1b = rg!==null ? Math.max(0, Math.min(rg, 15)) : 8;
+    g1 = Math.round(g1b);
+    g2 = Math.round(g1/2);
+    r = 10;
+    reason.g1 = rg!==null ? ('💡 參考營收年增'+rg.toFixed(0)+'%，抓一個相對穩健的估計值，可自行調整。') : '💡 資料不足，先給一般水準的參考值，請自行調整。';
+    reason.g2 = '💡 長期成長通常會比近期慢，抓前段的一半左右。';
+    reason.r  = '💡 一般水準的風險溢酬。';
+  }
+  reason.gt = '💡 長期不會超過整體經濟成長水準，先用一般假設，通常抓2%左右。';
+  return {g1:g1, g2:g2, r:r, gt:gt, reason:reason};
+}
+
+function openValuationTool(code){
+  var s = D.find(function(x){ return x.code === code; });
+  if(!s) return;
+  window.valCurrentCode = code;
+  document.getElementById('val-title').textContent = '🎯 '+s.code+' '+s.name+' 合理性評估';
+
+  document.getElementById('val-price').value = s.volume!==null ? s.volume : '';
+  var annEps = s.eps!==null ? (s.eps*4/0.6) : null;
+  document.getElementById('val-base').value = annEps!==null ? annEps.toFixed(2) : '';
+  var pe = (annEps && annEps>0 && s.volume!==null) ? (s.volume/annEps) : null;
+  document.getElementById('val-pe').value = pe!==null ? pe.toFixed(1) : '';
+
+  var suggestion = suggestValuationParams(s, pe);
+  document.getElementById('val-g1').value = suggestion.g1;
+  document.getElementById('val-g2').value = suggestion.g2;
+  document.getElementById('val-r').value = suggestion.r;
+  document.getElementById('val-gt').value = suggestion.gt;
+  document.getElementById('val-g1-hint').textContent = suggestion.reason.g1;
+  document.getElementById('val-g2-hint').textContent = suggestion.reason.g2;
+  document.getElementById('val-r-hint').textContent = suggestion.reason.r;
+  document.getElementById('val-gt-hint').textContent = suggestion.reason.gt;
+
+  document.getElementById('val-marginRatio').value = s.margin!==null ? s.margin.toFixed(1) : '';
+  document.getElementById('val-capital').value = s.capital!==null ? s.capital.toFixed(1) : '';
+
+  document.getElementById('val-sma20').value = '';
+  document.getElementById('val-sma60').value = '';
+  document.getElementById('val-kdK').value = '';
+  document.getElementById('val-kdD').value = '';
+  document.getElementById('val-rs').value = s.rs!==null ? s.rs.toFixed(1) : '';
+  document.getElementById('val-target').value = '';
+  document.getElementById('val-buyprice').value = '';
+  document.getElementById('val-yearHigh').value = '';
+  document.getElementById('val-yearLow').value = '';
+
+  document.getElementById('val-result').style.display = 'none';
+  document.getElementById('val-warn').style.display = 'none';
+  document.getElementById('valuation-modal').style.display = 'flex';
+}
+
+function fetchValuationTechnical(){
+  var code = window.valCurrentCode;
+  if(!code) return;
+  var btn = document.getElementById('val-fetch-btn');
+  if(btn){ btn.disabled = true; btn.textContent = '抓取中...'; }
+  fetch(NOTE_GAS_URL + '?action=technical&code=' + code)
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(!d.ok){ throw new Error(d.error||'抓取失敗'); }
+      if(d.sma20!==null && d.sma20!==undefined) document.getElementById('val-sma20').value = Number(d.sma20).toFixed(2);
+      if(d.sma60!==null && d.sma60!==undefined) document.getElementById('val-sma60').value = Number(d.sma60).toFixed(2);
+      if(d.k!==null && d.k!==undefined) document.getElementById('val-kdK').value = Number(d.k).toFixed(2);
+      if(d.d!==null && d.d!==undefined) document.getElementById('val-kdD').value = Number(d.d).toFixed(2);
+      if(d.yearHigh!==null && d.yearHigh!==undefined) document.getElementById('val-yearHigh').value = Number(d.yearHigh).toFixed(2);
+      if(d.yearLow!==null && d.yearLow!==undefined) document.getElementById('val-yearLow').value = Number(d.yearLow).toFixed(2);
+      toast('✅ 已自動帶入 SMA/KD/年高低','#238636');
+    })
+    .catch(function(e){
+      toast('❌ 抓取失敗：'+e.message,'#da3633');
+    })
+    .finally(function(){
+      if(btn){ btn.disabled = false; btn.textContent = '🔄 自動抓取 SMA/KD/年高低'; }
+    });
+}
+
+function valNum(id){
+  var v = parseFloat(document.getElementById(id).value);
+  return isNaN(v) ? null : v;
+}
+
+function valFmt(n){
+  return n.toLocaleString('zh-TW',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function valCalc(){
+  var price = valNum('val-price'), base = valNum('val-base'), g1 = valNum('val-g1'), g2 = valNum('val-g2'),
+      r = valNum('val-r'), gt = valNum('val-gt'), pe = valNum('val-pe'),
+      marginRatio = valNum('val-marginRatio'), capital = valNum('val-capital'),
+      sma20 = valNum('val-sma20'), sma60 = valNum('val-sma60'), kdK = valNum('val-kdK'), kdD = valNum('val-kdD'), rs = valNum('val-rs'),
+      target = valNum('val-target'),
+      buyPriceInput = valNum('val-buyprice'), yearHigh = valNum('val-yearHigh'), yearLow = valNum('val-yearLow');
+
+  var warnEl = document.getElementById('val-warn');
+  warnEl.style.display = 'none';
+
+  if(price===null || base===null || g1===null || g2===null || r===null || gt===null){
+    warnEl.textContent = '請至少填「目前股價」「每股基準值」「1-5年成長率」「6-10年成長率」「折現率」「永續成長率」才能計算估值。';
+    warnEl.style.display = 'block';
+    return;
+  }
+  if(r <= gt){
+    warnEl.textContent = '折現率必須大於永續成長率，請調整數值。';
+    warnEl.style.display = 'block';
+    return;
+  }
+
+  var rr=r/100, g1r=g1/100, g2r=g2/100, gtr=gt/100;
+  var cf = base, sumCf = 0;
+  for(var y=1;y<=10;y++){
+    var g = (y<=5)?g1r:g2r;
+    cf = cf*(1+g);
+    sumCf += cf/Math.pow(1+rr,y);
+  }
+  var cf11 = cf*(1+gtr);
+  var tv = cf11/(rr-gtr);
+  var tvPv = tv/Math.pow(1+rr,10);
+  var fairValue = sumCf+tvPv;
+  var premiumPct = (fairValue-price)/price*100;
+
+  document.getElementById('val-fairValue').textContent = 'NT$ '+valFmt(fairValue);
+  var premiumEl = document.getElementById('val-premium');
+  premiumEl.textContent = (premiumPct>=0?'+':'')+premiumPct.toFixed(1)+'%';
+  premiumEl.style.color = premiumPct>=0 ? '#f85149' : '#3fb950';
+
+  var targetBox = document.getElementById('val-target-compare');
+  var targetText = document.getElementById('val-target-text');
+  if(target!==null && target>0){
+    var devPct = (fairValue - target) / target * 100;
+    var devAbs = Math.abs(devPct);
+    var devColor = devAbs<=20 ? '#3fb950' : (devAbs<=50 ? '#d29922' : '#f85149');
+    var devNote = devAbs<=20
+      ? '算出來的合理價跟法人目標價落差不大，參數大致合理。'
+      : (devAbs<=50
+        ? '有一定落差，建議再檢視一下成長率／折現率的假設是否偏樂觀或偏保守。'
+        : '落差非常大，DCF對成長率假設很敏感，這組參數很可能不合理，建議大幅調降成長率或調高折現率後再重算，而不是直接相信這個合理價。');
+    targetText.innerHTML = '法人目標 <b>NT$ '+valFmt(target)+'</b>，模型合理價 <b style="color:'+devColor+'">'+(devPct>=0?'高':'低')+'了 '+devAbs.toFixed(1)+'%</b><br><span style="color:#8b949e;font-size:12px;">'+devNote+'</span>';
+    targetBox.style.display = 'block';
+  } else {
+    targetBox.style.display = 'none';
+  }
+
+  // ── 買入風險／報酬評估：假設用某個價位買進，下檔看近一年低點，上檔看近一年高點／DCF合理價／法人目標 ──
+  // 配色統一台股慣例：漲（正）＝紅，跌（負）＝綠
+  var UP_COLOR = '#f85149', DN_COLOR = '#3fb950';
+  var rrBox = document.getElementById('val-riskreward-box');
+  var buyPrice = (buyPriceInput!==null && buyPriceInput>0) ? buyPriceInput : price;
+  if(buyPrice!==null && (yearHigh!==null || yearLow!==null)){
+    document.getElementById('val-rr-buyprice').textContent = valFmt(buyPrice);
+
+    var downsideEl = document.getElementById('val-rr-downside');
+    var downsidePct = null;
+    if(yearLow!==null){
+      downsidePct = (buyPrice - yearLow) / buyPrice * 100;
+      downsideEl.innerHTML = 'NT$ '+valFmt(yearLow)+'（-'+Math.max(downsidePct,0).toFixed(1)+'%）';
+      downsideEl.style.color = DN_COLOR;
+    } else {
+      downsideEl.textContent = '未填近一年最低價';
+      downsideEl.style.color = '#8b949e';
+    }
+
+    var upsideHighEl = document.getElementById('val-rr-upsideHigh');
+    var upsideHighPct = null;
+    if(yearHigh!==null){
+      upsideHighPct = (yearHigh - buyPrice) / buyPrice * 100;
+      upsideHighEl.innerHTML = 'NT$ '+valFmt(yearHigh)+'（'+(upsideHighPct>=0?'+':'')+upsideHighPct.toFixed(1)+'%）';
+      upsideHighEl.style.color = upsideHighPct>=0 ? UP_COLOR : DN_COLOR;
+    } else {
+      upsideHighEl.textContent = '未填近一年最高價';
+      upsideHighEl.style.color = '#8b949e';
+    }
+
+    var upsideFairEl = document.getElementById('val-rr-upsideFair');
+    var upsideFairPct = (fairValue - buyPrice) / buyPrice * 100;
+    upsideFairEl.innerHTML = 'NT$ '+valFmt(fairValue)+'（'+(upsideFairPct>=0?'+':'')+upsideFairPct.toFixed(1)+'%）';
+    upsideFairEl.style.color = upsideFairPct>=0 ? UP_COLOR : DN_COLOR;
+
+    var targetRow = document.getElementById('val-rr-target-row');
+    var upsideTargetPct = null;
+    if(target!==null && target>0){
+      upsideTargetPct = (target - buyPrice) / buyPrice * 100;
+      var upsideTargetEl = document.getElementById('val-rr-upsideTarget');
+      upsideTargetEl.innerHTML = 'NT$ '+valFmt(target)+'（'+(upsideTargetPct>=0?'+':'')+upsideTargetPct.toFixed(1)+'%）';
+      upsideTargetEl.style.color = upsideTargetPct>=0 ? UP_COLOR : DN_COLOR;
+      targetRow.style.display = '';
+    } else {
+      targetRow.style.display = 'none';
+    }
+
+    var ratioEl = document.getElementById('val-rr-ratio');
+    var noteEl = document.getElementById('val-rr-note');
+    if(downsidePct!==null && upsideHighPct!==null){
+      if(downsidePct<=0){
+        ratioEl.textContent = '目前已跌破近一年低點';
+        ratioEl.style.color = UP_COLOR;
+        noteEl.textContent = '買入價已經在近一年最低價之下，代表可能又創了新低，下檔風險用近一年低點估已經不適用，要注意是不是還有更深的下檔空間。';
+      } else {
+        var ratio = upsideHighPct / downsidePct;
+        ratioEl.textContent = ratio.toFixed(2)+' : 1';
+        ratioEl.style.color = ratio>=2 ? '#3fb950' : (ratio>=1 ? '#d29922' : '#f85149');
+        noteEl.textContent = ratio>=2
+          ? '風險報酬比不錯（上檔空間至少是下檔風險的2倍以上），是常見交易人偏好的門檻。'
+          : (ratio>=1
+            ? '上檔空間跟下檔風險差不多，賠率沒有明顯優勢，要靠勝率或其他理由支撐。'
+            : '下檔風險比上檔空間還大，賠率偏差，這個價位進場的CP值不高。');
+      }
+    } else {
+      ratioEl.textContent = '-';
+      noteEl.textContent = '近一年最高價／最低價至少要填一個才能算風險報酬比，可以按上面「自動抓取」或自行輸入。';
+    }
+
+    // 圖形化：一條區間軸，標出近一年低／高、買入價、合理價、法人目標的相對位置
+    var chartEl = document.getElementById('val-rr-chart');
+    var pts = [];
+    if(yearLow!==null) pts.push(yearLow);
+    if(yearHigh!==null) pts.push(yearHigh);
+    pts.push(buyPrice, fairValue);
+    if(target!==null && target>0) pts.push(target);
+    var rMin = Math.min.apply(null, pts), rMax = Math.max.apply(null, pts);
+    var span = rMax - rMin;
+    if(span <= 0){ rMin -= 1; rMax += 1; span = rMax - rMin; }
+    var pad = span * 0.06;
+    rMin -= pad; rMax += pad; span = rMax - rMin;
+    function xpct(v){ return Math.max(0, Math.min(100, (v - rMin) / span * 100)); }
+
+    var lowLbl = '', highLbl = '';
+    if(yearLow!==null){
+      var lx = xpct(yearLow);
+      lowLbl = '<div style="position:absolute;left:'+lx+'%;top:40px;transform:translateX('+(lx<8?'0%':(lx>92?'-100%':'-50%'))+');font-size:9px;color:'+DN_COLOR+';white-space:nowrap;">年低 '+valFmt(yearLow)+'</div>'
+             + '<div style="position:absolute;left:'+lx+'%;top:30px;width:2px;height:10px;background:'+DN_COLOR+';transform:translateX(-1px);"></div>';
+    }
+    if(yearHigh!==null){
+      var hx = xpct(yearHigh);
+      highLbl = '<div style="position:absolute;left:'+hx+'%;top:40px;transform:translateX('+(hx<8?'0%':(hx>92?'-100%':'-50%'))+');font-size:9px;color:'+UP_COLOR+';white-space:nowrap;">年高 '+valFmt(yearHigh)+'</div>'
+              + '<div style="position:absolute;left:'+hx+'%;top:30px;width:2px;height:10px;background:'+UP_COLOR+';transform:translateX(-1px);"></div>';
+    }
+    var bx = xpct(buyPrice);
+    var buyLbl = '<div style="position:absolute;left:'+bx+'%;top:0px;transform:translateX('+(bx<8?'0%':(bx>92?'-100%':'-50%'))+');font-size:10px;font-weight:700;color:#58a6ff;white-space:nowrap;">▼買入 '+valFmt(buyPrice)+'</div>'
+             + '<div style="position:absolute;left:'+bx+'%;top:22px;width:2px;height:22px;background:#58a6ff;transform:translateX(-1px);"></div>';
+    var fx = xpct(fairValue);
+    var fairColor = upsideFairPct>=0 ? UP_COLOR : DN_COLOR;
+    var fairLbl = '<div style="position:absolute;left:'+fx+'%;top:40px;transform:translateX('+(fx<8?'0%':(fx>92?'-100%':'-50%'))+');font-size:9px;color:'+fairColor+';white-space:nowrap;">合理 '+valFmt(fairValue)+'</div>'
+                + '<div style="position:absolute;left:'+fx+'%;top:32px;width:2px;height:8px;background:'+fairColor+';transform:translateX(-1px);"></div>';
+    var targetLbl = '';
+    if(target!==null && target>0){
+      var tx = xpct(target);
+      var targetColor = upsideTargetPct>=0 ? UP_COLOR : DN_COLOR;
+      targetLbl = '<div style="position:absolute;left:'+tx+'%;top:52px;transform:translateX('+(tx<8?'0%':(tx>92?'-100%':'-50%'))+');font-size:9px;color:'+targetColor+';white-space:nowrap;">法人 '+valFmt(target)+'</div>'
+                + '<div style="position:absolute;left:'+tx+'%;top:32px;width:2px;height:20px;background:'+targetColor+';opacity:0.6;transform:translateX(-1px);"></div>';
+    }
+    chartEl.innerHTML = lowLbl + highLbl + buyLbl + fairLbl + targetLbl
+      + '<div style="position:absolute;left:0;right:0;top:34px;height:4px;background:#30363d;border-radius:2px;"></div>';
+    chartEl.style.display = 'block';
+    chartEl.style.height = (target!==null && target>0) ? '68px' : '52px';
+
+    rrBox.style.display = 'block';
+  } else {
+    rrBox.style.display = 'none';
+    document.getElementById('val-rr-chart').style.display = 'none';
+  }
+
+  var pegEl = document.getElementById('val-peg');
+  if(pe!==null && g1>0){
+    pegEl.textContent = (pe/g1).toFixed(2);
+  } else {
+    pegEl.textContent = '-';
+  }
+
+  var marginLight = document.getElementById('val-marginLight');
+  var marginVal = document.getElementById('val-marginVal');
+  if(marginRatio!==null){
+    marginVal.textContent = marginRatio.toFixed(1)+'%';
+    if(marginRatio>=150){ marginLight.style.background='#f85149'; marginVal.style.color='#f85149'; }
+    else if(marginRatio>=120){ marginLight.style.background='#d29922'; marginVal.style.color='#d29922'; }
+    else { marginLight.style.background='#3fb950'; marginVal.style.color='#3fb950'; }
+  } else {
+    marginVal.textContent='未填'; marginLight.style.background='#30363d'; marginVal.style.color='#8b949e';
+  }
+
+  var capitalLight = document.getElementById('val-capitalLight');
+  var capitalVal = document.getElementById('val-capitalVal');
+  // 股本只是面額股數，不是公司大小；市值 = 股本(億) x 股價 / 10（面額10元換算），用市值判斷才對
+  if(capital!==null && price!==null){
+    var marketCap = capital * price / 10;
+    if(marketCap<100){ capitalLight.style.background='#d29922'; capitalVal.style.color='#d29922'; capitalVal.textContent = '股本'+capital.toFixed(1)+'億，市值約'+marketCap.toFixed(0)+'億（小型股，波動較大）'; }
+    else { capitalLight.style.background='#3fb950'; capitalVal.style.color='#3fb950'; capitalVal.textContent = '股本'+capital.toFixed(1)+'億，市值約'+marketCap.toFixed(0)+'億'; }
+  } else if(capital!==null){
+    capitalVal.textContent = '股本'+capital.toFixed(1)+'億（缺股價，無法估市值）'; capitalLight.style.background='#30363d'; capitalVal.style.color='#8b949e';
+  } else {
+    capitalVal.textContent='未填'; capitalLight.style.background='#30363d'; capitalVal.style.color='#8b949e';
+  }
+
+  var momentumScore = 0, momentumCount = 0;
+  var trendLight = document.getElementById('val-trendLight');
+  var trendVal = document.getElementById('val-trendVal');
+  if(sma20!==null && sma60!==null){
+    momentumCount++;
+    if(price>sma20 && sma20>sma60){ trendVal.textContent='多頭排列'; trendLight.style.background='#3fb950'; trendVal.style.color='#3fb950'; momentumScore+=1; }
+    else if(price<sma20 && sma20<sma60){ trendVal.textContent='空頭排列'; trendLight.style.background='#f85149'; trendVal.style.color='#f85149'; momentumScore-=1; }
+    else { trendVal.textContent='糾結'; trendLight.style.background='#d29922'; trendVal.style.color='#d29922'; }
+  } else {
+    trendVal.textContent='未填'; trendLight.style.background='#30363d'; trendVal.style.color='#8b949e';
+  }
+
+  var kdLight = document.getElementById('val-kdLight');
+  var kdVal = document.getElementById('val-kdVal');
+  if(kdK!==null && kdD!==null){
+    momentumCount++;
+    if(kdK>kdD){ kdVal.textContent='黃金交叉'; kdLight.style.background='#3fb950'; kdVal.style.color='#3fb950'; momentumScore+=1; }
+    else { kdVal.textContent='死亡交叉'; kdLight.style.background='#f85149'; kdVal.style.color='#f85149'; momentumScore-=1; }
+  } else {
+    kdVal.textContent='未填'; kdLight.style.background='#30363d'; kdVal.style.color='#8b949e';
+  }
+
+  var rsLight = document.getElementById('val-rsLight');
+  var rsValEl = document.getElementById('val-rsVal');
+  if(rs!==null){
+    momentumCount++;
+    rsValEl.textContent = (rs>=0?'+':'')+rs.toFixed(2)+'%';
+    if(rs>0){ rsLight.style.background='#3fb950'; rsValEl.style.color='#3fb950'; momentumScore+=1; }
+    else { rsLight.style.background='#f85149'; rsValEl.style.color='#f85149'; momentumScore-=1; }
+  } else {
+    rsValEl.textContent='未填'; rsLight.style.background='#30363d'; rsValEl.style.color='#8b949e';
+  }
+
+  var valLabel, valKey;
+  if(premiumPct>=15){ valLabel='便宜'; valKey='cheap'; }
+  else if(premiumPct<=-15){ valLabel='昂貴'; valKey='exp'; }
+  else { valLabel='合理'; valKey='fair'; }
+
+  var momLabel, momKey;
+  if(momentumCount===0){ momLabel='技術面資料不足'; momKey='flat'; }
+  else if(momentumScore>=2){ momLabel='轉強'; momKey='up'; }
+  else if(momentumScore<=-2){ momLabel='轉弱'; momKey='down'; }
+  else { momLabel='中性'; momKey='flat'; }
+
+  var tagColors = {
+    cheap:{bg:'#3fb95022',fg:'#3fb950'}, fair:{bg:'#1f6feb22',fg:'#58a6ff'}, exp:{bg:'#f8514922',fg:'#f85149'}
+  };
+  var descMap = {
+    'cheap-up':'估值便宜且動能轉強，兩者同時偏多，是相對理想的觀察區間，但仍建議設好停損分批進場。',
+    'cheap-flat':'估值便宜，但動能尚未明朗，可以留意觀察或分批小量布局，等待技術面轉強訊號再加碼。',
+    'cheap-down':'估值看起來便宜，但技術面偏弱，要留意是否為「價值陷阱」──便宜不代表止跌，建議等止跌訊號出現再進場。',
+    'fair-up':'估值大致合理，動能偏強，屬於順勢操作情境，追高風險相對可控，但已經沒有明顯低估空間。',
+    'fair-flat':'估值合理、動能中性，目前沒有特別的進出場訊號，建議觀望等更明確的訊號。',
+    'fair-down':'估值合理但動能偏弱，短中期可能仍有壓力，建議觀望或減碼，不急著進場。',
+    'exp-up':'估值偏貴，但動能強勢，追價的話風險較高，若參與建議嚴設停損，並留意隨時可能拉回修正估值。',
+    'exp-flat':'估值偏貴，動能也不明確，建議減碼或避開，等回檔到更合理的價位再考慮。',
+    'exp-down':'估值偏貴且動能轉弱，兩者同時偏空，建議避開或減碼，不是好的進場時機。'
+  };
+  var key = valKey+'-'+momKey;
+  var verdictTag = document.getElementById('val-verdictTag');
+  verdictTag.textContent = valLabel+' × '+momLabel;
+  verdictTag.style.background = tagColors[valKey].bg;
+  verdictTag.style.color = tagColors[valKey].fg;
+  document.getElementById('val-verdictDesc').textContent = descMap[key] || '請輸入更多資料以取得完整判讀。';
+
+  document.getElementById('val-result').style.display = 'block';
 }
 
 function showAddToHome(){
