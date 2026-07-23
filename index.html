@@ -3335,12 +3335,6 @@ function suggestValuationParams(s, pe){
 
 function closeValuationTool(){
   document.getElementById('valuation-modal').style.display = 'none';
-  document.body.style.position = '';
-  document.body.style.top = '';
-  document.body.style.left = '';
-  document.body.style.right = '';
-  document.body.style.width = '';
-  window.scrollTo(0, window._valScrollLockY || 0);
 }
 function openValuationTool(code){
   var s = D.find(function(x){ return x.code === code; });
@@ -3381,12 +3375,6 @@ function openValuationTool(code){
   document.getElementById('val-warn').style.display = 'none';
   var valScrollEl = document.getElementById('val-modal-scroll');
   if(valScrollEl) valScrollEl.scrollTop = 0;
-  window._valScrollLockY = window.scrollY || document.documentElement.scrollTop || 0;
-  document.body.style.position = 'fixed';
-  document.body.style.top = '-' + window._valScrollLockY + 'px';
-  document.body.style.left = '0';
-  document.body.style.right = '0';
-  document.body.style.width = '100%';
   document.getElementById('valuation-modal').style.display = 'flex';
 }
 
@@ -3406,6 +3394,8 @@ function fetchValuationTechnical(){
       if(d.yearHigh!==null && d.yearHigh!==undefined) document.getElementById('val-yearHigh').value = Number(d.yearHigh).toFixed(2);
       if(d.yearLow!==null && d.yearLow!==undefined) document.getElementById('val-yearLow').value = Number(d.yearLow).toFixed(2);
       toast('✅ 已自動帶入 SMA/KD/年高低','#238636');
+      // 抓到新數據後自動重算一次，避免畫面停留在抓取前的舊結果
+      if(document.getElementById('val-result').style.display === 'block'){ valCalc(); }
     })
     .catch(function(e){
       toast('❌ 抓取失敗：'+e.message,'#da3633');
