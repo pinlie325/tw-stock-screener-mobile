@@ -2833,6 +2833,47 @@ function toast(msg,color){
 
 function showToast(msg){ toast(msg); }
 
+// 從「個股簡列」清單點股票直接跳到主列表對應卡片，
+// 跟熱力圖分類「進入」按鈕用同一套代碼白名單機制，確保卡片一定存在於畫面上
+function jumpToCardWithFilter(code, codes, catLabel){
+  var fsearch = document.getElementById('fsearch');
+  if(fsearch && fsearch.value){ fsearch.value=''; doSearch(''); toggleClear(''); }
+  if(codes){
+    window._hcatCodes = codes;
+    sel = [];
+    renderSelTags();
+    document.getElementById('dall').classList.add('on');
+    document.getElementById('fbtn').classList.remove('on');
+    document.getElementById('fbtn').textContent = '🔍 產業';
+    render();
+    var clearTag = document.createElement('span');
+    clearTag.className = 'dtag-selected';
+    clearTag.style.cssText = 'background:#30363d;color:#58a6ff;border:1px solid #58a6ff55;border-radius:4px;font-size:12px;padding:3px 8px;display:inline-flex;align-items:center;gap:4px;cursor:pointer';
+    clearTag.innerHTML = (catLabel||'篩選')+' '+codes.length+'支 <span onclick="clearHcatFilter()" style="color:#8b949e">✕</span>';
+    var tagsWrap = document.getElementById('fbar-tags-wrap');
+    if(tagsWrap){
+      var old = tagsWrap.querySelector('.dtag-selected');
+      if(old) old.remove();
+      tagsWrap.style.display='flex';
+      tagsWrap.insertBefore(clearTag, tagsWrap.firstChild);
+    }
+  }
+  setTimeout(function(){
+    var card = document.querySelector('.card[data-code="'+code+'"]');
+    if(card){
+      var hdr = document.querySelector('.hdr');
+      var fbar = document.querySelector('.fbar');
+      var sbar = document.querySelector('.sbar');
+      var offset = (hdr?hdr.offsetHeight:0) + (fbar?fbar.offsetHeight:0) + (sbar?sbar.offsetHeight:0) + 8;
+      var top = card.getBoundingClientRect().top + window.scrollY - offset;
+      window.scrollTo({top:top, behavior:'smooth'});
+      card.style.transition = 'box-shadow 0.3s';
+      card.style.boxShadow = '0 0 0 2px #58a6ff';
+      setTimeout(function(){ card.style.boxShadow = ''; }, 1500);
+    }
+  }, 100);
+}
+
 function showCompactList(){
   var data = getFilt().slice();
   data.sort(function(a,b){
@@ -3001,19 +3042,7 @@ function showCompactList(){
         el2.addEventListener('click', function(){
           document.getElementById('compact-modal').style.display='none';
           var code = el2.getAttribute('data-code');
-          var fsearch = document.getElementById('fsearch');
-          if(fsearch && fsearch.value){ fsearch.value=''; doSearch(''); toggleClear(''); }
-          setTimeout(function(){
-            var card = document.querySelector('.card[data-code="'+code+'"]');
-            if(card){
-              var hdr = document.querySelector('.hdr');
-              var fbar = document.querySelector('.fbar');
-              var sbar = document.querySelector('.sbar');
-              var offset = (hdr?hdr.offsetHeight:0)+(fbar?fbar.offsetHeight:0)+(sbar?sbar.offsetHeight:0)+8;
-              var top = card.getBoundingClientRect().top + window.scrollY - offset;
-              window.scrollTo({top:top, behavior:'smooth'});
-            }
-          }, 100);
+          jumpToCardWithFilter(code, subData.map(function(s){ return String(s.code); }), cat);
         });
       });
       // 高亮選中的方塊
@@ -3069,20 +3098,7 @@ function showCompactList(){
     el.addEventListener('click', function(){
       document.getElementById('compact-modal').style.display='none';
       var code = el.getAttribute('data-code');
-      // 清除搜尋，還原完整清單後捲到該卡片
-      var fsearch = document.getElementById('fsearch');
-      if(fsearch && fsearch.value){ fsearch.value=''; doSearch(''); toggleClear(''); }
-      setTimeout(function(){
-        var card = document.querySelector('.card[data-code="'+code+'"]');
-        if(card){
-          var hdr = document.querySelector('.hdr');
-          var fbar = document.querySelector('.fbar');
-          var sbar = document.querySelector('.sbar');
-          var offset = (hdr?hdr.offsetHeight:0) + (fbar?fbar.offsetHeight:0) + (sbar?sbar.offsetHeight:0) + 8;
-          var top = card.getBoundingClientRect().top + window.scrollY - offset;
-          window.scrollTo({top:top, behavior:'smooth'});
-        }
-      }, 100);
+      jumpToCardWithFilter(code, null, null);
     });
   });
   document.getElementById('compact-modal').style.display = 'flex';
@@ -3156,6 +3172,14 @@ function marginColor(pct){
   if(pct>=120) return {bg:'#d2992233',fg:'#d29922'};
   return {bg:'#3fb95033',fg:'#3fb950'};
 }
+function jumpFromMarginReport(code){
+  document.getElementById('margin-report-modal').style.display = 'none';
+  sel = [];
+  window._hcatCodes = null;
+  renderSelTags();
+  render();
+  jumpToCardWithFilter(code, null, null);
+}
 function openMarginReport(){
   document.getElementById('settings-modal').style.display = 'none';
   var groups = {};
@@ -3174,14 +3198,14 @@ function openMarginReport(){
     document.getElementById('margin-report-nav').innerHTML = '';
   } else {
     body.innerHTML = groupNames.map(function(name, gi){
-      var rows = groups[name].slice().sort(function(a,b){ return (b.margin||0)-(a.margin||0); });
+      var rows = groups[name].slice().sort(function(a,b){ return (a.margin||0)-(b.margin||0); });
       var LIMIT = 10;
       var hasMore = rows.length > LIMIT;
       var visibleRows = rows.slice(0, LIMIT);
       var hiddenRows = rows.slice(LIMIT);
       function rowHtml(s){
         var c = marginColor(s.margin);
-        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 6px;border-radius:4px;background:'+c.bg+';font-size:11px;min-width:0;">'
+        return '<div onclick="jumpFromMarginReport(\''+s.code+'\')" style="display:flex;justify-content:space-between;align-items:center;padding:4px 6px;border-radius:4px;background:'+c.bg+';font-size:11px;min-width:0;cursor:pointer;">'
           +'<span style="color:#8b949e;font-family:monospace;flex-shrink:0;">'+s.code+'</span>'
           +'<span style="color:#e6edf3;flex:1;margin:0 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+s.name+'</span>'
           +'<span style="color:'+c.fg+';font-weight:700;flex-shrink:0;">'+s.margin.toFixed(1)+'%</span>'
