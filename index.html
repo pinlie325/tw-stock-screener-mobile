@@ -2901,13 +2901,17 @@ function showCompactList(){
     var ups2 = matched.filter(function(s){return s.pct>0;}).length;
     var dns2 = matched.filter(function(s){return s.pct<0;}).length;
     var pctSum2 = matched.reduce(function(acc,s){return acc+(s.pct||0);},0);
-    catStats[cat] = {total:matched.length, ups:ups2, dns:dns2, pctSum:pctSum2};
+    var turnvalSum2 = matched.reduce(function(acc,s){return acc+(s.turnval||0);},0);
+    catStats[cat] = {total:matched.length, ups:ups2, dns:dns2, pctSum:pctSum2, turnval:turnvalSum2};
   });
   var catKeys = Object.keys(catStats).sort(function(a,b){
-    return (catStats[b].pctSum/catStats[b].total) - (catStats[a].pctSum/catStats[a].total);
+    return catStats[b].turnval - catStats[a].turnval;
   });
+  // 用成交值決定方塊大小（面積跟成交值成正比，用開根號換算成邊長，避免最大最小差太多）
+  var maxTurnval = catKeys.reduce(function(m,t){ return Math.max(m, catStats[t].turnval); }, 0) || 1;
+  var MIN_TILE = 58, MAX_TILE = 168;
   var heatHtml = '<div style="padding:10px 16px;border-bottom:1px solid #30363d">'
-    +'<div style="font-size:11px;color:#8b949e;margin-bottom:8px">產業熱力圖</div>'
+    +'<div style="font-size:11px;color:#8b949e;margin-bottom:8px">產業熱力圖（方塊大小＝成交值）</div>'
     +'<div style="display:flex;flex-wrap:wrap;gap:4px">';
   catKeys.forEach(function(t){
     var st = catStats[t];
@@ -2925,9 +2929,14 @@ function showCompactList(){
     } else {
       bg = '#21262d'; tc = '#8b949e';
     }
-    heatHtml += '<div style="background:'+bg+';border-radius:4px;padding:4px 7px;cursor:pointer;min-width:60px;text-align:center" class="hcat" data-tag="'+t+'">'
-      +'<div style="color:'+tc+';font-size:10px;font-weight:700">'+t+'</div>'
-      +'<div style="color:'+tc+';font-size:10px;opacity:0.8">'+st.total+'支 '+(avg>0?'+':'')+avg.toFixed(1)+'%</div>'
+    var sizeRatio = Math.sqrt(st.turnval / maxTurnval);
+    var tileSize = Math.round(MIN_TILE + (MAX_TILE - MIN_TILE) * sizeRatio);
+    var nameFont = Math.round(10 + 4 * sizeRatio);
+    var subFont = Math.round(9 + 2 * sizeRatio);
+    heatHtml += '<div style="background:'+bg+';border-radius:4px;padding:4px 7px;cursor:pointer;width:'+tileSize+'px;min-width:'+MIN_TILE+'px;box-sizing:border-box;text-align:center;display:flex;flex-direction:column;justify-content:center;" class="hcat" data-tag="'+t+'">'
+      +'<div style="color:'+tc+';font-size:'+nameFont+'px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+t+'</div>'
+      +'<div style="color:'+tc+';font-size:'+subFont+'px;opacity:0.8">'+st.total+'支 '+(avg>0?'+':'')+avg.toFixed(1)+'%</div>'
+      +(st.turnval>0?'<div style="color:'+tc+';font-size:'+Math.max(subFont-1,8)+'px;opacity:0.65">'+st.turnval.toFixed(0)+'億</div>':'')
       +'</div>';
   });
   heatHtml += '</div></div>';
