@@ -882,9 +882,28 @@ function adminRemoveUser(email){
     <button onclick="showAddToHome()" style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
       📲 加入主畫面（iOS）
     </button>
-    <button onclick="openMarginReport()" style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:15px;padding:12px;cursor:pointer;text-align:left">
+    <button onclick="openMarginReport()" style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
       📊 各族群融資維持率報表
     </button>
+    <button onclick="openMacroBoard()" style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:15px;padding:12px;cursor:pointer;text-align:left">
+      🌍 市場參考看板（原油／美元／VIX／美債）
+    </button>
+  </div>
+</div>
+
+<!-- MACRO REFERENCE BOARD MODAL -->
+<div id="macro-board-modal" style="display:none;position:fixed;inset:0;background:#0d1117;z-index:9999;flex-direction:column">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #30363d;background:#161b22;flex-shrink:0">
+    <span style="font-size:16px;font-weight:700;color:#e6edf3">🌍 市場參考看板</span>
+    <button onclick="document.getElementById('macro-board-modal').style.display='none'" style="background:none;border:none;color:#8b949e;font-size:22px;cursor:pointer">✕</button>
+  </div>
+  <div style="flex:1;overflow-y:auto;padding:14px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <span id="macro-board-updated" style="font-size:11px;color:#6e7681;">尚未更新</span>
+      <button id="macro-board-refresh-btn" onclick="fetchMacroBoard()" style="background:#1f6feb22;border:1px solid #58a6ff77;border-radius:14px;color:#58a6ff;font-size:12px;padding:5px 12px;cursor:pointer;">🔄 重新整理</button>
+    </div>
+    <div id="macro-board-grid" style="display:grid;grid-template-columns:1fr;gap:10px;"></div>
+    <p style="font-size:11px;color:#6e7681;line-height:1.6;margin-top:14px;">資料來源：Yahoo Finance，僅供參考，可能有延遲，實際交易請以正式報價為準。</p>
   </div>
 </div>
 
@@ -3188,6 +3207,71 @@ function jumpFromMarginReport(code){
   renderSelTags();
   render();
   jumpToCardWithFilter(code, null, null);
+}
+// 市場參考看板：原油／美元指數／VIX／美債殖利率，透過 Apps Script 代理 Yahoo Finance
+var MACRO_LABELS = {
+  oil:   {name:'布蘭特原油', unit:'US$', url:'https://www.cnbc.com/quotes/@LCO.1',
+    desc:'全球原油價格指標，反映能源成本與通膨壓力。油價大漲通常代表需求強或供給緊張，可能推升通膨、影響央行升息態度；對航空、塑化、運輸等產業成本衝擊大，對能源／原物料類股偏多。'},
+  dxy:   {name:'美元指數',   unit:'',    url:'https://finance.yahoo.com/quote/DX-Y.NYB',
+    desc:'衡量美元對一籃子主要貨幣（歐元、日圓等）的強弱。美元轉強，資金傾向回流美元資產，新興市場（含台股）與原物料容易承壓；美元轉弱則相對有利新興市場資金行情。'},
+  vix:   {name:'VIX恐慌指數', unit:'',    url:'https://finance.yahoo.com/quote/%5EVIX',
+    desc:'反映美股(S&P500)未來30天的預期波動率，數字越高代表市場越不安、避險需求越高。一般20以下算平穩，30以上常伴隨股市大幅拉回或恐慌性賣壓，可當市場情緒的溫度計。'},
+  us10y: {name:'美10年期公債殖利率', unit:'%', url:'https://finance.yahoo.com/quote/%5ETNX',
+    desc:'全球資金成本的重要指標。殖利率走升代表市場預期利率偏高或通膨壓力大，會墊高股票（尤其成長股／高本益比股）的折現率，通常對股市偏空；殖利率下滑則對股票評價偏有利。'}
+};
+function openMacroBoard(){
+  document.getElementById('settings-modal').style.display = 'none';
+  document.getElementById('macro-board-modal').style.display = 'flex';
+  var grid = document.getElementById('macro-board-grid');
+  if(!grid.children.length){
+    grid.innerHTML = Object.keys(MACRO_LABELS).map(function(k){
+      return '<div id="macro-card-'+k+'" style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:12px;">'
+        +'<div onclick="window.open(\''+MACRO_LABELS[k].url+'\',\'_blank\')" style="cursor:pointer;">'
+        +'<div style="font-size:12px;color:#8b949e;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">'+MACRO_LABELS[k].name+'<span style="color:#58a6ff;font-size:11px;">↗</span></div>'
+        +'<div id="macro-val-'+k+'" style="font-size:19px;font-weight:700;color:#e6edf3;">--</div>'
+        +'<div id="macro-chg-'+k+'" style="font-size:12px;margin-top:2px;">--</div>'
+        +'</div>'
+        +'<div style="font-size:11px;color:#6e7681;line-height:1.6;margin-top:8px;padding-top:8px;border-top:1px solid #30363d;">'+MACRO_LABELS[k].desc+'</div>'
+      +'</div>';
+    }).join('');
+  }
+  fetchMacroBoard();
+}
+function fetchMacroBoard(){
+  var btn = document.getElementById('macro-board-refresh-btn');
+  if(btn){ btn.disabled = true; btn.textContent = '抓取中...'; }
+  fetch(NOTE_GAS_URL + '?action=macro')
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(!d.ok){ throw new Error(d.error||'抓取失敗'); }
+      Object.keys(MACRO_LABELS).forEach(function(k){
+        var item = d.data && d.data[k];
+        var valEl = document.getElementById('macro-val-'+k);
+        var chgEl = document.getElementById('macro-chg-'+k);
+        if(!valEl || !chgEl) return;
+        if(!item || item.price===null || item.price===undefined){
+          valEl.textContent = '--'; chgEl.textContent = '無資料'; chgEl.style.color = '#8b949e';
+          return;
+        }
+        var unit = MACRO_LABELS[k].unit;
+        valEl.textContent = (unit==='US$'?'US$ ':'') + Number(item.price).toFixed(2) + (unit==='%'?'%':'');
+        if(item.changePercent!==null && item.changePercent!==undefined){
+          var cp = Number(item.changePercent);
+          // 台股慣例：漲(正)＝紅、跌(負)＝綠
+          chgEl.style.color = cp>=0 ? '#f85149' : '#3fb950';
+          chgEl.textContent = (cp>=0?'+':'') + cp.toFixed(2) + '%';
+        } else {
+          chgEl.textContent = ''; chgEl.style.color = '#8b949e';
+        }
+      });
+      document.getElementById('macro-board-updated').textContent = '更新時間：' + new Date().toLocaleString('zh-TW',{hour12:false});
+    })
+    .catch(function(e){
+      toast('❌ 市場看板抓取失敗：'+e.message,'#da3633');
+    })
+    .finally(function(){
+      if(btn){ btn.disabled = false; btn.textContent = '🔄 重新整理'; }
+    });
 }
 function openMarginReport(){
   document.getElementById('settings-modal').style.display = 'none';
