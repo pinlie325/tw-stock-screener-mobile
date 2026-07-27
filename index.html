@@ -1543,7 +1543,7 @@ function render(){
         +'<div class="cg-item"><div class="cg-lbl">毛利率%</div><div class="cg-val '+gmc+'">'+(s.grossmargin!==null?s.grossmargin.toFixed(1):'--')+'</div></div>'
         +(function(){var rg=s.revgrowth;var rgc=rg!==null?(rg>0?'up':rg<0?'dn':''):'';return '<div class="cg-item"><div class="cg-lbl">營收增%</div><div class="cg-val '+rgc+'">'+(rg!==null?((rg>0?'+':'')+rg.toFixed(1)):'--')+'</div></div>';})()
         +'<div class="cg-item"><div class="cg-lbl">單季EPS</div><div class="cg-val '+epsc+'">'+(s.eps!==null?s.eps.toFixed(2):'--')+'</div></div>'
-        +(function(){var annEps=s.eps!==null?s.eps*4/0.6:null;var pe=(annEps&&annEps>0&&s.volume!==null)?(s.volume/(annEps)).toFixed(1):null;return '<div class="cg-item"><div class="cg-lbl">本益比</div><div class="cg-val">'+(pe!==null?pe:'--')+'</div></div>';})()
+        +(function(){var pe; if(s.pe!==null&&s.pe!==undefined){pe=s.pe.toFixed(1);}else{var annEps=s.eps!==null?s.eps*4/0.6:null;pe=(annEps&&annEps>0&&s.volume!==null)?(s.volume/(annEps)).toFixed(1):null;}return '<div class="cg-item"><div class="cg-lbl">本益比</div><div class="cg-val">'+(pe!==null?pe:'--')+'</div></div>';})()
       +'</div>'
       // Yahoo K線圖區塊
       +'<div class="yf-wrap" id="yf-'+s.code+'">'
@@ -2423,7 +2423,7 @@ function parseXL(file){
 function processRows(rows,filename){
   var keys=Object.keys(rows[0]);
   function fc(arr){for(var i=0;i<arr.length;i++)for(var j=0;j<keys.length;j++)if(keys[j].indexOf(arr[i])>=0)return keys[j];return null;}
-  var COL={code:fc(['代碼']),name:fc(['商品','名稱']),close:fc(['昨收']),pct:fc(['漲幅']),avg:fc(['均價']),volume:fc(['成交']),turnover:fc(['換手率']),turnval:fc(['成交值']),capital:fc(['股本']),margin:fc(['融資維持']),ind:fc(['所有細產業','細產業','產業']),pos:fc(['產業地位']),rs:fc(['RS%']),grossmargin:fc(['毛利率']),eps:fc(['盈餘(單)','單季','EPS']),bigbuy:fc(['外盤特大單%','外盤特大單','特大單%']),revgrowth:fc(['營收年增率','營收年增']),news:fc(['公司動態'])};
+  var COL={code:fc(['代碼']),name:fc(['商品','名稱']),close:fc(['昨收']),pct:fc(['漲幅']),avg:fc(['均價']),volume:fc(['成交']),turnover:fc(['換手率']),turnval:fc(['成交值']),capital:fc(['股本']),margin:fc(['融資維持']),ind:fc(['所有細產業','細產業','產業']),pos:fc(['產業地位']),rs:fc(['RS%']),grossmargin:fc(['毛利率']),eps:fc(['盈餘(單)','單季','EPS']),bigbuy:fc(['外盤特大單%','外盤特大單','特大單%']),revgrowth:fc(['營收年增率','營收年增']),pe:fc(['本益比','PE(市盈率)','PE']),news:fc(['公司動態'])};
   function sf(v){if(v===null||v===undefined||v===''||v==='--')return null;var n=parseFloat(v);return isNaN(n)?null:n;}
   var nd=[];
   rows.forEach(function(r){
@@ -2432,7 +2432,7 @@ function processRows(rows,filename){
     // 代碼欄可能是數字(2302)、帶空格(' 2302 ')或小數('2302.0')，統一正規化為4位字串
     var rawCode=String(r[COL.code]).trim().replace(/\.0+$/,'');
     var cleanCode=/^\d+$/.test(rawCode)?rawCode.padStart(4,'0'):rawCode;
-    nd.push({code:cleanCode,name:COL.name?String(r[COL.name]||'').trim():'',close:COL.close?sf(r[COL.close]):null,pct:COL.pct?sf(r[COL.pct]):null,avg:COL.avg?sf(r[COL.avg]):null,volume:COL.volume?sf(r[COL.volume]):null,turnover:COL.turnover?sf(r[COL.turnover]):null,turnval:COL.turnval?sf(r[COL.turnval]):null,capital:COL.capital?sf(r[COL.capital]):null,margin:COL.margin?sf(r[COL.margin]):null,position:COL.pos&&r[COL.pos]?String(r[COL.pos]).trim():'',tags:ts,rs:COL.rs?sf(r[COL.rs]):null,grossmargin:COL.grossmargin?sf(r[COL.grossmargin]):null,eps:COL.eps?sf(r[COL.eps]):null,bigbuy:COL.bigbuy?sf(r[COL.bigbuy]):null,revgrowth:COL.revgrowth?sf(r[COL.revgrowth]):null,news:COL.news&&r[COL.news]?String(r[COL.news]).trim():''});
+    nd.push({code:cleanCode,name:COL.name?String(r[COL.name]||'').trim():'',close:COL.close?sf(r[COL.close]):null,pct:COL.pct?sf(r[COL.pct]):null,avg:COL.avg?sf(r[COL.avg]):null,volume:COL.volume?sf(r[COL.volume]):null,turnover:COL.turnover?sf(r[COL.turnover]):null,turnval:COL.turnval?sf(r[COL.turnval]):null,capital:COL.capital?sf(r[COL.capital]):null,margin:COL.margin?sf(r[COL.margin]):null,position:COL.pos&&r[COL.pos]?String(r[COL.pos]).trim():'',tags:ts,rs:COL.rs?sf(r[COL.rs]):null,grossmargin:COL.grossmargin?sf(r[COL.grossmargin]):null,eps:COL.eps?sf(r[COL.eps]):null,bigbuy:COL.bigbuy?sf(r[COL.bigbuy]):null,revgrowth:COL.revgrowth?sf(r[COL.revgrowth]):null,pe:COL.pe?sf(r[COL.pe]):null,news:COL.news&&r[COL.news]?String(r[COL.news]).trim():''});
   });
   if(!nd.length){alert('沒有讀到有效資料');return;}
   D=nd;
@@ -3513,9 +3513,16 @@ function openValuationTool(code){
   document.getElementById('val-title').textContent = '🎯 '+s.code+' '+s.name+' 合理性評估';
 
   document.getElementById('val-price').value = s.volume!==null ? s.volume : '';
-  var annEps = s.eps!==null ? (s.eps*4/0.6) : null;
+  var annEps, pe;
+  if(s.pe!==null && s.pe!==undefined && s.pe>0){
+    // 有報價軟體給的真實本益比，反推年化EPS會比單季EPS*4/0.6的概算準確很多
+    pe = s.pe;
+    annEps = (s.volume!==null) ? (s.volume / pe) : null;
+  } else {
+    annEps = s.eps!==null ? (s.eps*4/0.6) : null;
+    pe = (annEps && annEps>0 && s.volume!==null) ? (s.volume/annEps) : null;
+  }
   document.getElementById('val-base').value = annEps!==null ? annEps.toFixed(2) : '';
-  var pe = (annEps && annEps>0 && s.volume!==null) ? (s.volume/annEps) : null;
   document.getElementById('val-pe').value = pe!==null ? pe.toFixed(1) : '';
 
   var suggestion = suggestValuationParams(s, pe);
