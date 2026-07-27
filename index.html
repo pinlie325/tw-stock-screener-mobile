@@ -968,6 +968,7 @@ function adminRemoveUser(email){
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
         <div><label style="display:block;font-size:13px;color:#8b949e;margin-bottom:4px;">融資維持率%</label><input type="number" id="val-marginRatio" style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:18px;padding:10px;box-sizing:border-box;"></div>
         <div><label style="display:block;font-size:13px;color:#8b949e;margin-bottom:4px;">股本(億)</label><input type="number" id="val-capital" style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:18px;padding:10px;box-sizing:border-box;"></div>
+        <div style="grid-column:1/-1;"><label style="display:block;font-size:13px;color:#8b949e;margin-bottom:4px;">ROE(單季)%</label><input type="number" id="val-roe" style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:18px;padding:10px;box-sizing:border-box;"></div>
       </div>
     </div>
 
@@ -1041,6 +1042,7 @@ function adminRemoveUser(email){
         <table style="width:100%;border-collapse:collapse;font-size:15px;">
           <tr><td style="padding:5px 0;"><span id="val-marginLight" style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;"></span>融資維持率</td><td id="val-marginVal" style="text-align:right;">-</td></tr>
           <tr><td style="padding:5px 0;"><span id="val-capitalLight" style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;"></span>股本規模</td><td id="val-capitalVal" style="text-align:right;">-</td></tr>
+          <tr><td style="padding:5px 0;"><span id="val-roeLight" style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;"></span>獲利品質(單季ROE)</td><td id="val-roeVal" style="text-align:right;">-</td></tr>
         </table>
       </div>
       <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:12px;">
@@ -1150,7 +1152,7 @@ function adminRemoveUser(email){
   <button class="sbtn" data-k="eps" onclick="setSrtToggle(this,'eps','EPS ↑','EPS ↓')">EPS ↑</button>
   <button class="sbtn" data-k="grossmargin" onclick="setSrtToggle(this,'grossmargin','毛利率 ↑','毛利率 ↓')">毛利率 ↑</button>
   <button class="sbtn" data-k="turnval" onclick="setSrtToggle(this,'turnval','成交值 ↑','成交值 ↓')">成交值 ↑</button>
-  <button class="sbtn" data-k="turnover" onclick="setSrtToggle(this,'turnover','換手率 ↑','換手率 ↓')">換手率 ↑</button>
+  <button class="sbtn" data-k="roe" onclick="setSrtToggle(this,'roe','ROE ↑','ROE ↓')">ROE ↑</button>
   <button class="sbtn" data-k="margin" onclick="setSrtToggle(this,'margin','融資維持 ↑','融資維持 ↓','a')">融資維持 ↑</button>
   <button class="sbtn" data-k="capital" onclick="setSrtToggle(this,'capital','股本小→大','股本大→小','a')">股本小→大</button>
 </div>
@@ -1537,7 +1539,7 @@ function render(){
         +(function(){var bias=s.pct!==null?s.pct:null;var biasc=bias!==null?(bias>0?'up':bias<0?'dn':''):'';return '<div class="cg-item"><div class="cg-lbl">漲跌幅%</div><div class="cg-val '+biasc+'">'+(bias!==null?((bias>0?'+':'')+bias.toFixed(1)):'--')+'</div></div>';})()
         +'<div class="cg-item"><div class="cg-lbl">股本(億)</div><div class="cg-val">'+(s.capital!==null?s.capital.toFixed(1):'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">融資%</div><div class="cg-val '+mc+'">'+(s.margin!==null?s.margin.toFixed(1):'--')+'</div></div>'
-        +'<div class="cg-item"><div class="cg-lbl">換手率%</div><div class="cg-val">'+(s.turnover!==null?s.turnover.toFixed(2):'--')+'</div></div>'
+                +(function(){var roe=s.roe;var roec=roe!==null?(roe>=3.75?'up':roe<1.25?'dn':''):'';return '<div class="cg-item"><div class="cg-lbl">單季ROE%</div><div class="cg-val '+roec+'">'+(roe!==null?roe.toFixed(1):'--')+'</div></div>';})()
         +'<div class="cg-item"><div class="cg-lbl">RS%</div><div class="cg-val">'+(s.rs!==null?s.rs.toFixed(1):'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">外大單%</div><div class="cg-val">'+(s.bigbuy!==null&&s.bigbuy!==undefined?s.bigbuy.toFixed(1):'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">毛利率%</div><div class="cg-val '+gmc+'">'+(s.grossmargin!==null?s.grossmargin.toFixed(1):'--')+'</div></div>'
@@ -2423,7 +2425,7 @@ function parseXL(file){
 function processRows(rows,filename){
   var keys=Object.keys(rows[0]);
   function fc(arr){for(var i=0;i<arr.length;i++)for(var j=0;j<keys.length;j++)if(keys[j].indexOf(arr[i])>=0)return keys[j];return null;}
-  var COL={code:fc(['代碼']),name:fc(['商品','名稱']),close:fc(['昨收']),pct:fc(['漲幅']),avg:fc(['均價']),volume:fc(['成交']),turnover:fc(['換手率']),turnval:fc(['成交值']),capital:fc(['股本']),margin:fc(['融資維持']),ind:fc(['所有細產業','細產業','產業']),pos:fc(['產業地位']),rs:fc(['RS%']),grossmargin:fc(['毛利率']),eps:fc(['盈餘(單)','單季','EPS']),bigbuy:fc(['外盤特大單%','外盤特大單','特大單%']),revgrowth:fc(['營收年增率','營收年增']),pe:fc(['本益比','PE(市盈率)','PE']),news:fc(['公司動態'])};
+  var COL={code:fc(['代碼']),name:fc(['商品','名稱']),close:fc(['昨收']),pct:fc(['漲幅']),avg:fc(['均價']),volume:fc(['成交']),turnover:fc(['換手率']),turnval:fc(['成交值']),capital:fc(['股本']),margin:fc(['融資維持']),ind:fc(['所有細產業','細產業','產業']),pos:fc(['產業地位']),rs:fc(['RS%']),grossmargin:fc(['毛利率']),eps:fc(['盈餘(單)','單季','EPS']),bigbuy:fc(['外盤特大單%','外盤特大單','特大單%']),revgrowth:fc(['營收年增率','營收年增']),pe:fc(['本益比','PE(市盈率)','PE']),roe:fc(['ROE','股東權益報酬率']),news:fc(['公司動態'])};
   function sf(v){if(v===null||v===undefined||v===''||v==='--')return null;var n=parseFloat(v);return isNaN(n)?null:n;}
   var nd=[];
   rows.forEach(function(r){
@@ -2432,7 +2434,7 @@ function processRows(rows,filename){
     // 代碼欄可能是數字(2302)、帶空格(' 2302 ')或小數('2302.0')，統一正規化為4位字串
     var rawCode=String(r[COL.code]).trim().replace(/\.0+$/,'');
     var cleanCode=/^\d+$/.test(rawCode)?rawCode.padStart(4,'0'):rawCode;
-    nd.push({code:cleanCode,name:COL.name?String(r[COL.name]||'').trim():'',close:COL.close?sf(r[COL.close]):null,pct:COL.pct?sf(r[COL.pct]):null,avg:COL.avg?sf(r[COL.avg]):null,volume:COL.volume?sf(r[COL.volume]):null,turnover:COL.turnover?sf(r[COL.turnover]):null,turnval:COL.turnval?sf(r[COL.turnval]):null,capital:COL.capital?sf(r[COL.capital]):null,margin:COL.margin?sf(r[COL.margin]):null,position:COL.pos&&r[COL.pos]?String(r[COL.pos]).trim():'',tags:ts,rs:COL.rs?sf(r[COL.rs]):null,grossmargin:COL.grossmargin?sf(r[COL.grossmargin]):null,eps:COL.eps?sf(r[COL.eps]):null,bigbuy:COL.bigbuy?sf(r[COL.bigbuy]):null,revgrowth:COL.revgrowth?sf(r[COL.revgrowth]):null,pe:COL.pe?sf(r[COL.pe]):null,news:COL.news&&r[COL.news]?String(r[COL.news]).trim():''});
+    nd.push({code:cleanCode,name:COL.name?String(r[COL.name]||'').trim():'',close:COL.close?sf(r[COL.close]):null,pct:COL.pct?sf(r[COL.pct]):null,avg:COL.avg?sf(r[COL.avg]):null,volume:COL.volume?sf(r[COL.volume]):null,turnover:COL.turnover?sf(r[COL.turnover]):null,turnval:COL.turnval?sf(r[COL.turnval]):null,capital:COL.capital?sf(r[COL.capital]):null,margin:COL.margin?sf(r[COL.margin]):null,position:COL.pos&&r[COL.pos]?String(r[COL.pos]).trim():'',tags:ts,rs:COL.rs?sf(r[COL.rs]):null,grossmargin:COL.grossmargin?sf(r[COL.grossmargin]):null,eps:COL.eps?sf(r[COL.eps]):null,bigbuy:COL.bigbuy?sf(r[COL.bigbuy]):null,revgrowth:COL.revgrowth?sf(r[COL.revgrowth]):null,pe:COL.pe?sf(r[COL.pe]):null,roe:COL.roe?sf(r[COL.roe]):null,news:COL.news&&r[COL.news]?String(r[COL.news]).trim():''});
   });
   if(!nd.length){alert('沒有讀到有效資料');return;}
   D=nd;
@@ -3536,6 +3538,7 @@ function openValuationTool(code){
   document.getElementById('val-gt-hint').textContent = suggestion.reason.gt;
 
   document.getElementById('val-marginRatio').value = s.margin!==null ? s.margin.toFixed(1) : '';
+  document.getElementById('val-roe').value = s.roe!==null && s.roe!==undefined ? s.roe.toFixed(1) : '';
   document.getElementById('val-capital').value = s.capital!==null ? s.capital.toFixed(1) : '';
 
   document.getElementById('val-sma20').value = '';
@@ -3594,7 +3597,7 @@ function valFmt(n){
 function valCalc(){
   var price = valNum('val-price'), base = valNum('val-base'), g1 = valNum('val-g1'), g2 = valNum('val-g2'),
       r = valNum('val-r'), gt = valNum('val-gt'), pe = valNum('val-pe'),
-      marginRatio = valNum('val-marginRatio'), capital = valNum('val-capital'),
+      marginRatio = valNum('val-marginRatio'), capital = valNum('val-capital'), roeInput = valNum('val-roe'),
       sma20 = valNum('val-sma20'), sma60 = valNum('val-sma60'), kdK = valNum('val-kdK'), kdD = valNum('val-kdD'), rs = valNum('val-rs'),
       target = valNum('val-target'),
       buyPriceInput = valNum('val-buyprice'), yearHigh = valNum('val-yearHigh'), yearLow = valNum('val-yearLow');
@@ -3817,6 +3820,17 @@ function valCalc(){
     capitalVal.textContent = '股本'+capital.toFixed(1)+'億（缺股價，無法估市值）'; capitalLight.style.background='#30363d'; capitalVal.style.color='#8b949e';
   } else {
     capitalVal.textContent='未填'; capitalLight.style.background='#30363d'; capitalVal.style.color='#8b949e';
+  }
+
+  var roeLight = document.getElementById('val-roeLight');
+  var roeVal = document.getElementById('val-roeVal');
+  if(roeInput!==null){
+    roeVal.textContent = roeInput.toFixed(1)+'%';
+    if(roeInput>=3.75){ roeLight.style.background='#3fb950'; roeVal.style.color='#3fb950'; }
+    else if(roeInput>=2){ roeLight.style.background='#d29922'; roeVal.style.color='#d29922'; }
+    else { roeLight.style.background='#f85149'; roeVal.style.color='#f85149'; }
+  } else {
+    roeVal.textContent='未填'; roeLight.style.background='#30363d'; roeVal.style.color='#8b949e';
   }
 
   var momentumScore = 0, momentumCount = 0;
