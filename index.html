@@ -851,7 +851,7 @@ function adminRemoveUser(email){
     </div>
     <div style="font-size:13px;color:#c9d1d9;line-height:1.8">
       <p style="color:#f0c040;font-weight:700;margin:0 0 6px">📥 載入資料</p>
-      <p style="margin:0 0 12px">☁️ 雲端：從 Google Drive 載入最新選股 Excel<br>📄 本機：從手機/電腦載入 Excel 檔案</p>
+      <p style="margin:0 0 12px">☁️ 雲端：從 Google Drive 載入最新選股 Excel<br>本機手動載入 Excel 檔案：在「設定」裡</p>
       <p style="color:#f0c040;font-weight:700;margin:0 0 6px">🔍 搜尋與篩選</p>
       <p style="margin:0 0 12px">搜尋框輸入股票代碼或名稱<br>產業按鈕：依產業篩選個股<br>⭐ 按鈕：只顯示有備註的個股</p>
       <p style="color:#f0c040;font-weight:700;margin:0 0 6px">📊 卡片功能</p>
@@ -879,15 +879,34 @@ function adminRemoveUser(email){
     <button onclick="location.reload()" style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
       🔄 重新整理網頁
     </button>
+    <button onclick="document.getElementById('settings-modal').style.display='none';document.getElementById('fi').click()" style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
+      📄 從手機/電腦手動載入 Excel
+    </button>
     <button onclick="showAddToHome()" style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
       📲 加入主畫面（iOS）
     </button>
     <button onclick="openMarginReport()" style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
       📊 各族群融資維持率報表
     </button>
-    <button onclick="openMacroBoard()" style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:15px;padding:12px;cursor:pointer;text-align:left">
+    <button onclick="openMacroBoard()" style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
       🌍 市場參考看板（原油／美元／VIX／美債）
     </button>
+    <button onclick="openEconCalendar()" style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:15px;padding:12px;cursor:pointer;text-align:left">
+      🗓 財經行事曆
+    </button>
+  </div>
+</div>
+
+<!-- ECONOMIC CALENDAR MODAL -->
+<div id="econ-calendar-modal" style="display:none;position:fixed;inset:0;background:#0d1117;z-index:9999;flex-direction:column">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #30363d;background:#161b22;flex-shrink:0">
+    <span style="font-size:16px;font-weight:700;color:#e6edf3">🗓 財經行事曆</span>
+    <button onclick="document.getElementById('econ-calendar-modal').style.display='none'" style="background:none;border:none;color:#8b949e;font-size:22px;cursor:pointer">✕</button>
+  </div>
+  <div style="flex:1;overflow:hidden;">
+    <div id="econ-calendar-container" class="tradingview-widget-container" style="height:100%;width:100%;">
+      <div class="tradingview-widget-container__widget" style="height:100%;width:100%;"></div>
+    </div>
   </div>
 </div>
 
@@ -1101,7 +1120,6 @@ function adminRemoveUser(email){
   <div class="hdr-r">
     <button class="btn-cloud" onclick="openDrivePicker()" style="font-size:20px;padding:4px 10px">☁️</button>
     <button class="btn-cloud" onclick="toggleNoteFilter()" id="hdr-note-btn" title="只顯示有備註的股票" style="font-size:12px;padding:5px 10px">⭐</button>
-    <button class="btn-load" onclick="document.getElementById('fi').click()">📄</button>
     <input id="fi" type="file" accept=".xlsx,.xls" style="display:none" onchange="loadXL(this)">
   </div>
 </div>
@@ -3219,6 +3237,29 @@ var MACRO_LABELS = {
   us10y: {name:'美10年期公債殖利率', unit:'%', url:'https://finance.yahoo.com/quote/%5ETNX',
     desc:'全球資金成本的重要指標。殖利率走升代表市場預期利率偏高或通膨壓力大，會墊高股票（尤其成長股／高本益比股）的折現率，通常對股市偏空；殖利率下滑則對股票評價偏有利。'}
 };
+// 財經行事曆：內嵌 TradingView 的 Economic Calendar widget（官方公開embed，資料自動即時更新，
+// 介面文字含日期是中文，但個別指標名稱是widget本身限制，仍是英文）
+function openEconCalendar(){
+  document.getElementById('settings-modal').style.display = 'none';
+  document.getElementById('econ-calendar-modal').style.display = 'flex';
+  var container = document.getElementById('econ-calendar-container');
+  if(container && !container.dataset.loaded){
+    var script = document.createElement('script');
+    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-events.js';
+    script.async = true;
+    script.textContent = JSON.stringify({
+      colorTheme: 'dark',
+      isTransparent: false,
+      width: '100%',
+      height: '100%',
+      locale: 'zh_TW',
+      importanceFilter: '-1,0,1',
+      countryFilter: 'us,tw,cn,jp,eu'
+    });
+    container.appendChild(script);
+    container.dataset.loaded = '1';
+  }
+}
 function openMacroBoard(){
   document.getElementById('settings-modal').style.display = 'none';
   document.getElementById('macro-board-modal').style.display = 'flex';
