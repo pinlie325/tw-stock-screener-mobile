@@ -888,6 +888,9 @@ function adminRemoveUser(email){
     <button onclick="openMarginReport()" style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
       📊 各族群融資維持率報表
     </button>
+    <button onclick="openDisposalReport()" style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
+      🚨 處置股名單
+    </button>
     <button onclick="openMacroBoard()" style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
       🌍 市場參考看板（原油／美元／VIX／美債）
     </button>
@@ -937,6 +940,19 @@ function adminRemoveUser(email){
   <div id="mgroup-collapse-bar" style="display:none;flex-shrink:0;padding:10px 12px calc(10px + env(safe-area-inset-bottom)) 12px;background:#161b22;border-top:1px solid #30363d;">
     <button id="mgroup-float-collapse" onclick="showAllMarginGroups()" style="width:100%;background:#f8514922;border:1px solid #f85149;border-radius:10px;color:#f85149;font-size:15px;font-weight:700;padding:12px;min-height:44px;cursor:pointer;">✕ 收起</button>
   </div>
+</div>
+
+<!-- DISPOSAL REPORT MODAL -->
+<div id="disposal-report-modal" style="display:none;position:fixed;inset:0;background:#0d1117;z-index:9999;flex-direction:column">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #30363d;background:#161b22;flex-shrink:0">
+    <span style="font-size:16px;font-weight:700;color:#e6edf3">🚨 處置股名單</span>
+    <button onclick="document.getElementById('disposal-report-modal').style.display='none'" style="background:none;border:none;color:#8b949e;font-size:22px;cursor:pointer">✕</button>
+  </div>
+  <div style="padding:10px 16px 0;flex-shrink:0;">
+    <span id="disposal-report-updated" style="font-size:11px;color:#6e7681;">尚未更新</span>
+  </div>
+  <div id="disposal-report-body" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;"></div>
+  <p style="font-size:11px;color:#6e7681;line-height:1.6;margin:0;padding:0 16px calc(12px + env(safe-area-inset-bottom));flex-shrink:0;">資料來源：證交所／櫃買中心公開資訊，僅列出目前清單內、且處於處置期間的股票。</p>
 </div>
 
 <!-- VALUATION MODAL -->
@@ -1510,6 +1526,7 @@ function render(){
               +'<span class="card-code">'+s.code+'</span>'
               +(function(){var e=getExchLabel(s.code);return '<span class="card-exch '+e.cls+'">'+e.txt+'</span>';})()
               +'<span class="card-name">'+s.name+'</span>'
+              +(s.disposal?'<span title="'+s.disposal.reason.replace(/"/g,'&quot;')+'　期間 '+s.disposal.periodRaw+'" style="background:#f8514933;color:#f85149;border:1px solid #f85149;border-radius:4px;font-size:10px;padding:1px 5px;font-weight:700;">⚠處置中</span>':'')
               +'<button class="card-cam" onclick="event.stopPropagation();cardScreenshot(event,this.closest(\'.card\'))">📷</button>'
             +'</div>'
           +'<div class="card-pattern" id="pattern-'+s.code+'"></div>'
@@ -2447,6 +2464,8 @@ function processRows(rows,filename){
   toast('✅ 載入完成！共 '+D.length+' 支股票','#238636');
   autoLoadNotes();
   autoLoadStrategies();
+  applyDisposalMap();
+  fetchDisposalData();
 }
 
 // ── GAS / DRIVE ──
@@ -3414,6 +3433,100 @@ function showAllMarginGroups(){
   });
   var allBtn = document.getElementById('mgroup-nav-all');
   if(allBtn){ allBtn.style.background = '#1f6feb22'; allBtn.style.borderColor = '#58a6ff'; allBtn.style.color = '#58a6ff'; }
+}
+
+// ══════════ 處置股資訊：證交所／櫃買中心公開資料 ══════════
+var DISPOSAL_MAP = {}; // code -> {market, name, reason, periodRaw, endDate}
+
+function _rocToDate(rocStr){
+  rocStr = String(rocStr).trim();
+  var y,m,d;
+  if(rocStr.indexOf('/')>=0){
+    var p = rocStr.split('/');
+    y = parseInt(p[0],10)+1911; m = parseInt(p[1],10); d = parseInt(p[2],10);
+  } else if(rocStr.length===7){
+    y = parseInt(rocStr.substring(0,3),10)+1911;
+    m = parseInt(rocStr.substring(3,5),10);
+    d = parseInt(rocStr.substring(5,7),10);
+  } else {
+    return null;
+  }
+  if(!y||!m||!d) return null;
+  return new Date(y, m-1, d);
+}
+
+function applyDisposalMap(){
+  D.forEach(function(s){ s.disposal = DISPOSAL_MAP[s.code] || null; });
+}
+
+function fetchDisposalData(){
+  fetch(NOTE_GAS_URL + '?action=disposal')
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(!d.ok) throw new Error(d.error||'抓取失敗');
+      var map = {};
+      var today = new Date(); today.setHours(0,0,0,0);
+      (d.data.twse||[]).forEach(function(row){
+        var code = String(row[2]||'').trim();
+        if(!/^\d{4,6}$/.test(code)) return;
+        var period = String(row[6]||'');
+        var times = period.split('～');
+        if(times.length!==2) return;
+        var start=_rocToDate(times[0]), end=_rocToDate(times[1]);
+        if(!start||!end) return;
+        if(today<start||today>end) return;
+        map[code] = { market:'上市', name:row[3], reason:row[5], periodRaw:period, endDate:end };
+      });
+      (d.data.tpex||[]).forEach(function(row){
+        var code = String(row.SecuritiesCompanyCode||'').trim();
+        if(!/^\d{4}$/.test(code)) return; // 只抓4碼正股，CB/權證代碼較長先略過
+        var period = String(row.DispositionPeriod||'');
+        var times = period.split('~');
+        if(times.length!==2) return;
+        var start=_rocToDate(times[0]), end=_rocToDate(times[1]);
+        if(!start||!end) return;
+        if(today<start||today>end) return;
+        map[code] = { market:'上櫃', name:row.CompanyName, reason:row.DispositionReasons, periodRaw:period, endDate:end };
+      });
+      DISPOSAL_MAP = map;
+      applyDisposalMap();
+      render();
+      var updEl = document.getElementById('disposal-report-updated');
+      if(updEl) updEl.textContent = '更新時間：' + new Date().toLocaleString('zh-TW',{hour12:false});
+    })
+    .catch(function(e){
+      console.log('處置股資料抓取失敗:', e.message);
+    });
+}
+
+function openDisposalReport(){
+  document.getElementById('settings-modal').style.display = 'none';
+  var body = document.getElementById('disposal-report-body');
+  var list = D.filter(function(s){ return s.disposal; });
+  if(!list.length){
+    body.innerHTML = '<div style="text-align:center;color:#8b949e;padding:40px;">目前您清單內的股票沒有處於處置期間</div>';
+  } else {
+    body.innerHTML = list.map(function(s){
+      return '<div onclick="jumpFromDisposalReport(\''+s.code+'\')" style="background:#f8514915;border:1px solid #f85149;border-radius:8px;padding:10px 12px;cursor:pointer;">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;">'
+          +'<span style="font-weight:700;color:#e6edf3;">'+s.code+' '+s.name+'</span>'
+          +'<span style="font-size:11px;color:#f85149;border:1px solid #f85149;border-radius:4px;padding:1px 6px;">'+s.disposal.market+'</span>'
+        +'</div>'
+        +'<div style="font-size:12px;color:#8b949e;margin-top:4px;">處置原因：'+s.disposal.reason+'</div>'
+        +'<div style="font-size:12px;color:#8b949e;margin-top:2px;">處置期間：'+s.disposal.periodRaw+'</div>'
+      +'</div>';
+    }).join('');
+  }
+  document.getElementById('disposal-report-modal').style.display = 'flex';
+  fetchDisposalData();
+}
+function jumpFromDisposalReport(code){
+  document.getElementById('disposal-report-modal').style.display = 'none';
+  sel = [];
+  window._hcatCodes = null;
+  renderSelTags();
+  render();
+  jumpToCardWithFilter(code, null, null);
 }
 
 // ══════════ 股價合理性一鍵評估 ══════════
