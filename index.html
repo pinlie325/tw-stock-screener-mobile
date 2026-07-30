@@ -86,8 +86,10 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .card{background:#0d1117;border:1px solid #30363d;border-radius:10px;padding:14px 16px;cursor:pointer;transition:border-color .15s;overflow-x:hidden;max-width:100%;box-sizing:border-box;position:relative}
 .card.capturing{outline:2px solid #58a6ff}
 .card-cam{background:none;border:none;font-size:14px;cursor:pointer;padding:0;line-height:1;opacity:0.5}
-.private-note-icon{display:inline-block;width:11px;height:11px;border:1.5px solid #d29922;border-radius:2px;vertical-align:middle;box-sizing:border-box;}
-.private-note-icon.filled{background:#d29922;}
+.private-note-btn{position:absolute;top:0;left:0;width:0;height:0;border-style:solid;border-width:18px 18px 0 0;border-color:#30363d transparent transparent transparent;cursor:pointer;z-index:3;border-top-left-radius:10px;transition:border-color .15s;background:none;padding:0;outline:none;appearance:none;box-sizing:content-box;}
+.private-note-btn:hover{border-color:#484f58 transparent transparent transparent;}
+.private-note-btn.filled{border-color:#58a6ff transparent transparent transparent;}
+.private-note-btn.filled:hover{border-color:#79b8ff transparent transparent transparent;}
 .card-cam:hover,.card-cam:active{opacity:1}
 .card-note-bar{background:#30363d;color:#e040fb;font-size:12px;padding:4px 8px;border-radius:4px;margin-bottom:6px;line-height:1.4}
 .card-sharednote-bar{background:#1f6feb22;color:#58a6ff;font-size:12px;padding:4px 8px;border-radius:4px;margin-bottom:6px;line-height:1.4}
@@ -910,11 +912,12 @@ function adminRemoveUser(email){
       <span id="note-edit-title" style="font-size:16px;font-weight:700;color:#e6edf3">📝 編輯備註</span>
       <button onclick="closeNoteEdit()" style="background:none;border:none;color:#8b949e;font-size:20px;cursor:pointer">✕</button>
     </div>
+    <div id="note-edit-history" style="display:none;max-height:160px;overflow-y:auto;margin-bottom:10px;border:1px solid #30363d;border-radius:8px;padding:8px 10px;background:#0d1117;"></div>
     <textarea id="note-edit-input" rows="3" style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:15px;padding:10px;box-sizing:border-box;resize:vertical;font-family:inherit;"></textarea>
     <div style="display:flex;gap:8px;margin-top:12px;">
       <button id="note-edit-delete-btn" onclick="deleteNoteEdit()" style="flex:0 0 auto;background:#f8514922;border:1px solid #f85149;border-radius:8px;color:#f85149;font-size:14px;padding:10px 14px;cursor:pointer;">🗑刪除</button>
       <button onclick="closeNoteEdit()" style="flex:1;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#8b949e;font-size:14px;padding:10px;cursor:pointer;">取消</button>
-      <button onclick="saveNoteEdit()" style="flex:1;background:#1f6feb;border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:700;padding:10px;cursor:pointer;">儲存</button>
+      <button id="note-edit-save-btn" onclick="saveNoteEdit()" style="flex:1;background:#1f6feb;border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:700;padding:10px;cursor:pointer;">儲存</button>
     </div>
     <p id="note-edit-hint" style="font-size:11px;color:#6e7681;line-height:1.5;margin:10px 0 0;">備註會同步寫回共用的Google試算表。</p>
   </div>
@@ -1264,7 +1267,7 @@ function adminRemoveUser(email){
 
 <script>
 var D=[];
-var noteMap={}, sharedNoteMap={};
+var noteMap={}, sharedNoteMap={}, sharedNoteHistory={};
 var C={"半導體":["IC設計","IC製造","晶圓代工","IC封裝","IC測試","IC封裝測試","DRAM","非揮發性記憶體","封測服務與材料","矽晶圓","第三類半導體","矽化鎵相關","化合物晶圓","設計IP","ASIC","探針、探針卡","半導體製程設備","封測用設備","PCB相關設備","廠務工程"],"AI / 伺服器":["AI伺服器","ASIC伺服器","伺服器","雲端科技","Internet技術與基礎設施"],"電源 / 電力":["電源供應器","UPS","變壓器","電力設備","配電盤","變電設備","配電工程","電力公共事業","PV Inverter","太陽能","工業用電池","電池","儲能系統"],"被動元件":["被動元件","MLCC","晶片電阻","電容","電感","鋁質電解電容","石英元件","振盪器","鉭質電解電容","分離式元件","電晶體"],"PCB / 載板":["印刷電路板","印刷電路板相關","HDI板","IC基板","BGA基板","ABF載板","軟板","銅箔基板"],"連接器 / 線材":["連接器","連接線材","電線電纜","電子線"],"電腦 / 系統":["電腦系統業","工業電腦","電子製造服務","筆記型電腦製造","桌上型電腦","週邊產品","機殼","散熱模組","散熱風扇馬達"],"通訊 / 網路":["網通設備","光通訊","無線網路設備系統(WLAN)","用戶端設備","衛星通訊設備","網路通訊IC"],"光電 / LED":["LED","LED照明產品","LED封裝","光學鏡片/頭","光學元件","面板業","面板零組件","顯示器"],"生技 / 醫療":["醫藥產業","生物科技","新藥研發","西藥製劑","醫療器材","食品生技"],"車用 / 電動車":["車用電子","電動車","決策車零組件","車輛整車","車用鋰電池","車用充電相關","傳動系統","機車零組件","輪圈"],"金融":["金融業","銀行","證券","保險","投信","金控","資產管理","金融其他"],"營建 / 地產":["營建","地產","住宅建設","營造工程","資產股"],"傳產 / 機械":["化學工業","傳產其他","塑化製品","塑化原料","產業機械","機械零組件"],"航運":["運輸事業","航空","海運","倉儲","流通業"],"零售 / 消費":["旅宿／餐飲","餐飲","飯店","休閒娛樂","食品加工","成衣","成衣製造","農林漁牧"],"軟體 / 系統整合":["軟體業","系統整合"],"電子通路":["電子通路","電子元件代理商","IC零組件通路商"]};
 
 var sel=[],sk='pct',sd='d',searchQ='';
@@ -1541,10 +1544,10 @@ function render(){
     var hiTags=s.tags.filter(function(t){return sel.indexOf(t)>=0;});
     var showTags=s.tags.slice(0,4);
     return '<div class="card" data-code="'+s.code+'" data-pct="'+(s.pct!==null?s.pct:'')+'" data-volume="'+(s.volume!==null?s.volume:'')+'" oncontextmenu="cardScreenshot(event,this)" ontouchstart="startLongPress(event,this)" ontouchend="cancelLongPress()" ontouchmove="cancelLongPress()" onclick="openChart(event,\''+s.code+'\',\''+s.name.replace(/'/g,"\\'")+'\')">'
+      +(isAdminUser()?('<button class="private-note-btn'+(noteMap[s.code]?' filled':'')+'" title="私人備註" onclick="event.stopPropagation();openNoteEdit(\''+s.code+'\',\''+s.name.replace(/'/g,"\\'")+'\',\'private\')"></button>'):'')
       +'<div class="card-hd">'
         +'<div class="card-left">'
           +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;flex-wrap:wrap">'
-              +(isAdminUser()?('<button class="card-cam" onclick="event.stopPropagation();openNoteEdit(\''+s.code+'\',\''+s.name.replace(/'/g,"\\'")+'\',\'private\')">'+'<span class="private-note-icon'+(noteMap[s.code]?' filled':'')+'"></span>'+'</button>'):'')
               +'<span class="card-code">'+s.code+'</span>'
               +(function(){var e=getExchLabel(s.code);return '<span class="card-exch '+e.cls+'">'+e.txt+'</span>';})()
               +'<span class="card-name">'+s.name+'</span>'
@@ -2712,6 +2715,7 @@ function autoLoadNotes(){
         if(!d.ok) return;
         noteMap = d.notes || {};
         sharedNoteMap = d.sharedNotes || {};
+        sharedNoteHistory = d.sharedHistory || {};
         var count = Object.keys(noteMap).length + Object.keys(sharedNoteMap).length;
         if(count > 0){
           applyNotes();
@@ -2841,15 +2845,59 @@ function applyNotes(){
 var noteEditCode = null, noteEditName = null, noteEditField = 'shared';
 function openNoteEdit(code, name, field){
   noteEditCode = code; noteEditName = name; noteEditField = field || 'shared';
-  var map = noteEditField === 'private' ? noteMap : sharedNoteMap;
-  var label = noteEditField === 'private' ? '⭐ 私人備註' : '💬 共同筆記';
-  document.getElementById('note-edit-title').textContent = label + '　' + code + ' ' + name;
-  document.getElementById('note-edit-input').value = map[code] || '';
-  document.getElementById('note-edit-delete-btn').style.display = map[code] ? '' : 'none';
+  var historyEl = document.getElementById('note-edit-history');
+  var deleteBtn = document.getElementById('note-edit-delete-btn');
+  var saveBtn = document.getElementById('note-edit-save-btn');
+  var inputEl = document.getElementById('note-edit-input');
   var hintEl = document.getElementById('note-edit-hint');
-  if(hintEl) hintEl.textContent = noteEditField === 'private' ? '只有你（管理者）能編輯，其他使用者只能看到。' : '所有使用者都看得到、也都能編輯。';
+  if(noteEditField === 'private'){
+    document.getElementById('note-edit-title').textContent = '⭐ 私人備註　' + code + ' ' + name;
+    inputEl.value = noteMap[code] || '';
+    inputEl.placeholder = '';
+    deleteBtn.style.display = noteMap[code] ? '' : 'none';
+    saveBtn.textContent = '儲存';
+    historyEl.style.display = 'none';
+    hintEl.textContent = '只有你（管理者）能編輯，其他使用者只能看到。';
+  } else {
+    document.getElementById('note-edit-title').textContent = '💬 共同筆記　' + code + ' ' + name;
+    inputEl.value = '';
+    inputEl.placeholder = '新增一則留言…';
+    deleteBtn.style.display = 'none'; // 共同筆記是留言紀錄，不支援整條刪除
+    saveBtn.textContent = '新增';
+    var hist = sharedNoteHistory[code] || (sharedNoteMap[code] ? [{time:'',text:sharedNoteMap[code]}] : []);
+    historyEl.innerHTML = '';
+    if(hist.length){
+      historyEl.style.display = 'block';
+      hist.forEach(function(h){
+        var row = document.createElement('div');
+        row.style.cssText = 'padding:6px 0;border-bottom:1px solid #21262d;display:flex;gap:6px;align-items:flex-start;';
+        var textWrap = document.createElement('div');
+        textWrap.style.cssText = 'flex:1;min-width:0;';
+        if(h.time){
+          var timeEl = document.createElement('div');
+          timeEl.style.cssText = 'font-size:10px;color:#6e7681;margin-bottom:2px;';
+          timeEl.textContent = h.time;
+          textWrap.appendChild(timeEl);
+        }
+        var textEl = document.createElement('div');
+        textEl.style.cssText = 'font-size:13px;color:#c9d1d9;white-space:pre-wrap;';
+        textEl.textContent = h.text;
+        textWrap.appendChild(textEl);
+        row.appendChild(textWrap);
+        var delBtn = document.createElement('button');
+        delBtn.textContent = '🗑';
+        delBtn.style.cssText = 'flex-shrink:0;background:none;border:none;color:#8b949e;font-size:13px;cursor:pointer;padding:2px 4px;opacity:0.6;';
+        delBtn.onclick = function(){ deleteSharedEntry(code, h.time, h.text); };
+        row.appendChild(delBtn);
+        historyEl.appendChild(row);
+      });
+    } else {
+      historyEl.style.display = 'none';
+    }
+    hintEl.textContent = '所有使用者都看得到、也都能新增留言，舊留言不會被蓋掉。';
+  }
   document.getElementById('note-edit-modal').style.display = 'flex';
-  setTimeout(function(){ var el=document.getElementById('note-edit-input'); if(el) el.focus(); }, 50);
+  setTimeout(function(){ inputEl.focus(); }, 50);
 }
 function closeNoteEdit(){
   document.getElementById('note-edit-modal').style.display = 'none';
@@ -2876,15 +2924,47 @@ function _postNote(code, name, note, field){
   reqPromise
     .then(function(d){
       if(!d.ok) throw new Error(d.error||'儲存失敗');
-      var map = field === 'private' ? noteMap : sharedNoteMap;
-      if(note){ map[code] = note; } else { delete map[code]; }
+      if(field === 'private'){
+        if(note){ noteMap[code] = note; } else { delete noteMap[code]; }
+      } else if(note){
+        // 共同筆記是新增一筆，不是覆蓋：把新的一則插到歷史紀錄最前面
+        sharedNoteMap[code] = note;
+        var timeStr = new Date().toLocaleString('zh-TW',{hour12:false,month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+        if(!sharedNoteHistory[code]) sharedNoteHistory[code] = [];
+        sharedNoteHistory[code].unshift({time:timeStr, text:note});
+      }
       applyNotes();
       render();
       closeNoteEdit();
-      toast(note?'✅ 備註已更新':'🗑 備註已刪除','#238636');
+      toast(note?(field==='private'?'✅ 備註已更新':'✅ 已新增留言'):'🗑 備註已刪除','#238636');
     })
     .catch(function(e){
       toast('❌ 備註儲存失敗：'+(e.message||e.error||''),'#da3633');
+    });
+}
+// 刪除共同筆記裡「特定一則」留言（用代碼+時間+內容三者比對找到那一列），其他留言不受影響
+function deleteSharedEntry(code, time, text){
+  if(!confirm('確定要刪除這則留言嗎？\n\n'+text)) return;
+  toast('⏳ 刪除中...','#1f6feb');
+  var qs = 'action=deleteSharedNote&code='+encodeURIComponent(code)+'&time='+encodeURIComponent(time||'')+'&text='+encodeURIComponent(text);
+  fetch(NOTE_GAS_URL + '?' + qs)
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(!d.ok) throw new Error(d.error||'刪除失敗');
+      var hist = sharedNoteHistory[code] || [];
+      var idx = hist.findIndex(function(h){ return h.time === time && h.text === text; });
+      if(idx >= 0) hist.splice(idx, 1);
+      sharedNoteMap[code] = hist.length ? hist[0].text : undefined;
+      if(!hist.length){ delete sharedNoteMap[code]; delete sharedNoteHistory[code]; }
+      applyNotes();
+      render();
+      if(document.getElementById('note-edit-modal').style.display !== 'none'){
+        openNoteEdit(noteEditCode, noteEditName, noteEditField); // 重新整理彈窗內容
+      }
+      toast('🗑 留言已刪除','#238636');
+    })
+    .catch(function(e){
+      toast('❌ 刪除失敗：'+e.message,'#da3633');
     });
 }
 
