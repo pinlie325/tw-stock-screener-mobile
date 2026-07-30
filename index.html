@@ -1154,12 +1154,14 @@ function adminRemoveUser(email){
 </div>
 
 <div class="hdr">
-  <div>
-    <span class="hdr-t" onclick="showHelpModal()" style="cursor:pointer">選股平台</span>
-    <span class="hdr-sub" id="hdr-sub">請載入資料</span>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <button class="btn-cloud" onclick="openDrivePicker()" title="雲端載入" style="font-size:16px;padding:4px 8px;background:#1f6feb22;border-color:#58a6ff;color:#58a6ff;">☁️</button>
+    <div>
+      <span class="hdr-t" onclick="showHelpModal()" style="cursor:pointer">選股平台</span>
+      <span class="hdr-sub" id="hdr-sub">請載入資料</span>
+    </div>
   </div>
   <div class="hdr-r">
-    <button class="btn-cloud" onclick="openDrivePicker()" style="font-size:20px;padding:4px 10px">☁️</button>
     <button class="btn-cloud" onclick="toggleNoteFilter()" id="hdr-note-btn" title="只顯示有私人備註的股票" style="font-size:12px;padding:5px 10px">⭐</button>
     <button class="btn-cloud" onclick="toggleAllNoteFilter()" id="hdr-allnote-btn" title="顯示所有有備註或共同筆記的股票" style="font-size:12px;padding:5px 10px">💬</button>
     <input id="fi" type="file" accept=".xlsx,.xls" style="display:none" onchange="loadXL(this)">
