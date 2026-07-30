@@ -1160,7 +1160,8 @@ function adminRemoveUser(email){
   </div>
   <div class="hdr-r">
     <button class="btn-cloud" onclick="openDrivePicker()" style="font-size:20px;padding:4px 10px">☁️</button>
-    <button class="btn-cloud" onclick="toggleNoteFilter()" id="hdr-note-btn" title="只顯示有備註的股票" style="font-size:12px;padding:5px 10px">⭐</button>
+    <button class="btn-cloud" onclick="toggleNoteFilter()" id="hdr-note-btn" title="只顯示有私人備註的股票" style="font-size:12px;padding:5px 10px">⭐</button>
+    <button class="btn-cloud" onclick="toggleAllNoteFilter()" id="hdr-allnote-btn" title="顯示所有有備註或共同筆記的股票" style="font-size:12px;padding:5px 10px">💬</button>
     <input id="fi" type="file" accept=".xlsx,.xls" style="display:none" onchange="loadXL(this)">
   </div>
 </div>
@@ -1491,6 +1492,24 @@ function toggleNoteFilter(){
   render();
 }
 
+// 顯示所有「有備註或共同筆記」的股票（私人備註 or 共同筆記，任一個有就算）
+var allNoteFilterOn = false;
+function toggleAllNoteFilter(){
+  allNoteFilterOn = !allNoteFilterOn;
+  var btn = document.getElementById('hdr-allnote-btn');
+  if(allNoteFilterOn){
+    btn.style.borderColor = '#58a6ff';
+    btn.style.color = '#58a6ff';
+    btn.style.background = '#58a6ff22';
+    autoLoadNotes(); // 同時重新載入備註/共同筆記
+  } else {
+    btn.style.borderColor = '';
+    btn.style.color = '';
+    btn.style.background = '';
+  }
+  render();
+}
+
 function getFilt(){
   var d=D;
   if(window._hcatCodes && window._hcatCodes.length){
@@ -1505,6 +1524,7 @@ function getFilt(){
     });
   }
   if(noteFilterOn) d=d.filter(function(s){return noteMap[String(s.code)];});
+  if(allNoteFilterOn) d=d.filter(function(s){return noteMap[String(s.code)] || sharedNoteMap[String(s.code)];});
   if(groupFilter) d=d.filter(function(s){return (groupMap[String(s.code)]||[]).indexOf(groupFilter)>=0;});
   if(conceptFilter) d=d.filter(function(s){return (conceptMap[String(s.code)]||[]).indexOf(conceptFilter)>=0;});
   return d;
