@@ -1526,7 +1526,7 @@ function render(){
               +'<span class="card-code">'+s.code+'</span>'
               +(function(){var e=getExchLabel(s.code);return '<span class="card-exch '+e.cls+'">'+e.txt+'</span>';})()
               +'<span class="card-name">'+s.name+'</span>'
-              +(s.disposal?'<span title="'+s.disposal.reason.replace(/"/g,'&quot;')+'　期間 '+s.disposal.periodRaw+'" style="background:#f8514933;color:#f85149;border:1px solid #f85149;border-radius:4px;font-size:10px;padding:1px 5px;font-weight:700;">⚠處置中</span>':'')
+              +(function(){if(s.disposal){var ft=s.disposal.freq?(s.disposal.freq+'分盤'):'處置中';return '<span title="'+s.disposal.reason.replace(/"/g,'&quot;')+'　期間 '+s.disposal.periodRaw+'" style="background:#f8514933;color:#f85149;border:1px solid #f85149;border-radius:4px;font-size:10px;padding:1px 5px;font-weight:700;">⚠'+ft+'</span>';}if(s.attention){return '<span title="'+s.attention.reason.replace(/"/g,'&quot;')+'　'+s.attention.date+'" style="background:#d2992233;color:#d29922;border:1px solid #d29922;border-radius:4px;font-size:10px;padding:1px 5px;font-weight:700;">注意</span>';}return '';})()
               +'<button class="card-cam" onclick="event.stopPropagation();cardScreenshot(event,this.closest(\'.card\'))">📷</button>'
             +'</div>'
           +'<div class="card-pattern" id="pattern-'+s.code+'"></div>'
@@ -2466,6 +2466,7 @@ function processRows(rows,filename){
   autoLoadStrategies();
   applyDisposalMap();
   fetchDisposalData();
+  fetchAttentionData();
 }
 
 // ── GAS / DRIVE ──
@@ -3435,8 +3436,10 @@ function showAllMarginGroups(){
   if(allBtn){ allBtn.style.background = '#1f6feb22'; allBtn.style.borderColor = '#58a6ff'; allBtn.style.color = '#58a6ff'; }
 }
 
-// ══════════ 處置股資訊：證交所／櫃買中心公開資料 ══════════
-var DISPOSAL_MAP = {}; // code -> {market, name, reason, periodRaw, endDate}
+// ══════════ 處置股／注意股資訊：證交所／櫃買中心公開資料 ══════════
+var DISPOSAL_MAP = {};  // code -> {market, name, reason, measure, freq, periodRaw, endDate}
+var ATTENTION_MAP = {}; // code -> {count, reason, date}
+var ATTENTION_DATE = '';
 
 function _rocToDate(rocStr){
   rocStr = String(rocStr).trim();
@@ -3454,9 +3457,20 @@ function _rocToDate(rocStr){
   if(!y||!m||!d) return null;
   return new Date(y, m-1, d);
 }
+// 從處置內容/條件文字中擷取撮合頻率，例如「約每5分鐘撮合一次」「約每20分鐘撮合一次」
+function _extractFreq(text){
+  var m = /每\s*(\d+)\s*分鐘撮合/.exec(String(text||''));
+  return m ? m[1] : null;
+}
+function _stripHtml(text){
+  return String(text||'').replace(/<[^>]+>/g,'');
+}
 
 function applyDisposalMap(){
-  D.forEach(function(s){ s.disposal = DISPOSAL_MAP[s.code] || null; });
+  D.forEach(function(s){
+    s.disposal = DISPOSAL_MAP[s.code] || null;
+    s.attention = ATTENTION_MAP[s.code] || null;
+  });
 }
 
 function fetchDisposalData(){
@@ -3475,7 +3489,7 @@ function fetchDisposalData(){
         var start=_rocToDate(times[0]), end=_rocToDate(times[1]);
         if(!start||!end) return;
         if(today<start||today>end) return;
-        map[code] = { market:'上市', name:row[3], reason:row[5], periodRaw:period, endDate:end };
+        map[code] = { market:'上市', name:row[3], reason:row[5], measure:row[7], freq:_extractFreq(row[8]), periodRaw:period, endDate:end };
       });
       (d.data.tpex||[]).forEach(function(row){
         var code = String(row.SecuritiesCompanyCode||'').trim();
@@ -3486,39 +3500,85 @@ function fetchDisposalData(){
         var start=_rocToDate(times[0]), end=_rocToDate(times[1]);
         if(!start||!end) return;
         if(today<start||today>end) return;
-        map[code] = { market:'上櫃', name:row.CompanyName, reason:row.DispositionReasons, periodRaw:period, endDate:end };
+        map[code] = { market:'上櫃', name:row.CompanyName, reason:row.DispositionReasons, measure:null, freq:_extractFreq(row.DisposalCondition), periodRaw:period, endDate:end };
       });
       DISPOSAL_MAP = map;
       applyDisposalMap();
       render();
       var updEl = document.getElementById('disposal-report-updated');
-      if(updEl) updEl.textContent = '更新時間：' + new Date().toLocaleString('zh-TW',{hour12:false});
+      if(updEl) updEl.textContent = '處置更新：' + new Date().toLocaleString('zh-TW',{hour12:false}) + (ATTENTION_DATE?'　注意股資料日：'+ATTENTION_DATE:'');
     })
     .catch(function(e){
       console.log('處置股資料抓取失敗:', e.message);
+    });
+}
+// 注意股：目前僅涵蓋上市（TWSE），櫃買中心暫無穩定的公開JSON端點
+function fetchAttentionData(){
+  fetch(NOTE_GAS_URL + '?action=attention')
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(!d.ok) throw new Error(d.error||'抓取失敗');
+      var map = {};
+      (d.data||[]).forEach(function(row){
+        var code = String(row[1]||'').trim();
+        if(!/^\d{4,6}$/.test(code)) return;
+        map[code] = { count:row[3], reason:_stripHtml(row[4]), date:row[5] };
+      });
+      ATTENTION_MAP = map;
+      ATTENTION_DATE = d.date || '';
+      applyDisposalMap();
+      render();
+      var updEl = document.getElementById('disposal-report-updated');
+      if(updEl) updEl.textContent = '注意股資料日：' + (ATTENTION_DATE||'--');
+    })
+    .catch(function(e){
+      console.log('注意股資料抓取失敗:', e.message);
     });
 }
 
 function openDisposalReport(){
   document.getElementById('settings-modal').style.display = 'none';
   var body = document.getElementById('disposal-report-body');
-  var list = D.filter(function(s){ return s.disposal; });
-  if(!list.length){
-    body.innerHTML = '<div style="text-align:center;color:#8b949e;padding:40px;">目前您清單內的股票沒有處於處置期間</div>';
+  var disposalList = D.filter(function(s){ return s.disposal; });
+  var attentionOnlyList = D.filter(function(s){ return s.attention && !s.disposal; });
+  var html = '';
+  html += '<div style="font-size:13px;font-weight:700;color:#f85149;margin-bottom:2px;">🔴 處置中（'+disposalList.length+'）</div>';
+  if(!disposalList.length){
+    html += '<div style="text-align:center;color:#8b949e;padding:16px 0;font-size:13px;">目前您清單內沒有股票處於處置期間</div>';
   } else {
-    body.innerHTML = list.map(function(s){
+    html += disposalList.map(function(s){
+      var freqTxt = s.disposal.freq ? ('約每'+s.disposal.freq+'分鐘撮合一次') : '';
       return '<div onclick="jumpFromDisposalReport(\''+s.code+'\')" style="background:#f8514915;border:1px solid #f85149;border-radius:8px;padding:10px 12px;cursor:pointer;">'
         +'<div style="display:flex;justify-content:space-between;align-items:center;">'
           +'<span style="font-weight:700;color:#e6edf3;">'+s.code+' '+s.name+'</span>'
-          +'<span style="font-size:11px;color:#f85149;border:1px solid #f85149;border-radius:4px;padding:1px 6px;">'+s.disposal.market+'</span>'
+          +'<span style="font-size:11px;color:#f85149;border:1px solid #f85149;border-radius:4px;padding:1px 6px;flex-shrink:0;margin-left:6px;">'+s.disposal.market+(s.disposal.freq?'・'+s.disposal.freq+'分盤':'')+'</span>'
         +'</div>'
-        +'<div style="font-size:12px;color:#8b949e;margin-top:4px;">處置原因：'+s.disposal.reason+'</div>'
+        +(s.disposal.measure?'<div style="font-size:12px;color:#f85149;margin-top:4px;">'+s.disposal.measure+'</div>':'')
+        +'<div style="font-size:12px;color:#8b949e;margin-top:2px;">處置條件：'+s.disposal.reason+'</div>'
+        +(freqTxt?'<div style="font-size:12px;color:#8b949e;margin-top:2px;">撮合方式：'+freqTxt+'</div>':'')
         +'<div style="font-size:12px;color:#8b949e;margin-top:2px;">處置期間：'+s.disposal.periodRaw+'</div>'
       +'</div>';
     }).join('');
   }
+  html += '<div style="font-size:13px;font-weight:700;color:#d29922;margin:14px 0 2px;">🟡 注意股（尚未進入處置，'+attentionOnlyList.length+'）</div>';
+  if(!attentionOnlyList.length){
+    html += '<div style="text-align:center;color:#8b949e;padding:16px 0;font-size:13px;">目前您清單內沒有股票在最近一次公告的注意名單中</div>';
+  } else {
+    html += attentionOnlyList.map(function(s){
+      return '<div onclick="jumpFromDisposalReport(\''+s.code+'\')" style="background:#d2992215;border:1px solid #d29922;border-radius:8px;padding:10px 12px;cursor:pointer;">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;">'
+          +'<span style="font-weight:700;color:#e6edf3;">'+s.code+' '+s.name+'</span>'
+          +'<span style="font-size:11px;color:#d29922;border:1px solid #d29922;border-radius:4px;padding:1px 6px;flex-shrink:0;margin-left:6px;">累計'+s.attention.count+'次</span>'
+        +'</div>'
+        +'<div style="font-size:12px;color:#8b949e;margin-top:4px;">'+s.attention.reason+'</div>'
+        +'<div style="font-size:12px;color:#8b949e;margin-top:2px;">公告日期：'+s.attention.date+'</div>'
+      +'</div>';
+    }).join('');
+  }
+  body.innerHTML = html;
   document.getElementById('disposal-report-modal').style.display = 'flex';
   fetchDisposalData();
+  fetchAttentionData();
 }
 function jumpFromDisposalReport(code){
   document.getElementById('disposal-report-modal').style.display = 'none';
