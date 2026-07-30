@@ -2810,37 +2810,28 @@ function isAdminUser(){
   return localStorage.getItem('twstock_is_admin') === '1';
 }
 function applyNotes(){
-  var admin = isAdminUser();
   document.querySelectorAll('.card').forEach(function(card){
     var codeEl=card.querySelector('.card-code');
-    var nameEl=card.querySelector('.card-name');
     if(!codeEl)return;
     var code=codeEl.textContent.trim();
-    var name=nameEl?nameEl.textContent.trim():'';
-    // 私人備註（只有我能編輯，其他人唯讀顯示）
+    // 私人備註（純顯示，編輯只能透過卡片上方的方形圖示按鈕）
     var note=noteMap[code];
     var existing=card.querySelector('.card-note-bar');
     if(existing)existing.remove();
     if(note){
       var bar=document.createElement('div');
       bar.className='card-note-bar';
-      if(admin){
-        bar.style.cursor='pointer';
-        bar.onclick=function(ev){ ev.stopPropagation(); openNoteEdit(code, name, 'private'); };
-      }
       bar.textContent=note;
       insertCardBar(card, bar, 'card-note-bar');
     }
-    // 共同備註（任何人都能編輯）
+    // 共同備註（純顯示，編輯只能透過卡片上方的💬圖示按鈕）
     var snote=sharedNoteMap[code];
     var sExisting=card.querySelector('.card-sharednote-bar');
     if(sExisting)sExisting.remove();
     if(snote){
       var sbar=document.createElement('div');
       sbar.className='card-sharednote-bar';
-      sbar.style.cursor='pointer';
       sbar.textContent='💬 '+snote;
-      sbar.onclick=function(ev){ ev.stopPropagation(); openNoteEdit(code, name, 'shared'); };
       insertCardBar(card, sbar, 'card-sharednote-bar');
     }
   });
