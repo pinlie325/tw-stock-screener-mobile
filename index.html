@@ -86,8 +86,11 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .card{background:#0d1117;border:1px solid #30363d;border-radius:10px;padding:14px 16px;cursor:pointer;transition:border-color .15s;overflow-x:hidden;max-width:100%;box-sizing:border-box;position:relative}
 .card.capturing{outline:2px solid #58a6ff}
 .card-cam{background:none;border:none;font-size:14px;cursor:pointer;padding:0;line-height:1;opacity:0.5}
+.private-note-icon{display:inline-block;width:11px;height:11px;border:1.5px solid #d29922;border-radius:2px;vertical-align:middle;box-sizing:border-box;}
+.private-note-icon.filled{background:#d29922;}
 .card-cam:hover,.card-cam:active{opacity:1}
 .card-note-bar{background:#30363d;color:#e040fb;font-size:12px;padding:4px 8px;border-radius:4px;margin-bottom:6px;line-height:1.4}
+.card-sharednote-bar{background:#1f6feb22;color:#58a6ff;font-size:12px;padding:4px 8px;border-radius:4px;margin-bottom:6px;line-height:1.4}
 .card-tags-row{display:flex;flex-wrap:nowrap;gap:6px;margin-bottom:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;cursor:grab}
 .card-tags-row::-webkit-scrollbar{display:none}
 .card-group-bar{background:#30363d;color:#d29922;font-size:12px;padding:4px 8px;border-radius:4px;line-height:1.4;flex-shrink:0}
@@ -900,6 +903,23 @@ function adminRemoveUser(email){
   </div>
 </div>
 
+<!-- NOTE EDIT MODAL -->
+<div id="note-edit-modal" style="display:none;position:fixed;inset:0;background:#000a;z-index:9998;align-items:center;justify-content:center;padding:16px;box-sizing:border-box">
+  <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;width:100%;max-width:340px;padding:20px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <span id="note-edit-title" style="font-size:16px;font-weight:700;color:#e6edf3">📝 編輯備註</span>
+      <button onclick="closeNoteEdit()" style="background:none;border:none;color:#8b949e;font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <textarea id="note-edit-input" rows="3" style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:15px;padding:10px;box-sizing:border-box;resize:vertical;font-family:inherit;"></textarea>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <button id="note-edit-delete-btn" onclick="deleteNoteEdit()" style="flex:0 0 auto;background:#f8514922;border:1px solid #f85149;border-radius:8px;color:#f85149;font-size:14px;padding:10px 14px;cursor:pointer;">🗑刪除</button>
+      <button onclick="closeNoteEdit()" style="flex:1;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#8b949e;font-size:14px;padding:10px;cursor:pointer;">取消</button>
+      <button onclick="saveNoteEdit()" style="flex:1;background:#1f6feb;border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:700;padding:10px;cursor:pointer;">儲存</button>
+    </div>
+    <p id="note-edit-hint" style="font-size:11px;color:#6e7681;line-height:1.5;margin:10px 0 0;">備註會同步寫回共用的Google試算表。</p>
+  </div>
+</div>
+
 <!-- ECONOMIC CALENDAR MODAL -->
 <div id="econ-calendar-modal" style="display:none;position:fixed;inset:0;background:#0d1117;z-index:9999;flex-direction:column">
   <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #30363d;background:#161b22;flex-shrink:0">
@@ -1244,6 +1264,7 @@ function adminRemoveUser(email){
 
 <script>
 var D=[];
+var noteMap={}, sharedNoteMap={};
 var C={"半導體":["IC設計","IC製造","晶圓代工","IC封裝","IC測試","IC封裝測試","DRAM","非揮發性記憶體","封測服務與材料","矽晶圓","第三類半導體","矽化鎵相關","化合物晶圓","設計IP","ASIC","探針、探針卡","半導體製程設備","封測用設備","PCB相關設備","廠務工程"],"AI / 伺服器":["AI伺服器","ASIC伺服器","伺服器","雲端科技","Internet技術與基礎設施"],"電源 / 電力":["電源供應器","UPS","變壓器","電力設備","配電盤","變電設備","配電工程","電力公共事業","PV Inverter","太陽能","工業用電池","電池","儲能系統"],"被動元件":["被動元件","MLCC","晶片電阻","電容","電感","鋁質電解電容","石英元件","振盪器","鉭質電解電容","分離式元件","電晶體"],"PCB / 載板":["印刷電路板","印刷電路板相關","HDI板","IC基板","BGA基板","ABF載板","軟板","銅箔基板"],"連接器 / 線材":["連接器","連接線材","電線電纜","電子線"],"電腦 / 系統":["電腦系統業","工業電腦","電子製造服務","筆記型電腦製造","桌上型電腦","週邊產品","機殼","散熱模組","散熱風扇馬達"],"通訊 / 網路":["網通設備","光通訊","無線網路設備系統(WLAN)","用戶端設備","衛星通訊設備","網路通訊IC"],"光電 / LED":["LED","LED照明產品","LED封裝","光學鏡片/頭","光學元件","面板業","面板零組件","顯示器"],"生技 / 醫療":["醫藥產業","生物科技","新藥研發","西藥製劑","醫療器材","食品生技"],"車用 / 電動車":["車用電子","電動車","決策車零組件","車輛整車","車用鋰電池","車用充電相關","傳動系統","機車零組件","輪圈"],"金融":["金融業","銀行","證券","保險","投信","金控","資產管理","金融其他"],"營建 / 地產":["營建","地產","住宅建設","營造工程","資產股"],"傳產 / 機械":["化學工業","傳產其他","塑化製品","塑化原料","產業機械","機械零組件"],"航運":["運輸事業","航空","海運","倉儲","流通業"],"零售 / 消費":["旅宿／餐飲","餐飲","飯店","休閒娛樂","食品加工","成衣","成衣製造","農林漁牧"],"軟體 / 系統整合":["軟體業","系統整合"],"電子通路":["電子通路","電子元件代理商","IC零組件通路商"]};
 
 var sel=[],sk='pct',sd='d',searchQ='';
@@ -1523,11 +1544,12 @@ function render(){
       +'<div class="card-hd">'
         +'<div class="card-left">'
           +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;flex-wrap:wrap">'
+              +(isAdminUser()?('<button class="card-cam" onclick="event.stopPropagation();openNoteEdit(\''+s.code+'\',\''+s.name.replace(/'/g,"\\'")+'\',\'private\')">'+'<span class="private-note-icon'+(noteMap[s.code]?' filled':'')+'"></span>'+'</button>'):'')
               +'<span class="card-code">'+s.code+'</span>'
               +(function(){var e=getExchLabel(s.code);return '<span class="card-exch '+e.cls+'">'+e.txt+'</span>';})()
               +'<span class="card-name">'+s.name+'</span>'
               +(function(){if(s.disposal){var ft=s.disposal.freq?(s.disposal.freq+'分盤'):'處置中';return '<span title="'+s.disposal.reason.replace(/"/g,'&quot;')+'　期間 '+s.disposal.periodRaw+'" style="background:#f8514933;color:#f85149;border:1px solid #f85149;border-radius:4px;font-size:10px;padding:1px 5px;font-weight:700;">⚠'+ft+'</span>';}if(s.attention){return '<span title="'+s.attention.reason.replace(/"/g,'&quot;')+'　'+s.attention.date+'" style="background:#d2992233;color:#d29922;border:1px solid #d29922;border-radius:4px;font-size:10px;padding:1px 5px;font-weight:700;">注意</span>';}return '';})()
-              +'<button class="card-cam" onclick="event.stopPropagation();cardScreenshot(event,this.closest(\'.card\'))">📷</button>'
+              +'<button class="card-cam" onclick="event.stopPropagation();openNoteEdit(\''+s.code+'\',\''+s.name.replace(/'/g,"\\'")+'\',\'shared\')">'+(sharedNoteMap[s.code]?'💬':'💬+')+'</button>'
             +'</div>'
           +'<div class="card-pattern" id="pattern-'+s.code+'"></div>'
           +(s.position?'<div class="card-pos">'+s.position+'</div>':'')
@@ -1547,6 +1569,7 @@ function render(){
         +'<button class="card-line" style="background:#1f6feb22;border-color:#58a6ff;color:#58a6ff;cursor:pointer;" onclick="event.stopPropagation();openValuationTool(\''+s.code+'\')">🎯評估</button>'
       +'</div>'
       +'<div class="card-price" style="margin-bottom:6px">'
+        +'<button class="card-cam" style="margin-right:2px" onclick="event.stopPropagation();cardScreenshot(event,this.closest(\'.card\'))">📷</button>'
         +(s.close!==null?'<span class="card-avg">昨收 <span>'+s.close.toFixed(1)+'</span></span>':'')
         +(s.avg!==null?'<span class="card-avg">均價 <span>'+s.avg.toFixed(1)+'</span></span>':'')
         +(s.turnval!==null?'<span class="card-avg">成交值 <span>'+s.turnval.toFixed(1)+'億</span></span>':'')
@@ -1588,7 +1611,7 @@ function render(){
     +'</div>';
   }).join('');
   if(cardsEl) cardsEl.scrollTop = scrollY; // 還原捲動位置
-  if(Object.keys(noteMap).length) applyNotes(); // 重新套用備註
+  if(Object.keys(noteMap).length || Object.keys(sharedNoteMap).length) applyNotes(); // 重新套用備註
   if(Object.keys(strategyMap).length) applyStrategies(); // 重新套用策略
   if(Object.keys(groupMap).length) applyGroups(); // 重新套用集團標籤
   if(Object.keys(conceptMap).length) applyConcepts(); // 重新套用概念股標籤
@@ -2632,7 +2655,7 @@ function autoLoadStrategies(){
 
 // 卡片上方各種標籤列的固定顯示順序：集團/概念股 → 策略標籤 → 備註
 // 不管非同步載入的先後順序為何，永遠依照這個順序排版
-var CARD_BAR_ORDER = ['card-tags-row','card-strategy-bar','card-note-bar'];
+var CARD_BAR_ORDER = ['card-tags-row','card-strategy-bar','card-note-bar','card-sharednote-bar'];
 function insertCardBar(card, el, className){
   var idx = CARD_BAR_ORDER.indexOf(className);
   for(var i=idx+1;i<CARD_BAR_ORDER.length;i++){
@@ -2679,19 +2702,30 @@ function applyStrategies(){
 }
 
 function autoLoadNotes(){
-  fetch(NOTE_GAS_URL)
-    .then(function(r){return r.json();})
-    .then(function(d){
-      if(!d.ok) return;
-      noteMap = d.notes || {};
-      var count = Object.keys(noteMap).length;
-      if(count > 0){
-        applyNotes();
-        showToast('📝 已自動載入 '+count+' 筆備註');
-      }
-    })
-    .catch(function(){})  // 靜默失敗，不打擾使用者
-    .finally(function(){ _reportLoadStep('notes'); });
+  // 私人備註只有管理者身分驗證通過(idToken)才會回傳，這裡先嘗試取得目前登入者的token
+  // （非管理者拿到的token驗證會失敗，後端就只會回傳空的私人備註，不會外洩內容）
+  var doFetch = function(idToken){
+    var url = NOTE_GAS_URL + (idToken ? ('?idToken='+encodeURIComponent(idToken)) : '');
+    fetch(url)
+      .then(function(r){return r.json();})
+      .then(function(d){
+        if(!d.ok) return;
+        noteMap = d.notes || {};
+        sharedNoteMap = d.sharedNotes || {};
+        var count = Object.keys(noteMap).length + Object.keys(sharedNoteMap).length;
+        if(count > 0){
+          applyNotes();
+          showToast('📝 已自動載入 '+count+' 筆備註');
+        }
+      })
+      .catch(function(){})  // 靜默失敗，不打擾使用者
+      .finally(function(){ _reportLoadStep('notes'); });
+  };
+  if(fbAuth.currentUser){
+    fbAuth.currentUser.getIdToken().then(doFetch).catch(function(){ doFetch(null); });
+  } else {
+    doFetch(null);
+  }
 }
 
 // 靜默載入集團對照表（不打擾使用者，失敗也沒關係，可重新整理再試）
@@ -2772,21 +2806,95 @@ function loadNoteFile(i){
     .catch(function(e){toast('❌ 備註載入失敗：'+e.message,'#da3633');});
 }
 
+function isAdminUser(){
+  return localStorage.getItem('twstock_is_admin') === '1';
+}
 function applyNotes(){
+  var admin = isAdminUser();
   document.querySelectorAll('.card').forEach(function(card){
     var codeEl=card.querySelector('.card-code');
+    var nameEl=card.querySelector('.card-name');
     if(!codeEl)return;
     var code=codeEl.textContent.trim();
+    var name=nameEl?nameEl.textContent.trim():'';
+    // 私人備註（只有我能編輯，其他人唯讀顯示）
     var note=noteMap[code];
     var existing=card.querySelector('.card-note-bar');
     if(existing)existing.remove();
     if(note){
       var bar=document.createElement('div');
       bar.className='card-note-bar';
-      bar.textContent='📝 '+note;
+      if(admin){
+        bar.style.cursor='pointer';
+        bar.onclick=function(ev){ ev.stopPropagation(); openNoteEdit(code, name, 'private'); };
+      }
+      bar.textContent=note;
       insertCardBar(card, bar, 'card-note-bar');
     }
+    // 共同備註（任何人都能編輯）
+    var snote=sharedNoteMap[code];
+    var sExisting=card.querySelector('.card-sharednote-bar');
+    if(sExisting)sExisting.remove();
+    if(snote){
+      var sbar=document.createElement('div');
+      sbar.className='card-sharednote-bar';
+      sbar.style.cursor='pointer';
+      sbar.textContent='💬 '+snote;
+      sbar.onclick=function(ev){ ev.stopPropagation(); openNoteEdit(code, name, 'shared'); };
+      insertCardBar(card, sbar, 'card-sharednote-bar');
+    }
   });
+}
+
+// ══════════ 備註共同編輯：寫回共用Google試算表 ══════════
+var noteEditCode = null, noteEditName = null, noteEditField = 'shared';
+function openNoteEdit(code, name, field){
+  noteEditCode = code; noteEditName = name; noteEditField = field || 'shared';
+  var map = noteEditField === 'private' ? noteMap : sharedNoteMap;
+  var label = noteEditField === 'private' ? '⭐ 私人備註' : '💬 共同筆記';
+  document.getElementById('note-edit-title').textContent = label + '　' + code + ' ' + name;
+  document.getElementById('note-edit-input').value = map[code] || '';
+  document.getElementById('note-edit-delete-btn').style.display = map[code] ? '' : 'none';
+  var hintEl = document.getElementById('note-edit-hint');
+  if(hintEl) hintEl.textContent = noteEditField === 'private' ? '只有你（管理者）能編輯，其他使用者只能看到。' : '所有使用者都看得到、也都能編輯。';
+  document.getElementById('note-edit-modal').style.display = 'flex';
+  setTimeout(function(){ var el=document.getElementById('note-edit-input'); if(el) el.focus(); }, 50);
+}
+function closeNoteEdit(){
+  document.getElementById('note-edit-modal').style.display = 'none';
+}
+function saveNoteEdit(){
+  var val = document.getElementById('note-edit-input').value.trim();
+  if(!val){ closeNoteEdit(); return; }
+  _postNote(noteEditCode, noteEditName, val, noteEditField);
+}
+function deleteNoteEdit(){
+  _postNote(noteEditCode, noteEditName, '', noteEditField);
+}
+function _postNote(code, name, note, field){
+  toast('⏳ 儲存中...','#1f6feb');
+  var params = { code: code, name: name || '', note: note, field: field };
+  var reqPromise;
+  if(field === 'private'){
+    reqPromise = adminFetch('saveNote', params);
+  } else {
+    var qs = 'action=saveNote';
+    for(var k in params){ qs += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(params[k]); }
+    reqPromise = fetch(NOTE_GAS_URL + '?' + qs).then(function(r){ return r.json(); });
+  }
+  reqPromise
+    .then(function(d){
+      if(!d.ok) throw new Error(d.error||'儲存失敗');
+      var map = field === 'private' ? noteMap : sharedNoteMap;
+      if(note){ map[code] = note; } else { delete map[code]; }
+      applyNotes();
+      render();
+      closeNoteEdit();
+      toast(note?'✅ 備註已更新':'🗑 備註已刪除','#238636');
+    })
+    .catch(function(e){
+      toast('❌ 備註儲存失敗：'+(e.message||e.error||''),'#da3633');
+    });
 }
 
 // 把集團標籤（灰底、橘字，跟備註同風格）套到卡片上，點名稱可篩選只看該集團
