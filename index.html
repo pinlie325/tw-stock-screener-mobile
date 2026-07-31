@@ -91,13 +91,13 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .private-note-btn.filled{border-color:#58a6ff transparent transparent transparent;}
 .private-note-btn.filled:hover{border-color:#79b8ff transparent transparent transparent;}
 .card-cam:hover,.card-cam:active{opacity:1}
-.card-note-bar{background:#30363d;color:#e040fb;font-size:12px;padding:4px 8px;border-radius:4px;margin-bottom:6px;line-height:1.4}
+.card-note-bar{background:#1f6feb22;color:#e040fb;font-size:12px;padding:4px 8px;border-radius:4px;margin-bottom:6px;line-height:1.4}
 .card-sharednote-bar{background:#1f6feb22;color:#58a6ff;font-size:12px;padding:4px 8px;border-radius:4px;margin-bottom:6px;line-height:1.4}
 .card-tags-row{display:flex;flex-wrap:nowrap;gap:6px;margin-bottom:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;cursor:grab}
 .card-tags-row::-webkit-scrollbar{display:none}
 .card-group-bar{background:#30363d;color:#d29922;font-size:12px;padding:4px 8px;border-radius:4px;line-height:1.4;flex-shrink:0}
 .card-group-bar span{cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
-.card-concept-bar{background:#30363d;color:#39c5cf;font-size:12px;padding:4px 8px;border-radius:4px;line-height:1.4;flex-shrink:0}
+.card-concept-bar{background:#1f6feb22;color:#39c5cf;font-size:12px;padding:4px 8px;border-radius:4px;line-height:1.4;flex-shrink:0}
 .card-concept-bar span{cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
 .card-strategy-bar{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
 .stag{background:#1a2a3a;color:#58a6ff;border:1px solid #1f6feb55;border-radius:4px;font-size:11px;padding:2px 6px;white-space:nowrap}
@@ -108,7 +108,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .card-left{min-width:0;flex:1}
 .card-code{font-family:monospace;font-size:21px;font-weight:700;color:#79c0ff}
 .card-exch{font-size:10px;font-weight:600;text-align:center;border-radius:3px;padding:1px 5px;margin-top:2px;white-space:nowrap}
-.card-exch.twse{background:#1f6feb22;color:#79c0ff;border:1px solid #1f6feb44}
+.card-exch.twse{background:#6e768133;color:#c9d1d9;border:1px solid #6e768155}
 .card-exch.tpex{background:#3fb95018;color:#3fb950;border:1px solid #3fb95033}
 .card-name{font-size:17px;font-weight:600;color:#e6edf3;line-height:1.2}
 .card-pattern{display:flex;flex-wrap:wrap;gap:3px;margin-top:3px}
@@ -856,11 +856,11 @@ function adminRemoveUser(email){
     </div>
     <div style="font-size:13px;color:#c9d1d9;line-height:1.8">
       <p style="color:#f0c040;font-weight:700;margin:0 0 6px">📥 載入資料</p>
-      <p style="margin:0 0 12px">☁️ 雲端：從 Google Drive 載入最新選股 Excel<br>本機手動載入 Excel 檔案：在「設定」裡</p>
+      <p style="margin:0 0 12px">☁️ 雲端（左上角）：從 Google Drive 載入最新選股 Excel<br>本機手動載入 Excel 檔案：在「設定」裡</p>
       <p style="color:#f0c040;font-weight:700;margin:0 0 6px">🔍 搜尋與篩選</p>
-      <p style="margin:0 0 12px">搜尋框輸入股票代碼或名稱<br>產業按鈕：依產業篩選個股<br>⭐ 按鈕：只顯示有備註的個股</p>
+      <p style="margin:0 0 12px">搜尋框輸入股票代碼或名稱<br>產業按鈕：依產業篩選個股<br>⭐ 只顯示管理者挑選個股<br>💬 只顯示有共同筆記（敲敲話）的個股<br>兩個按鈕可以同時開，同時開會顯示兩種備註任一種的個股</p>
       <p style="color:#f0c040;font-weight:700;margin:0 0 6px">📊 卡片功能</p>
-      <p style="margin:0 0 12px">點擊卡片：展開 K 線圖<br>K 線圖左右滑動：查看歷史走勢<br>📷 圖示：截圖模式<br>CM / LINE：跳轉外部連結</p>
+      <p style="margin:0 0 12px">點擊卡片：展開 K 線圖<br>K 線圖左右滑動：查看歷史走勢<br>📷 圖示（昨收前面）：截圖模式<br>CM / LINE：跳轉外部連結<br>卡片上的橘/紅色標籤：處置股、注意股警示</p>
       <p style="color:#f0c040;font-weight:700;margin:0 0 6px">📈 技術型態（點開K線後顯示）</p>
       <p style="margin:0 0 12px">
         <span style="color:#f85149">趨勢偏多 / 突破MA60 / 三連紅 / 長紅K / 價量齊揚</span><br>
@@ -869,7 +869,9 @@ function adminRemoveUser(email){
         <span style="color:#ffd700">進場訊號：站上MA60+MA13，RSI>50向上，MA60向上，量能放大</span>
       </p>
       <p style="color:#f0c040;font-weight:700;margin:0 0 6px">📝 備註系統</p>
-      <p style="margin:0">開啟 app 自動從雲端載入備註<br>備註顯示於卡片頂部（灰底紫字）<br>按 ⭐ 可篩選有備註的個股並更新備註</p>
+      <p style="margin:0 0 12px">私人備註：只有管理者能新增/編輯，其他使用者完全看不到；卡片左上角的三角形圖示（藍色代表已有備註）也只有管理者看得到，點圖示才能編輯，點卡片上的備註文字列不會觸發編輯<br><br>共同筆記（敲敲話）：所有使用者都能新增留言，是留言紀錄的形式，新留言不會蓋掉舊的，每則都能個別刪除，卡片上只顯示最新一則，點開可看全部歷史</p>
+      <p style="color:#f0c040;font-weight:700;margin:0 0 6px">🚫 排除股票清單</p>
+      <p style="margin:0">在「設定」→「排除股票清單」，輸入代碼或名稱（會自動互相帶入另一個）即可加入；加入後載入Excel會自動濾掉，存在共用試算表的「黑名單」分頁，所有使用者都適用，只有管理者能新增或移除</p>
     </div>
   </div>
 </div>
@@ -1185,8 +1187,8 @@ function adminRemoveUser(email){
     </div>
   </div>
   <div class="hdr-r">
-    <button class="btn-cloud" onclick="toggleNoteFilter()" id="hdr-note-btn" title="只顯示有私人備註的股票" style="font-size:12px;padding:5px 10px">⭐</button>
-    <button class="btn-cloud" onclick="toggleAllNoteFilter()" id="hdr-allnote-btn" title="顯示所有有備註或共同筆記的股票" style="font-size:12px;padding:5px 10px">💬</button>
+    <button class="btn-cloud" onclick="toggleNoteFilter()" id="hdr-note-btn" title="只顯示管理者挑選個股" style="font-size:12px;padding:5px 10px">⭐</button>
+    <button class="btn-cloud" onclick="toggleAllNoteFilter()" id="hdr-allnote-btn" title="只顯示有共同筆記（敲敲話）的股票" style="font-size:12px;padding:5px 10px">💬</button>
     <input id="fi" type="file" accept=".xlsx,.xls" style="display:none" onchange="loadXL(this)">
   </div>
 </div>
@@ -1684,7 +1686,7 @@ function toggleNoteFilter(){
   render();
 }
 
-// 顯示所有「有備註或共同筆記」的股票（私人備註 or 共同筆記，任一個有就算）
+// 只顯示有「共同筆記（敲敲話）」的股票，不含私人備註
 var allNoteFilterOn = false;
 function toggleAllNoteFilter(){
   allNoteFilterOn = !allNoteFilterOn;
@@ -1715,8 +1717,14 @@ function getFilt(){
       return s.code.toLowerCase().indexOf(q)>=0 || s.name.toLowerCase().indexOf(q)>=0;
     });
   }
-  if(noteFilterOn) d=d.filter(function(s){return noteMap[String(s.code)];});
-  if(allNoteFilterOn) d=d.filter(function(s){return noteMap[String(s.code)] || sharedNoteMap[String(s.code)];});
+  // 星星（私人備註）跟敲敲話（共同筆記）同時開時改成聯集：只要有其中一種備註就顯示
+  if(noteFilterOn && allNoteFilterOn){
+    d=d.filter(function(s){ var c=String(s.code); return noteMap[c] || sharedNoteMap[c]; });
+  } else if(noteFilterOn){
+    d=d.filter(function(s){return noteMap[String(s.code)];});
+  } else if(allNoteFilterOn){
+    d=d.filter(function(s){return sharedNoteMap[String(s.code)];});
+  }
   if(groupFilter) d=d.filter(function(s){return (groupMap[String(s.code)]||[]).indexOf(groupFilter)>=0;});
   if(conceptFilter) d=d.filter(function(s){return (conceptMap[String(s.code)]||[]).indexOf(conceptFilter)>=0;});
   return d;
