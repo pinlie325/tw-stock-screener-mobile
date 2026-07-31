@@ -899,8 +899,11 @@ function adminRemoveUser(email){
     <button onclick="openMacroBoard()" style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
       🌍 市場參考看板（原油／美元／VIX／美債）
     </button>
-    <button onclick="openEconCalendar()" style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:15px;padding:12px;cursor:pointer;text-align:left">
+    <button onclick="openEconCalendar()" style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
       🗓 財經行事曆
+    </button>
+    <button onclick="openExcludeManager()" style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:15px;padding:12px;cursor:pointer;text-align:left">
+      🚫 排除股票清單
     </button>
   </div>
 </div>
@@ -976,6 +979,26 @@ function adminRemoveUser(email){
   </div>
   <div id="disposal-report-body" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;"></div>
   <p style="font-size:11px;color:#6e7681;line-height:1.6;margin:0;padding:0 16px calc(12px + env(safe-area-inset-bottom));flex-shrink:0;">資料來源：證交所／櫃買中心公開資訊，僅列出目前清單內、且處於處置期間的股票。</p>
+</div>
+
+<!-- EXCLUDE LIST MODAL -->
+<div id="exclude-modal" style="display:none;position:fixed;inset:0;background:#000a;z-index:9998;align-items:center;justify-content:center;padding:16px;box-sizing:border-box">
+  <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;width:100%;max-width:360px;padding:20px;max-height:80vh;display:flex;flex-direction:column;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-shrink:0;">
+      <span style="font-size:16px;font-weight:700;color:#e6edf3">🚫 排除股票清單</span>
+      <button onclick="document.getElementById('exclude-modal').style.display='none'" style="background:none;border:none;color:#8b949e;font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <p style="font-size:12px;color:#8b949e;line-height:1.6;margin:0 0 10px;flex-shrink:0;">清單裡的股票代碼載入Excel時會自動被濾掉，不會出現在畫面上。存在共用試算表的「黑名單」分頁，所有使用者都適用；只有管理者能新增或移除。</p>
+    <p id="exclude-readonly-hint" style="display:none;font-size:12px;color:#f0c040;line-height:1.6;margin:0 0 10px;flex-shrink:0;">目前僅管理者能編輯此清單，你只能查看。</p>
+    <div style="display:flex;gap:6px;margin-bottom:4px;flex-shrink:0;">
+      <input id="exclude-add-input" type="text" placeholder="股票代碼或名稱，例如 2498 宏達電" oninput="previewExcludeName(this.value)" style="flex:1;min-width:0;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:14px;padding:8px 10px;box-sizing:border-box;">
+    </div>
+    <div id="exclude-name-preview" style="min-height:16px;font-size:12px;color:#8b949e;margin-bottom:8px;flex-shrink:0;padding:0 2px;"></div>
+    <div id="exclude-add-btn-wrap" style="margin-bottom:12px;flex-shrink:0;">
+      <button onclick="addExcludeCode()" style="width:100%;background:#1f6feb;border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:700;padding:8px 14px;cursor:pointer;">新增</button>
+    </div>
+    <div id="exclude-list-body" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px;"></div>
+  </div>
 </div>
 
 <!-- VALUATION MODAL -->
@@ -1270,7 +1293,174 @@ function adminRemoveUser(email){
 
 <script>
 var D=[];
+var D_RAW=[]; // 完整未過濾清單，黑名單增減時都從這裡重新套用篩選，移除黑名單後才能立刻恢復顯示，不用重新載入Excel
 var noteMap={}, sharedNoteMap={}, sharedNoteHistory={};
+// ── 排除股票清單（黑名單）：存在共用試算表的「黑名單」分頁，載入Excel時自動濾掉，只有管理者能新增/移除 ──
+var EXCLUDE_CODES = [];
+var EXCLUDE_NAMES = {};
+// 一次性搬家用：之前版本存在localStorage的舊名單，第一次偵測到就自動搬進共用黑名單分頁，之後清掉
+var EXCLUDE_MIGRATE_LEGACY = ['6166','2923','1442','8415','2910','6226','1723','3018','6225','3055','9910','1215','4183','3532','1526','4147','3088','9914','2504','8462','2359','2379','1707','2015','9940','6804','1712','9921','1218','4706','9917','2501','2903'];
+function applyExcludeFilter(list){
+  if(!EXCLUDE_CODES.length) return list;
+  var set = {}; EXCLUDE_CODES.forEach(function(c){ set[c]=1; });
+  return list.filter(function(s){ return !set[s.code]; });
+}
+function migrateLegacyExcludeList(){
+  try{
+    if(localStorage.getItem('twstock_exclude_codes') === null) return; // 沒有舊資料，不用搬
+    if(!isAdminUser()) return; // 只有管理者能寫黑名單分頁，等管理者登入時再搬
+    var toAdd = EXCLUDE_MIGRATE_LEGACY.filter(function(c){ return EXCLUDE_CODES.indexOf(c)===-1; });
+    if(!toAdd.length){ localStorage.removeItem('twstock_exclude_codes'); return; }
+    var chain = Promise.resolve();
+    toAdd.forEach(function(c){
+      chain = chain.then(function(){ return adminFetch('addBlacklist', {code:c, name:''}); });
+    });
+    chain.then(function(){
+      EXCLUDE_CODES = EXCLUDE_CODES.concat(toAdd);
+      localStorage.removeItem('twstock_exclude_codes');
+      if(D_RAW.length){ D = applyExcludeFilter(D_RAW); render(); }
+      toast('🚫 已把舊的排除清單搬進共用黑名單','#238636');
+    }).catch(function(){});
+  }catch(e){}
+}
+function openExcludeManager(){
+  document.getElementById('settings-modal').style.display = 'none';
+  var admin = isAdminUser();
+  var addRow = document.getElementById('exclude-add-input').parentElement;
+  addRow.style.display = admin ? 'flex' : 'none';
+  var addBtnWrap = document.getElementById('exclude-add-btn-wrap');
+  if(addBtnWrap) addBtnWrap.style.display = admin ? 'block' : 'none';
+  var hint = document.getElementById('exclude-readonly-hint');
+  if(hint) hint.style.display = admin ? 'none' : 'block';
+  document.getElementById('exclude-add-input').value = '';
+  document.getElementById('exclude-name-preview').textContent = '';
+  renderExcludeList();
+  document.getElementById('exclude-modal').style.display = 'flex';
+}
+// 輸入框同時接受「代碼」或「名稱」，自動判斷是哪一種、雙向查出另一半資訊
+function _lookupStockName(code){
+  var nm = EXCLUDE_NAMES[code] || '';
+  if(!nm) D.forEach(function(s){ if(s.code===code) nm=s.name; });
+  return nm;
+}
+function _lookupStockByName(query){
+  var match = null;
+  D.forEach(function(s){ if(!match && s.name === query) match = s; });
+  if(!match) D.forEach(function(s){ if(!match && s.name && s.name.indexOf(query) >= 0) match = s; });
+  return match; // {code, name, ...} 或 null
+}
+// 判斷使用者輸入的是代碼還是名稱，回傳 {code, name, isCode, notFound}
+function _resolveExcludeInput(raw){
+  raw = (raw || '').trim();
+  if(!raw) return {code:'', name:'', isCode:true, notFound:false};
+  if(/^\d+$/.test(raw)){
+    var code = raw.padStart(4,'0');
+    var nm = _lookupStockName(code);
+    return {code:code, name:nm, isCode:true, notFound:!nm};
+  }
+  var match = _lookupStockByName(raw);
+  if(match) return {code:match.code, name:match.name, isCode:false, notFound:false};
+  return {code:'', name:raw, isCode:false, notFound:true};
+}
+// 輸入時即時顯示會自動帶入什麼（代碼→名稱，或名稱→代碼）
+function previewExcludeName(raw){
+  var previewEl = document.getElementById('exclude-name-preview');
+  raw = (raw || '').trim();
+  if(!raw){ previewEl.textContent = ''; return; }
+  var r = _resolveExcludeInput(raw);
+  if(r.isCode){
+    if(r.name){
+      previewEl.textContent = '將自動帶入名稱：' + r.name;
+      previewEl.style.color = '#3fb950';
+    } else {
+      previewEl.textContent = '目前清單裡查不到這個代碼的名稱，會先以空白名稱加入';
+      previewEl.style.color = '#8b949e';
+    }
+  } else {
+    if(r.code){
+      previewEl.textContent = '將自動帶入代碼：' + r.code + '（' + r.name + '）';
+      previewEl.style.color = '#3fb950';
+    } else {
+      previewEl.textContent = '目前清單裡查不到這個名稱對應的代碼，請改輸入股票代碼';
+      previewEl.style.color = '#f0c040';
+    }
+  }
+}
+function renderExcludeList(){
+  var body = document.getElementById('exclude-list-body');
+  if(!EXCLUDE_CODES.length){
+    body.innerHTML = '<div style="text-align:center;color:#8b949e;padding:20px;font-size:13px;">目前沒有排除任何股票</div>';
+    return;
+  }
+  // 優先用黑名單分頁存的名稱，沒有的話退而求其次用目前已載入資料裡的名稱
+  var nameByCode = {};
+  D.forEach(function(s){ nameByCode[s.code] = s.name; });
+  var canEditBl = isAdminUser();
+  body.innerHTML = EXCLUDE_CODES.map(function(c){
+    var nm = EXCLUDE_NAMES[c] || nameByCode[c] || '';
+    return '<div style="display:flex;justify-content:space-between;align-items:center;background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:8px 10px;">'
+      + '<span style="color:#e6edf3;font-size:14px;">'+c+(nm?' '+nm:'')+'</span>'
+      + (canEditBl?('<button onclick="removeExcludeCode(\''+c+'\')" style="background:none;border:none;color:#f85149;font-size:16px;cursor:pointer;padding:2px 6px;">✕</button>'):'')
+    +'</div>';
+  }).join('');
+}
+function addExcludeCode(){
+  var input = document.getElementById('exclude-add-input');
+  var previewEl = document.getElementById('exclude-name-preview');
+  var raw = input.value.trim();
+  if(!raw) return;
+  var r = _resolveExcludeInput(raw);
+  if(!r.code){
+    toast('❌ 查不到「'+raw+'」對應的代碼，請改輸入股票代碼','#da3633');
+    return;
+  }
+  var code = r.code, nm = r.name;
+  if(EXCLUDE_CODES.indexOf(code) >= 0){
+    // 已經在清單裡了，如果這次自動查得到名稱就順便補上/更新
+    if(nm && nm !== EXCLUDE_NAMES[code]){
+      toast('⏳ 更新中...','#1f6feb');
+      adminFetch('addBlacklist', {code:code, name:nm})
+        .then(function(d){
+          if(!d.ok) throw new Error(d.error||'更新失敗');
+          EXCLUDE_NAMES[code] = nm;
+          input.value = ''; previewEl.textContent = '';
+          renderExcludeList();
+          toast('✅ 已更新名稱：'+code+' '+nm,'#238636');
+        })
+        .catch(function(e){ toast('❌ 更新失敗：'+e.message,'#da3633'); });
+    } else {
+      toast('ℹ️ 已經在黑名單裡了：'+code,'#8b949e');
+      input.value = ''; previewEl.textContent = '';
+    }
+    return;
+  }
+  toast('⏳ 新增中...','#1f6feb');
+  adminFetch('addBlacklist', {code:code, name:nm})
+    .then(function(d){
+      if(!d.ok) throw new Error(d.error||'新增失敗');
+      EXCLUDE_CODES.push(code);
+      if(nm) EXCLUDE_NAMES[code] = nm;
+      input.value = ''; previewEl.textContent = '';
+      renderExcludeList();
+      if(D_RAW.length){ D = applyExcludeFilter(D_RAW); render(); }
+      toast('🚫 已加入黑名單：'+code+(nm?' '+nm:''),'#238636');
+    })
+    .catch(function(e){ toast('❌ 新增失敗：'+e.message,'#da3633'); });
+}
+function removeExcludeCode(code){
+  toast('⏳ 移除中...','#1f6feb');
+  adminFetch('removeBlacklist', {code:code})
+    .then(function(d){
+      if(!d.ok) throw new Error(d.error||'移除失敗');
+      var idx = EXCLUDE_CODES.indexOf(code);
+      if(idx >= 0) EXCLUDE_CODES.splice(idx, 1);
+      delete EXCLUDE_NAMES[code];
+      renderExcludeList();
+      if(D_RAW.length){ D = applyExcludeFilter(D_RAW); render(); }
+      toast('✅ 已從黑名單移除：'+code+'，馬上恢復顯示','#1f6feb');
+    })
+    .catch(function(e){ toast('❌ 移除失敗：'+e.message,'#da3633'); });
+}
 var C={"半導體":["IC設計","IC製造","晶圓代工","IC封裝","IC測試","IC封裝測試","DRAM","非揮發性記憶體","封測服務與材料","矽晶圓","第三類半導體","矽化鎵相關","化合物晶圓","設計IP","ASIC","探針、探針卡","半導體製程設備","封測用設備","PCB相關設備","廠務工程"],"AI / 伺服器":["AI伺服器","ASIC伺服器","伺服器","雲端科技","Internet技術與基礎設施"],"電源 / 電力":["電源供應器","UPS","變壓器","電力設備","配電盤","變電設備","配電工程","電力公共事業","PV Inverter","太陽能","工業用電池","電池","儲能系統"],"被動元件":["被動元件","MLCC","晶片電阻","電容","電感","鋁質電解電容","石英元件","振盪器","鉭質電解電容","分離式元件","電晶體"],"PCB / 載板":["印刷電路板","印刷電路板相關","HDI板","IC基板","BGA基板","ABF載板","軟板","銅箔基板"],"連接器 / 線材":["連接器","連接線材","電線電纜","電子線"],"電腦 / 系統":["電腦系統業","工業電腦","電子製造服務","筆記型電腦製造","桌上型電腦","週邊產品","機殼","散熱模組","散熱風扇馬達"],"通訊 / 網路":["網通設備","光通訊","無線網路設備系統(WLAN)","用戶端設備","衛星通訊設備","網路通訊IC"],"光電 / LED":["LED","LED照明產品","LED封裝","光學鏡片/頭","光學元件","面板業","面板零組件","顯示器"],"生技 / 醫療":["醫藥產業","生物科技","新藥研發","西藥製劑","醫療器材","食品生技"],"車用 / 電動車":["車用電子","電動車","決策車零組件","車輛整車","車用鋰電池","車用充電相關","傳動系統","機車零組件","輪圈"],"金融":["金融業","銀行","證券","保險","投信","金控","資產管理","金融其他"],"營建 / 地產":["營建","地產","住宅建設","營造工程","資產股"],"傳產 / 機械":["化學工業","傳產其他","塑化製品","塑化原料","產業機械","機械零組件"],"航運":["運輸事業","航空","海運","倉儲","流通業"],"零售 / 消費":["旅宿／餐飲","餐飲","飯店","休閒娛樂","食品加工","成衣","成衣製造","農林漁牧"],"軟體 / 系統整合":["軟體業","系統整合"],"電子通路":["電子通路","電子元件代理商","IC零組件通路商"]};
 
 var sel=[],sk='pct',sd='d',searchQ='';
@@ -2502,7 +2692,8 @@ function processRows(rows,filename){
     nd.push({code:cleanCode,name:COL.name?String(r[COL.name]||'').trim():'',close:COL.close?sf(r[COL.close]):null,pct:COL.pct?sf(r[COL.pct]):null,avg:COL.avg?sf(r[COL.avg]):null,volume:COL.volume?sf(r[COL.volume]):null,turnover:COL.turnover?sf(r[COL.turnover]):null,turnval:COL.turnval?sf(r[COL.turnval]):null,capital:COL.capital?sf(r[COL.capital]):null,margin:COL.margin?sf(r[COL.margin]):null,position:COL.pos&&r[COL.pos]?String(r[COL.pos]).trim():'',tags:ts,rs:COL.rs?sf(r[COL.rs]):null,grossmargin:COL.grossmargin?sf(r[COL.grossmargin]):null,eps:COL.eps?sf(r[COL.eps]):null,bigbuy:COL.bigbuy?sf(r[COL.bigbuy]):null,revgrowth:COL.revgrowth?sf(r[COL.revgrowth]):null,pe:COL.pe?sf(r[COL.pe]):null,roe:COL.roe?sf(r[COL.roe]):null,news:COL.news&&r[COL.news]?String(r[COL.news]).trim():''});
   });
   if(!nd.length){alert('沒有讀到有效資料');return;}
-  D=nd;
+  D_RAW=nd;
+  D=applyExcludeFilter(D_RAW);
   var m=filename?filename.match(/(\d{8})/):'';
   var dlbl='';
   if(m){var d=m[1];dlbl=d.substring(0,4)+'/'+d.substring(4,6)+'/'+d.substring(6,8);}
@@ -2738,6 +2929,12 @@ function autoLoadNotes(){
         noteMap = d.notes || {};
         sharedNoteMap = d.sharedNotes || {};
         sharedNoteHistory = d.sharedHistory || {};
+        var blData = d.blacklist || [];
+        EXCLUDE_CODES = blData.map(function(x){ return typeof x === 'string' ? x : x.code; });
+        EXCLUDE_NAMES = {};
+        blData.forEach(function(x){ if(typeof x === 'object' && x.code && x.name) EXCLUDE_NAMES[x.code] = x.name; });
+        if(D_RAW.length){ D = applyExcludeFilter(D_RAW); render(); }
+        migrateLegacyExcludeList();
         var count = Object.keys(noteMap).length + Object.keys(sharedNoteMap).length;
         if(count > 0){
           applyNotes();
