@@ -845,7 +845,7 @@ function adminRemoveUser(email){
 </div>
 
 <!-- FLOATING TOP BUTTON -->
-<button id="float-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" style="position:fixed;left:10px;top:65%;transform:translateY(-50%);z-index:900;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#8b949e;font-size:14px;padding:10px 6px;cursor:pointer;box-shadow:0 2px 8px #0006">▲</button>
+<button id="float-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" style="position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:900;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#8b949e;padding:6px 12px;line-height:1;cursor:pointer;box-shadow:0 2px 8px #0006;font-size:13px;">▲</button>
 
 <!-- HELP MODAL -->
 <div id="help-modal" style="display:none;position:fixed;inset:0;background:#000a;z-index:9998;align-items:center;justify-content:center;padding:16px;box-sizing:border-box">
@@ -1227,7 +1227,7 @@ function adminRemoveUser(email){
 <!-- COUNT BAR -->
 <div class="cbar">
   <span>顯示 <b id="rc">0</b> 支</span>
-  <button id="general-note-btn" onclick="openGeneralNoteModal()" style="background:#1f6feb22;border:1px solid #58a6ff77;border-radius:12px;color:#58a6ff;font-size:11px;padding:3px 10px;cursor:pointer;white-space:nowrap;">📣 大聲公</button>
+  <button id="general-note-btn" onclick="generalNoteBtnClick()" style="background:#1f6feb22;border:1px solid #58a6ff77;border-radius:12px;color:#58a6ff;font-size:11px;padding:3px 10px;cursor:pointer;white-space:nowrap;">📣 大聲公</button>
   <div class="cbar-sts" id="csts"></div>
 </div>
 
@@ -1317,6 +1317,7 @@ var D=[];
 var D_RAW=[]; // 完整未過濾清單，黑名單增減時都從這裡重新套用篩選，移除黑名單後才能立刻恢復顯示，不用重新載入Excel
 var noteMap={}, sharedNoteMap={}, sharedNoteHistory={};
 var generalNoteHistory=[]; // 留言板：不綁特定股票代碼的獨立留言，陣列，每則 {time, text, name}，新到舊排序
+var gnActiveJumpCode = null; // 記錄目前的搜尋是不是從大聲公點標籤跳過來的，是的話再按一次大聲公鈕就變成清除搜尋
 // ── 排除股票清單（黑名單）：存在共用試算表的「黑名單」分頁，載入Excel時自動濾掉，只有管理者能新增/移除 ──
 var EXCLUDE_CODES = [];
 var EXCLUDE_NAMES = {};
@@ -1521,6 +1522,7 @@ function renderGeneralNoteList(){
 // 點留言裡標註的股票標籤：關掉大聲公，回到清單並搜尋該代碼
 function jumpToStock(code){
   document.getElementById('general-note-modal').style.display = 'none';
+  gnActiveJumpCode = code; // 標記這次搜尋是從大聲公標籤跳過來的
   var searchInput = document.getElementById('fsearch');
   if(searchInput){
     searchInput.value = code;
@@ -1528,6 +1530,19 @@ function jumpToStock(code){
     toggleClear(code);
   }
   window.scrollTo({top:0, behavior:'smooth'});
+}
+// 大聲公按鈕：平常按下去是開留言板；但如果目前的搜尋是剛才點標籤跳過來的，
+// 再按一次就改成清除搜尋、回到完整清單，像開關一樣
+function generalNoteBtnClick(){
+  if(gnActiveJumpCode){
+    gnActiveJumpCode = null;
+    // 離開跳轉來的搜尋結果時回到最上面，不用像一般清除搜尋那樣停在原地
+    var searchInput = document.getElementById('fsearch');
+    if(searchInput){ searchInput.value=''; doSearch(''); toggleClear(''); }
+    window.scrollTo({top:0, behavior:'smooth'});
+  } else {
+    openGeneralNoteModal();
+  }
 }
 function addGeneralNote(){
   var input = document.getElementById('general-note-input');
@@ -1700,6 +1715,8 @@ function setSrtToggle(el, k, labelD, labelA, defaultDir){
 // ── SEARCH ──
 function doSearch(v){
   searchQ=v ? v.trim().toLowerCase() : '';
+  // 如果使用者自己改了搜尋內容（不是大聲公跳轉當下設的那個代碼），就取消「跳轉來的搜尋」標記
+  if(gnActiveJumpCode && v !== gnActiveJumpCode){ gnActiveJumpCode = null; }
   render();
 }
 
