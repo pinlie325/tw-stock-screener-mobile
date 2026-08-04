@@ -1227,7 +1227,26 @@ function adminRemoveUser(email){
 <!-- COUNT BAR -->
 <div class="cbar">
   <span>顯示 <b id="rc">0</b> 支</span>
+  <button id="general-note-btn" onclick="openGeneralNoteModal()" style="background:#1f6feb22;border:1px solid #58a6ff77;border-radius:12px;color:#58a6ff;font-size:11px;padding:3px 10px;cursor:pointer;white-space:nowrap;">📣 大聲公</button>
   <div class="cbar-sts" id="csts"></div>
+</div>
+
+<!-- GENERAL NOTE BOARD MODAL：不綁特定股票代碼的獨立留言區，所有使用者都能看、都能留言 -->
+<div id="general-note-modal" style="display:none;position:fixed;inset:0;background:#0d1117;z-index:9999;flex-direction:column">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #30363d;background:linear-gradient(135deg,#1f6feb22,#161b22);flex-shrink:0">
+    <span style="font-size:19px;font-weight:800;color:#e6edf3;letter-spacing:0.5px;">📣 大聲公</span>
+    <button onclick="document.getElementById('general-note-modal').style.display='none'" style="background:none;border:none;color:#8b949e;font-size:24px;cursor:pointer">✕</button>
+  </div>
+  <div id="general-note-list" style="flex:1;overflow-y:auto;padding:14px 16px;"></div>
+  <div style="flex-shrink:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom)) 16px;background:#161b22;border-top:1px solid #30363d;">
+    <input id="general-note-name-input" type="text" placeholder="😀 你的名字" style="width:100%;background:#0d1117;border:1.5px solid #30363d;border-radius:12px;color:#e6edf3;font-size:16px;padding:10px 12px;box-sizing:border-box;margin-bottom:8px;">
+    <input id="general-note-tag-input" type="text" placeholder="🏷 標註股票代碼或名稱（選填）" oninput="previewGeneralNoteTag(this.value)" style="width:100%;background:#0d1117;border:1.5px solid #30363d;border-radius:12px;color:#e6edf3;font-size:16px;padding:10px 12px;box-sizing:border-box;margin-bottom:2px;">
+    <div id="general-note-tag-preview" style="min-height:16px;font-size:12px;color:#8b949e;margin-bottom:8px;padding:0 4px;"></div>
+    <div style="display:flex;gap:8px;">
+      <textarea id="general-note-input" rows="2" placeholder="說點什麼吧…" style="flex:1;background:#0d1117;border:1.5px solid #30363d;border-radius:12px;color:#e6edf3;font-size:16px;padding:10px 12px;box-sizing:border-box;resize:vertical;font-family:inherit;"></textarea>
+      <button onclick="addGeneralNote()" style="flex-shrink:0;background:linear-gradient(135deg,#1f6feb,#58a6ff);border:none;border-radius:20px;color:#fff;font-size:15px;font-weight:800;padding:0 20px;cursor:pointer;">📤 送出</button>
+    </div>
+  </div>
 </div>
 
 <!-- CARDS -->
@@ -1297,6 +1316,7 @@ function adminRemoveUser(email){
 var D=[];
 var D_RAW=[]; // 完整未過濾清單，黑名單增減時都從這裡重新套用篩選，移除黑名單後才能立刻恢復顯示，不用重新載入Excel
 var noteMap={}, sharedNoteMap={}, sharedNoteHistory={};
+var generalNoteHistory=[]; // 留言板：不綁特定股票代碼的獨立留言，陣列，每則 {time, text, name}，新到舊排序
 // ── 排除股票清單（黑名單）：存在共用試算表的「黑名單」分頁，載入Excel時自動濾掉，只有管理者能新增/移除 ──
 var EXCLUDE_CODES = [];
 var EXCLUDE_NAMES = {};
@@ -1388,6 +1408,171 @@ function previewExcludeName(raw){
     }
   }
 }
+
+// ── 新增留言（不限清單內個股）：就算這支股票目前沒出現在選股清單裡，也可以先留言 ──
+// ── 大聲公：不綁特定股票代碼的獨立留言區，每則都記錄留言人 ──
+function updateGeneralNoteBtn(){
+  var btn = document.getElementById('general-note-btn');
+  if(!btn) return;
+  var n = generalNoteHistory.length;
+  btn.textContent = n ? ('📣 大聲公 ('+n+')') : '📣 大聲公';
+}
+function openGeneralNoteModal(){
+  renderGeneralNoteList();
+  document.getElementById('general-note-input').value = '';
+  document.getElementById('general-note-tag-input').value = '';
+  document.getElementById('general-note-tag-preview').textContent = '';
+  document.getElementById('general-note-name-input').value = ''; // 不預設名字，每次都要自己填
+  document.getElementById('general-note-modal').style.display = 'flex';
+}
+// 留言可以標註想提到的個股，輸入代碼或名稱都可以（跟排除清單同一套雙向解析邏輯）
+function previewGeneralNoteTag(raw){
+  var previewEl = document.getElementById('general-note-tag-preview');
+  raw = (raw || '').trim();
+  if(!raw){ previewEl.textContent = ''; return; }
+  var r = _resolveExcludeInput(raw);
+  if(r.code){
+    previewEl.textContent = '將標註：' + r.code + (r.name?('（'+r.name+'）'):'');
+    previewEl.style.color = '#3fb950';
+  } else {
+    // 目前清單裡查不到對應代碼也沒關係，還是可以標註，只是不能點擊跳轉
+    previewEl.textContent = '將標註文字：' + raw + '（目前清單裡查不到代碼，標籤不能點擊跳轉）';
+    previewEl.style.color = '#8b949e';
+  }
+}
+// 依名字算出一個固定的活潑配色，同一個人每次顏色都一樣，方便一眼認出誰是誰
+var GN_PALETTE = [
+  {bg:'#1f6feb26', fg:'#58a6ff', solid:'#1f6feb'},
+  {bg:'#3fb95026', fg:'#56d364', solid:'#2ea043'},
+  {bg:'#f0c04026', fg:'#f0c040', solid:'#d29922'},
+  {bg:'#f7768e26', fg:'#ff9bb3', solid:'#db6d84'},
+  {bg:'#a371f726', fg:'#c297ff', solid:'#8957e5'},
+  {bg:'#39c5cf26', fg:'#56d4dd', solid:'#1b9aa4'}
+];
+function _gnColor(name){
+  var s = name || '匿名';
+  var h = 0;
+  for(var i=0;i<s.length;i++){ h = (h*31 + s.charCodeAt(i)) >>> 0; }
+  return GN_PALETTE[h % GN_PALETTE.length];
+}
+function renderGeneralNoteList(){
+  var listEl = document.getElementById('general-note-list');
+  if(!generalNoteHistory.length){
+    listEl.innerHTML = '<div style="text-align:center;color:#8b949e;padding:24px 16px;font-size:14px;">🦗 目前還沒有留言，第一個來搶頭香！</div>';
+    return;
+  }
+  listEl.innerHTML = '';
+  generalNoteHistory.forEach(function(h){
+    var nm = h.name || '匿名';
+    var c = _gnColor(nm);
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:8px;align-items:flex-start;margin-bottom:12px;';
+
+    var avatar = document.createElement('div');
+    avatar.style.cssText = 'flex-shrink:0;width:34px;height:34px;border-radius:50%;background:'+c.solid+';color:#fff;font-size:15px;font-weight:800;display:flex;align-items:center;justify-content:center;';
+    avatar.textContent = nm.slice(0,1).toUpperCase();
+    row.appendChild(avatar);
+
+    var bubbleWrap = document.createElement('div');
+    bubbleWrap.style.cssText = 'flex:1;min-width:0;';
+
+    var metaEl = document.createElement('div');
+    metaEl.style.cssText = 'font-size:12px;margin-bottom:3px;';
+    metaEl.innerHTML = '<span style="font-weight:800;color:'+c.fg+';">'+nm.replace(/</g,'&lt;')+'</span> <span style="color:#6e7681;">'+(h.time||'')+'</span>';
+    bubbleWrap.appendChild(metaEl);
+
+    var bubble = document.createElement('div');
+    bubble.style.cssText = 'background:'+c.bg+';border-radius:14px;padding:10px 12px;';
+
+    if(h.tagCode || h.tagName){
+      // 留言當初可能查不到代碼，但現在清單資料可能已經更新了，顯示的當下重新查一次，能跳轉就跳轉
+      var liveCode = h.tagCode;
+      var liveName = h.tagName;
+      if(!liveCode && h.tagName){
+        var liveMatch = _lookupStockByName(h.tagName);
+        if(liveMatch){ liveCode = liveMatch.code; liveName = liveMatch.name; }
+      }
+      var tagEl = document.createElement('span');
+      tagEl.textContent = '🏷 ' + (liveCode ? (liveCode + (liveName?(' '+liveName):'')) : liveName);
+      if(liveCode){
+        tagEl.style.cssText = 'display:inline-block;background:#0d1117cc;color:#58a6ff;font-size:12px;font-weight:700;padding:3px 9px;border-radius:10px;margin-bottom:6px;cursor:pointer;';
+        tagEl.onclick = function(){ jumpToStock(liveCode); };
+      } else {
+        tagEl.style.cssText = 'display:inline-block;background:#0d1117cc;color:#8b949e;font-size:12px;font-weight:700;padding:3px 9px;border-radius:10px;margin-bottom:6px;';
+      }
+      bubble.appendChild(tagEl);
+      bubble.appendChild(document.createElement('br'));
+    }
+    var textEl = document.createElement('div');
+    textEl.style.cssText = 'font-size:15px;line-height:1.5;color:#e6edf3;white-space:pre-wrap;';
+    textEl.textContent = h.text;
+    bubble.appendChild(textEl);
+    bubbleWrap.appendChild(bubble);
+    row.appendChild(bubbleWrap);
+
+    var delBtn = document.createElement('button');
+    delBtn.textContent = '🗑';
+    delBtn.style.cssText = 'flex-shrink:0;background:none;border:none;color:#8b949e;font-size:15px;cursor:pointer;padding:4px 6px;opacity:0.5;align-self:flex-start;';
+    delBtn.onclick = function(){ deleteGeneralNoteEntry(h.time, h.text, h.name); };
+    row.appendChild(delBtn);
+    listEl.appendChild(row);
+  });
+}
+// 點留言裡標註的股票標籤：關掉大聲公，回到清單並搜尋該代碼
+function jumpToStock(code){
+  document.getElementById('general-note-modal').style.display = 'none';
+  var searchInput = document.getElementById('fsearch');
+  if(searchInput){
+    searchInput.value = code;
+    doSearch(code);
+    toggleClear(code);
+  }
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+function addGeneralNote(){
+  var input = document.getElementById('general-note-input');
+  var nameInput = document.getElementById('general-note-name-input');
+  var tagInput = document.getElementById('general-note-tag-input');
+  var val = input.value.trim();
+  var name = nameInput.value.trim();
+  if(!val) return;
+  if(!name){ toast('❌ 請先填留言人名字','#da3633'); nameInput.focus(); return; }
+  var tagCode = '', tagName = '';
+  var tagRaw = tagInput.value.trim();
+  if(tagRaw){
+    var r = _resolveExcludeInput(tagRaw);
+    if(r.code){ tagCode = r.code; tagName = r.name || ''; }
+    else { tagName = tagRaw; } // 查不到代碼也沒關係，就存文字當標籤，不會擋下留言，只是不能點擊跳轉
+  }
+  toast('⏳ 送出中...','#1f6feb');
+  var qs = 'action=saveGeneralNote&text=' + encodeURIComponent(val) + '&name=' + encodeURIComponent(name)
+    + '&tagCode=' + encodeURIComponent(tagCode) + '&tagName=' + encodeURIComponent(tagName);
+  fetch(NOTE_GAS_URL + '?' + qs).then(function(r){return r.json();}).then(function(d){
+    if(!d.ok) throw new Error(d.error||'新增失敗');
+    var timeStr = new Date().toLocaleString('zh-TW',{hour12:false,month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+    generalNoteHistory.unshift({time:timeStr, text:val, name:name, tagCode:tagCode, tagName:tagName});
+    input.value = '';
+    tagInput.value = '';
+    document.getElementById('general-note-tag-preview').textContent = '';
+    renderGeneralNoteList();
+    updateGeneralNoteBtn();
+    toast('✅ 已新增留言','#238636');
+  }).catch(function(e){ toast('❌ 新增失敗：'+e.message,'#da3633'); });
+}
+function deleteGeneralNoteEntry(time, text, name){
+  if(!confirm('確定要刪除這則留言嗎？\n\n'+text)) return;
+  toast('⏳ 刪除中...','#1f6feb');
+  var qs = 'action=deleteGeneralNote&time='+encodeURIComponent(time||'')+'&text='+encodeURIComponent(text)+'&name='+encodeURIComponent(name||'');
+  fetch(NOTE_GAS_URL + '?' + qs).then(function(r){return r.json();}).then(function(d){
+    if(!d.ok) throw new Error(d.error||'刪除失敗');
+    var idx = generalNoteHistory.findIndex(function(h){ return h.time===time && h.text===text && (h.name||'')===(name||''); });
+    if(idx>=0) generalNoteHistory.splice(idx,1);
+    renderGeneralNoteList();
+    updateGeneralNoteBtn();
+    toast('🗑 留言已刪除','#238636');
+  }).catch(function(e){ toast('❌ 刪除失敗：'+e.message,'#da3633'); });
+}
+
 function renderExcludeList(){
   var body = document.getElementById('exclude-list-body');
   if(!EXCLUDE_CODES.length){
@@ -2943,6 +3128,8 @@ function autoLoadNotes(){
         blData.forEach(function(x){ if(typeof x === 'object' && x.code && x.name) EXCLUDE_NAMES[x.code] = x.name; });
         if(D_RAW.length){ D = applyExcludeFilter(D_RAW); render(); }
         migrateLegacyExcludeList();
+        generalNoteHistory = d.generalNotes || [];
+        updateGeneralNoteBtn();
         var count = Object.keys(noteMap).length + Object.keys(sharedNoteMap).length;
         if(count > 0){
           applyNotes();
