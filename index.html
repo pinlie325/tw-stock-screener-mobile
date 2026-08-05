@@ -1196,7 +1196,7 @@ function adminRemoveUser(email){
 <!-- FILTER BAR -->
 <div class="fbar">
   <div class="fbar-search-wrap">
-    <input class="fbar-search" id="fsearch" type="text" placeholder="搜尋代碼或名稱..." oninput="doSearch(this.value);toggleClear(this.value)" onkeyup="doSearch(this.value);toggleClear(this.value)">
+    <input class="fbar-search" id="fsearch" type="text" placeholder="搜尋代碼或名稱..." oninput="doSearch(this.value);toggleClear(this.value)">
     <button class="fbar-clear" id="fclear" onclick="clearSearch()">✕</button>
   </div>
   <button class="btn-filter" id="fbtn" onclick="openDrawer()">🔍 產業</button>
@@ -1526,7 +1526,7 @@ function jumpToStock(code){
   var searchInput = document.getElementById('fsearch');
   if(searchInput){
     searchInput.value = code;
-    doSearch(code);
+    doSearch(code, true);
     toggleClear(code);
   }
   window.scrollTo({top:0, behavior:'smooth'});
@@ -1538,7 +1538,7 @@ function generalNoteBtnClick(){
     gnActiveJumpCode = null;
     // 離開跳轉來的搜尋結果時回到最上面，不用像一般清除搜尋那樣停在原地
     var searchInput = document.getElementById('fsearch');
-    if(searchInput){ searchInput.value=''; doSearch(''); toggleClear(''); }
+    if(searchInput){ searchInput.value=''; doSearch('', true); toggleClear(''); }
     window.scrollTo({top:0, behavior:'smooth'});
   } else {
     openGeneralNoteModal();
@@ -1676,7 +1676,7 @@ function clearSearch(){
   var targetCode = firstCode ? firstCode.textContent.trim() : null;
 
   var i=document.getElementById('fsearch');
-  if(i){i.value='';doSearch('');toggleClear('');}
+  if(i){i.value='';doSearch('', true);toggleClear('');}
 
   // render 後捲到該卡片
   if(targetCode){
@@ -1713,11 +1713,15 @@ function setSrtToggle(el, k, labelD, labelA, defaultDir){
 }
 
 // ── SEARCH ──
-function doSearch(v){
+var _searchDebounceTimer = null;
+// immediate=true：跳過debounce立刻重畫，給程式自己觸發搜尋（例如清除、跳轉股票）用；
+// 使用者打字時（oninput預設不帶這個參數）才debounce，避免每個按鍵都整個重render造成頓頓的
+function doSearch(v, immediate){
   searchQ=v ? v.trim().toLowerCase() : '';
   // 如果使用者自己改了搜尋內容（不是大聲公跳轉當下設的那個代碼），就取消「跳轉來的搜尋」標記
   if(gnActiveJumpCode && v !== gnActiveJumpCode){ gnActiveJumpCode = null; }
-  render();
+  if(_searchDebounceTimer){ clearTimeout(_searchDebounceTimer); _searchDebounceTimer = null; }
+  if(immediate){ render(); } else { _searchDebounceTimer = setTimeout(render, 150); }
 }
 
 // ── DRAWER ──
@@ -2991,14 +2995,20 @@ function autoLoadLatestStockFile(){
         .then(function(r){return r.json();})
         .then(function(fd){
           if(!fd.ok) return;
-          var binary=atob(fd.base64);
-          var bytes=new Uint8Array(binary.length);
-          for(var i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
-          var wb=XLSX.read(bytes.buffer,{type:'array'});
-          var ws=wb.Sheets[wb.SheetNames[0]];
-          var rows=XLSX.utils.sheet_to_json(ws,{defval:null});
-          processRows(rows,fd.name||f.name);
-          showToast('☁️ 已自動載入最新選股檔：'+(fd.name||f.name));
+          // 解base64＋解析Excel＋渲染幾百張卡片都是很吃CPU的同步運算，用setTimeout讓瀏覽器先畫一次畫面（載入進度條才會動），不會整個卡住
+          return new Promise(function(resolve){
+            setTimeout(function(){
+              var binary=atob(fd.base64);
+              var bytes=new Uint8Array(binary.length);
+              for(var i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+              var wb=XLSX.read(bytes.buffer,{type:'array'});
+              var ws=wb.Sheets[wb.SheetNames[0]];
+              var rows=XLSX.utils.sheet_to_json(ws,{defval:null});
+              processRows(rows,fd.name||f.name);
+              showToast('☁️ 已自動載入最新選股檔：'+(fd.name||f.name));
+              resolve();
+            }, 0);
+          });
         });
     })
     .catch(function(){}) // 靜默失敗，不打擾使用者；使用者仍可手動點☁️重試
@@ -3506,7 +3516,7 @@ function showToast(msg){ toast(msg); }
 // 跟熱力圖分類「進入」按鈕用同一套代碼白名單機制，確保卡片一定存在於畫面上
 function jumpToCardWithFilter(code, codes, catLabel){
   var fsearch = document.getElementById('fsearch');
-  if(fsearch && fsearch.value){ fsearch.value=''; doSearch(''); toggleClear(''); }
+  if(fsearch && fsearch.value){ fsearch.value=''; doSearch('', true); toggleClear(''); }
   if(codes){
     window._hcatCodes = codes;
     sel = [];
