@@ -2016,27 +2016,8 @@ function render(){
         +'<div class="cg-item"><div class="cg-lbl">單季EPS</div><div class="cg-val '+epsc+'">'+(s.eps!==null?s.eps.toFixed(2):'--')+'</div></div>'
         +(function(){var pe; if(s.pe!==null&&s.pe!==undefined){pe=s.pe.toFixed(1);}else{var annEps=s.eps!==null?s.eps*4/0.6:null;pe=(annEps&&annEps>0&&s.volume!==null)?(s.volume/(annEps)).toFixed(1):null;}return '<div class="cg-item"><div class="cg-lbl">本益比</div><div class="cg-val">'+(pe!==null?pe:'--')+'</div></div>';})()
       +'</div>'
-      // Yahoo K線圖區塊
-      +'<div class="yf-wrap" id="yf-'+s.code+'">'
-        +'<div class="yf-bar">'
-          +'<div>'
-            +'<div class="yf-title">'+s.code+' '+s.name+'</div>'
-            +'<div class="yf-price-row" id="yf-pr-'+s.code+'"></div>'
-          +'</div>'
-          +'<div style="display:flex;align-items:center;gap:6px">'
-            +'<div class="yf-intervals">'
-              +'<button class="yf-int on" data-iv="D" onclick="event.stopPropagation();yfSetRange(\''+s.code+'\',\'D\',this)">日</button>'
-              +'<button class="yf-int" data-iv="W" onclick="event.stopPropagation();yfSetRange(\''+s.code+'\',\'W\',this)">週</button>'
-            +'</div>'
-            +'<div class="yf-kbars">'
-              +'<button class="yf-kbar" onclick="event.stopPropagation();setKBars(30,this)">30</button>'
-              +'<button class="yf-kbar on" onclick="event.stopPropagation();setKBars(60,this)">60</button>'
-            +'</div>'
-            +'<span class="yf-close" onclick="event.stopPropagation();closeChart(\''+s.code+'\')">✕</span>'
-          +'</div>'
-        +'</div>'
-        +'<div id="yf-frame-'+s.code+'" style="min-height:0"></div>'
-      +'</div>'
+      // Yahoo K線圖區塊（延遲建立：展開時才產生內容，初始渲染只留空殼，大幅減少每張卡片的HTML量）
+      +'<div class="yf-wrap" id="yf-'+s.code+'"></div>'
     +'</div>';
   }).join('');
   if(cardsEl) cardsEl.scrollTop = scrollY; // 還原捲動位置
@@ -2258,6 +2239,30 @@ function openChart(e, code, name){
 
   var wrap=document.getElementById('yf-'+code);
   if(!wrap) return;
+
+  // 延遲建立K線區塊內容：第一次展開這張卡片才產生（渲染清單時只留空殼，加快清單顯示速度）
+  if(!wrap.dataset.built){
+    wrap.innerHTML =
+      '<div class="yf-bar">'
+        +'<div>'
+          +'<div class="yf-title">'+code+' '+name+'</div>'
+          +'<div class="yf-price-row" id="yf-pr-'+code+'"></div>'
+        +'</div>'
+        +'<div style="display:flex;align-items:center;gap:6px">'
+          +'<div class="yf-intervals">'
+            +'<button class="yf-int on" data-iv="D" onclick="event.stopPropagation();yfSetRange(\''+code+'\',\'D\',this)">日</button>'
+            +'<button class="yf-int" data-iv="W" onclick="event.stopPropagation();yfSetRange(\''+code+'\',\'W\',this)">週</button>'
+          +'</div>'
+          +'<div class="yf-kbars">'
+            +'<button class="yf-kbar" onclick="event.stopPropagation();setKBars(30,this)">30</button>'
+            +'<button class="yf-kbar on" onclick="event.stopPropagation();setKBars(60,this)">60</button>'
+          +'</div>'
+          +'<span class="yf-close" onclick="event.stopPropagation();closeChart(\''+code+'\')">✕</span>'
+        +'</div>'
+      +'</div>'
+      +'<div id="yf-frame-'+code+'" style="min-height:0"></div>';
+    wrap.dataset.built='1';
+  }
 
   if(currentChart===code && wrap.classList.contains('on')){
     closeChart(code); return;
