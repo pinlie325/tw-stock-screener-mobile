@@ -2930,9 +2930,7 @@ function processRows(rows,filename){
     var parseMs = pl.parseDone ? Math.round(pl.parseDone - pl.parseStart) : 0;
     var renderMs = Math.round(pl.render);
     var totalMs = fetchMs + parseMs + renderMs;
-    setTimeout(function(){
-      toast('⏱ 抓檔案'+fetchMs+'ms 解析'+parseMs+'ms('+(pl.rowCount||'?')+'列) 顯示'+renderMs+'ms 共'+totalMs+'ms','#8957e5');
-    }, 1600);
+    // 畫面上的紫色提示已移除，只留 console.log 供之後需要時查效能（打開瀏覽器 F12 主控台看）
     console.log('[效能] 抓檔案(找最新+讀內容):'+fetchMs+'ms, base64+Excel解析:'+parseMs+'ms('+(pl.rowCount||'?')+'列), 畫面渲染:'+renderMs+'ms, 總計:'+totalMs+'ms');
   }
   autoLoadNotes();
