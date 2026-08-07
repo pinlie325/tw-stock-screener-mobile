@@ -34,7 +34,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 
 /* ── HEADER ── */
 .hdr{background:#161b22;border-bottom:1px solid #30363d;padding:9px 14px;display:flex;align-items:center;gap:8px;position:fixed;top:0;left:0;right:0;z-index:100;}
-.hdr-t{font-size:17px;font-weight:700;color:#58a6ff;white-space:nowrap}
+.hdr-t{font-size:14px;font-weight:700;color:#58a6ff;white-space:nowrap}
 .hdr-sub{font-size:12px;color:#8b949e;margin-left:4px}
 .hdr-r{margin-left:auto;display:flex;gap:6px}
 .btn-cloud{background:#1f6feb22;border:1px solid #58a6ff;border-radius:6px;padding:6px 16px;font-size:15px;color:#58a6ff;cursor:pointer;font-weight:600}
@@ -2934,7 +2934,7 @@ function processRows(rows,filename){
   D=applyExcludeFilter(D_RAW);
   var m=filename?filename.match(/(\d{8})/):'';
   var dlbl='';
-  if(m){var d=m[1];dlbl=d.substring(0,4)+'/'+d.substring(4,6)+'/'+d.substring(6,8);}
+  if(m){var d=m[1];dlbl=d.substring(2,4)+'/'+d.substring(4,6)+'/'+d.substring(6,8);}
   document.getElementById('hdr-sub').textContent=(dlbl||'')+' · '+D.length+'支';
   setTimeout(adjustPadding, 0); // 副標題文字變長可能讓上面header變成兩行，重新量一次高度避免蓋住下面的搜尋框
   initCats();
