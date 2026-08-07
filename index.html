@@ -34,6 +34,9 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 
 /* ── HEADER ── */
 .hdr{background:#161b22;border-bottom:1px solid #30363d;padding:9px 14px;display:flex;align-items:center;gap:8px;position:fixed;top:0;left:0;right:0;z-index:100;}
+.bbar{background:#161b22;border-top:1px solid #30363d;padding:8px 14px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;position:fixed;left:0;right:0;bottom:0;z-index:900;}
+.bbar-l{display:flex;justify-content:flex-start;gap:8px}
+.bbar-r{display:flex;justify-content:flex-end;gap:8px}
 .hdr-t{font-size:14px;font-weight:700;color:#58a6ff;white-space:nowrap}
 .hdr-sub{font-size:12px;color:#8b949e;margin-left:4px}
 .hdr-r{margin-left:auto;display:flex;gap:6px}
@@ -73,7 +76,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .su{color:#f85149}.sd2{color:#3fb950}
 
 /* ── CARDS ── */
-.cards{flex:1;padding:8px 10px;display:grid;grid-template-columns:1fr;gap:8px;overflow-y:auto;align-content:start}
+.cards{flex:1;padding:8px 10px 64px;display:grid;grid-template-columns:1fr;gap:8px;overflow-y:auto;align-content:start}
 @media(min-width:640px){.cards{grid-template-columns:1fr 1fr;padding:10px 12px}}
 @media(max-width:480px){
   .cg-item{padding:4px 6px;min-height:36px}
@@ -816,11 +819,18 @@ function adminRemoveUser(email){
 }
 </script>
 
-<!-- ADMIN FLOATING BUTTON (僅管理者登入後顯示) -->
-<button id="admin-btn" onclick="openAdminPanel()" style="display:none;position:fixed;left:14px;bottom:20px;z-index:900;background:#21262d;border:1px solid #30363d;border-radius:50%;color:#58a6ff;width:44px;height:44px;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px #0006;font-size:18px;">👤</button>
-
-<!-- LOGOUT BUTTON (登入成功後顯示) -->
-<button id="logout-btn" onclick="doLogout()" style="display:none;position:fixed;right:14px;bottom:20px;z-index:900;background:#21262d;border:1px solid #30363d;border-radius:50%;color:#f85149;width:44px;height:44px;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px #0006;font-size:16px;" title="登出">🚪</button>
+<!-- BOTTOM BAR：跟上方header一樣是整條橫幅背景，不是懸浮圓形按鈕。👤跟🚪只有登入後才會顯示，▲用grid固定在正中間 -->
+<div class="bbar" id="bbar">
+  <div class="bbar-l">
+    <button id="logout-btn" onclick="doLogout()" style="display:none;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#f85149;width:38px;height:38px;align-items:center;justify-content:center;cursor:pointer;font-size:15px;" title="登出">🚪</button>
+    <button id="admin-btn" onclick="openAdminPanel()" style="display:none;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#58a6ff;width:38px;height:38px;align-items:center;justify-content:center;cursor:pointer;font-size:17px;">👤</button>
+  </div>
+  <button id="float-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" style="background:#21262d;border:1px solid #30363d;border-radius:8px;color:#8b949e;padding:8px 34px;line-height:1;cursor:pointer;font-size:13px;">▲</button>
+  <div class="bbar-r">
+    <button id="general-note-btn" onclick="generalNoteBtnClick()" style="background:#21262d;border:1px solid #30363d;border-radius:8px;color:#8b949e;font-size:13px;padding:7px 14px;cursor:pointer;white-space:nowrap;margin-right:18px;">📣</button>
+    <button onclick="openSettings()" title="設定" style="background:#21262d;border:1px solid #30363d;border-radius:8px;color:#8b949e;width:38px;height:38px;align-items:center;justify-content:center;cursor:pointer;font-size:17px;">⚙️</button>
+  </div>
+</div>
 
 <!-- ADMIN MODAL -->
 <div id="admin-modal" style="display:none;position:fixed;inset:0;background:#000a;z-index:9998;align-items:center;justify-content:center;padding:16px;box-sizing:border-box">
@@ -844,9 +854,6 @@ function adminRemoveUser(email){
     </div>
   </div>
 </div>
-
-<!-- FLOATING TOP BUTTON -->
-<button id="float-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" style="position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:900;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#8b949e;padding:6px 12px;line-height:1;cursor:pointer;box-shadow:0 2px 8px #0006;font-size:13px;">▲</button>
 
 <!-- HELP MODAL -->
 <div id="help-modal" style="display:none;position:fixed;inset:0;background:#000a;z-index:9998;align-items:center;justify-content:center;padding:16px;box-sizing:border-box">
@@ -1204,7 +1211,6 @@ function adminRemoveUser(email){
   <button class="btn-filter" id="fbtn" onclick="openDrawer()">🔍 產業</button>
   <button class="btn-filter" onclick="showCompactList()" title="簡列">🏷️</button>
   <button class="btn-filter" onclick="openStrategyFilter()" title="策略篩選">📌</button>
-  <button class="btn-filter" onclick="openSettings()" title="設定">⚙️</button>
 </div>
 <div id="fbar-tags-wrap" style="display:none;align-items:center;gap:5px;padding:0 12px 6px;flex-wrap:wrap">
   <button class="fbar-clear-all" id="fbar-clear-all" onclick="selAll()">✕ 清除全部</button>
@@ -1229,7 +1235,6 @@ function adminRemoveUser(email){
 <!-- COUNT BAR -->
 <div class="cbar">
   <span>顯示 <b id="rc">0</b> 支</span>
-  <button id="general-note-btn" onclick="generalNoteBtnClick()" style="background:#1f6feb22;border:1px solid #58a6ff77;border-radius:12px;color:#58a6ff;font-size:11px;padding:3px 10px;cursor:pointer;white-space:nowrap;">📣 大聲公</button>
   <div class="cbar-sts" id="csts"></div>
 </div>
 
@@ -1418,7 +1423,8 @@ function updateGeneralNoteBtn(){
   var btn = document.getElementById('general-note-btn');
   if(!btn) return;
   var n = generalNoteHistory.length;
-  btn.textContent = n ? ('📣 大聲公 ('+n+')') : '📣 大聲公';
+  // 白色在深色底上太搶眼，改用跟其他底部icon一樣低調的灰色，只顯示數字不寫「大聲公」文字
+  btn.textContent = n ? ('📣 '+n) : '📣';
 }
 function openGeneralNoteModal(){
   renderGeneralNoteList();
@@ -2076,13 +2082,11 @@ function cardScreenshot(e, el) {
   var sbar = document.querySelector('.sbar');
   var statsRow = document.querySelector('.cbar');
   var tagRow = document.getElementById('fbar-tags-wrap');
-  var floatBtn = document.getElementById('float-top');
-  var adminBtn = document.getElementById('admin-btn');
-  var logoutBtn = document.getElementById('logout-btn');
+  var bbar = document.querySelector('.bbar');
   var otherCards = document.querySelectorAll('.card');
 
   var hidden = [];
-  [hdr, fbar, sbar, statsRow, tagRow, floatBtn, adminBtn, logoutBtn].forEach(function(el2) {
+  [hdr, fbar, sbar, statsRow, tagRow, bbar].forEach(function(el2) {
     if (el2) { hidden.push({el:el2, disp:el2.style.display}); el2.style.display='none'; }
   });
   otherCards.forEach(function(c) {
