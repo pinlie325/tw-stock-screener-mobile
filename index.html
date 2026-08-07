@@ -859,7 +859,7 @@ function adminRemoveUser(email){
       <p style="color:#f0c040;font-weight:700;margin:0 0 6px">📥 載入資料</p>
       <p style="margin:0 0 12px">☁️ 雲端（左上角）：從 Google Drive 載入最新選股 Excel<br>本機手動載入 Excel 檔案：在「設定」裡</p>
       <p style="color:#f0c040;font-weight:700;margin:0 0 6px">🔍 搜尋與篩選</p>
-      <p style="margin:0 0 12px">搜尋框輸入股票代碼或名稱<br>產業按鈕：依產業篩選個股<br>⭐ 只顯示管理者挑選個股<br>💬 只顯示有共同筆記（敲敲話）的個股<br>兩個按鈕可以同時開，同時開會顯示兩種備註任一種的個股</p>
+      <p style="margin:0 0 12px">搜尋框輸入股票代碼或名稱<br>產業按鈕：依產業篩選個股<br>⭐ 只顯示管理者挑選個股<br>💬 只顯示有共同筆記（敲敲話）的個股<br>❤️ 只顯示我的最愛（點卡片上的🤍/❤️加入或移除，每個使用者自己的清單，別人看不到）<br>三個按鈕可以同時開，同時開會聯集顯示（符合任一種就出現）</p>
       <p style="color:#f0c040;font-weight:700;margin:0 0 6px">📊 卡片功能</p>
       <p style="margin:0 0 12px">點擊卡片：展開 K 線圖<br>K 線圖左右滑動：查看歷史走勢<br>📷 圖示（昨收前面）：截圖模式<br>CM / LINE：跳轉外部連結<br>卡片上的橘/紅色標籤：處置股、注意股警示</p>
       <p style="color:#f0c040;font-weight:700;margin:0 0 6px">📈 技術型態（點開K線後顯示）</p>
@@ -1190,6 +1190,7 @@ function adminRemoveUser(email){
   <div class="hdr-r">
     <button class="btn-cloud" onclick="toggleNoteFilter()" id="hdr-note-btn" title="只顯示管理者挑選個股" style="font-size:12px;padding:5px 10px">⭐</button>
     <button class="btn-cloud" onclick="toggleAllNoteFilter()" id="hdr-allnote-btn" title="只顯示有共同筆記（敲敲話）的股票" style="font-size:12px;padding:5px 10px">💬</button>
+    <button class="btn-cloud" onclick="toggleFavFilter()" id="hdr-fav-btn" title="只顯示我的最愛" style="font-size:12px;padding:5px 10px">❤️</button>
     <input id="fi" type="file" accept=".xlsx,.xls" style="display:none" onchange="loadXL(this)">
   </div>
 </div>
@@ -1316,7 +1317,7 @@ function adminRemoveUser(email){
 <script>
 var D=[];
 var D_RAW=[]; // 完整未過濾清單，黑名單增減時都從這裡重新套用篩選，移除黑名單後才能立刻恢復顯示，不用重新載入Excel
-var noteMap={}, sharedNoteMap={}, sharedNoteHistory={};
+var noteMap={}, sharedNoteMap={}, sharedNoteHistory={}, favMap={};
 var generalNoteHistory=[]; // 留言板：不綁特定股票代碼的獨立留言，陣列，每則 {time, text, name}，新到舊排序
 var gnActiveJumpCode = null; // 記錄目前的搜尋是不是從大聲公點標籤跳過來的，是的話再按一次大聲公鈕就變成清除搜尋
 // ── 排除股票清單（黑名單）：存在共用試算表的「黑名單」分頁，載入Excel時自動濾掉，只有管理者能新增/移除 ──
@@ -1911,6 +1912,23 @@ function toggleAllNoteFilter(){
   render();
 }
 
+// 只顯示「我的最愛」（個人收藏，每個使用者自己的清單，別人看不到）
+var favFilterOn = false;
+function toggleFavFilter(){
+  favFilterOn = !favFilterOn;
+  var btn = document.getElementById('hdr-fav-btn');
+  if(favFilterOn){
+    btn.style.borderColor = '#f0c040';
+    btn.style.color = '#f0c040';
+    btn.style.background = '#f0c04022';
+  } else {
+    btn.style.borderColor = '';
+    btn.style.color = '';
+    btn.style.background = '';
+  }
+  render();
+}
+
 function getFilt(){
   var d=D;
   if(window._hcatCodes && window._hcatCodes.length){
@@ -1924,13 +1942,12 @@ function getFilt(){
       return s.code.toLowerCase().indexOf(q)>=0 || s.name.toLowerCase().indexOf(q)>=0;
     });
   }
-  // 星星（私人備註）跟敲敲話（共同筆記）同時開時改成聯集：只要有其中一種備註就顯示
-  if(noteFilterOn && allNoteFilterOn){
-    d=d.filter(function(s){ var c=String(s.code); return noteMap[c] || sharedNoteMap[c]; });
-  } else if(noteFilterOn){
-    d=d.filter(function(s){return noteMap[String(s.code)];});
-  } else if(allNoteFilterOn){
-    d=d.filter(function(s){return sharedNoteMap[String(s.code)];});
+  // 星星（私人備註）／敲敲話（共同筆記）／我的最愛，這三個篩選鈕可以同時開，同時開時是聯集：符合任一種就顯示
+  if(noteFilterOn || allNoteFilterOn || favFilterOn){
+    d=d.filter(function(s){
+      var c=String(s.code);
+      return (noteFilterOn && noteMap[c]) || (allNoteFilterOn && sharedNoteMap[c]) || (favFilterOn && favMap[c]);
+    });
   }
   if(groupFilter) d=d.filter(function(s){return (groupMap[String(s.code)]||[]).indexOf(groupFilter)>=0;});
   if(conceptFilter) d=d.filter(function(s){return (conceptMap[String(s.code)]||[]).indexOf(conceptFilter)>=0;});
@@ -1979,6 +1996,7 @@ function render(){
               +(function(){var e=getExchLabel(s.code);return '<span class="card-exch '+e.cls+'">'+e.txt+'</span>';})()
               +'<span class="card-name">'+s.name+'</span>'
               +(function(){if(s.disposal){var ft=s.disposal.freq?(s.disposal.freq+'分盤'):'處置中';return '<span title="'+s.disposal.reason.replace(/"/g,'&quot;')+'　期間 '+s.disposal.periodRaw+'" style="background:#f8514933;color:#f85149;border:1px solid #f85149;border-radius:4px;font-size:10px;padding:1px 5px;font-weight:700;">⚠'+ft+'</span>';}if(s.attention){return '<span title="'+s.attention.reason.replace(/"/g,'&quot;')+'　'+s.attention.date+'" style="background:#d2992233;color:#d29922;border:1px solid #d29922;border-radius:4px;font-size:10px;padding:1px 5px;font-weight:700;">注意</span>';}return '';})()
+              +'<button class="card-cam" onclick="event.stopPropagation();toggleFavorite(\''+s.code+'\',\''+s.name.replace(/'/g,"\\'")+'\',this)">'+(favMap[s.code]?'❤️':'🤍')+'</button>'
               +'<button class="card-cam" onclick="event.stopPropagation();openNoteEdit(\''+s.code+'\',\''+s.name.replace(/'/g,"\\'")+'\',\'shared\')">'+(sharedNoteMap[s.code]?'💬':'💬+')+'</button>'
             +'</div>'
           +'<div class="card-pattern" id="pattern-'+s.code+'"></div>'
@@ -3175,6 +3193,9 @@ function autoLoadNotes(){
         migrateLegacyExcludeList();
         generalNoteHistory = d.generalNotes || [];
         updateGeneralNoteBtn();
+        // 我的最愛：只有登入時後端才會回傳（未登入是空陣列），每個使用者拿到的是自己的清單
+        favMap = {};
+        (d.favorites || []).forEach(function(fv){ if(fv && fv.code) favMap[String(fv.code)] = fv.name || ''; });
         var count = Object.keys(noteMap).length + Object.keys(sharedNoteMap).length;
         if(count > 0){
           applyNotes();
@@ -3296,6 +3317,23 @@ function applyNotes(){
       sbar.className='card-sharednote-bar';
       sbar.textContent='💬 '+snote;
       insertCardBar(card, sbar, 'card-sharednote-bar');
+    }
+  });
+}
+
+// ══════════ 我的最愛：個人收藏（每個使用者自己的清單，別人看不到） ══════════
+function toggleFavorite(code, name, btnEl){
+  var wasFav = !!favMap[code];
+  // 先樂觀更新畫面，API失敗再復原，操作起來比較順
+  if(wasFav) delete favMap[code]; else favMap[code] = name;
+  if(btnEl) btnEl.textContent = wasFav ? '🤍' : '❤️';
+  if(favFilterOn) render();
+  adminFetch(wasFav ? 'removeFavorite' : 'addFavorite', {code: code, name: name}).then(function(res){
+    if(!res || !res.ok){
+      if(wasFav) favMap[code] = name; else delete favMap[code];
+      if(btnEl) btnEl.textContent = wasFav ? '❤️' : '🤍';
+      if(favFilterOn) render();
+      toast((res && res.error === 'not_logged_in') ? '請先登入才能加入最愛' : '操作失敗，請稍後再試','#da3633');
     }
   });
 }
