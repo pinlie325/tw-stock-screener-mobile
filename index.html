@@ -2936,6 +2936,7 @@ function processRows(rows,filename){
   var dlbl='';
   if(m){var d=m[1];dlbl=d.substring(0,4)+'/'+d.substring(4,6)+'/'+d.substring(6,8);}
   document.getElementById('hdr-sub').textContent=(dlbl||'')+' · '+D.length+'支';
+  setTimeout(adjustPadding, 0); // 副標題文字變長可能讓上面header變成兩行，重新量一次高度避免蓋住下面的搜尋框
   initCats();
   var _tRenderStart = performance.now();
   render();
