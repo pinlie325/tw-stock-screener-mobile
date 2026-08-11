@@ -137,7 +137,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:#0d1117;color:
 .card-avg span{color:#c9d1d9}
 
 /* Card stats grid */
-.card-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:5px;margin-bottom:4px}
+.card-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr;gap:5px;margin-bottom:4px}
 .cg-item{background:#161b22;border-radius:6px;padding:4px 7px;display:flex;flex-direction:column;justify-content:space-between;min-height:40px;min-width:0;overflow:hidden}
 .cg-lbl{font-size:11px;color:#8b949e;text-align:left}
 .cg-val{font-size:15px;font-weight:600;color:#e6edf3;line-height:1.2;text-align:right}
@@ -2020,12 +2020,13 @@ function render(){
         +'<button class="card-cam" style="margin-right:2px" onclick="event.stopPropagation();cardScreenshot(event,this.closest(\'.card\'))">📷</button>'
         +(s.close!==null?'<span class="card-avg">昨收 <span>'+s.close.toFixed(1)+'</span></span>':'')
         +(s.avg!==null?'<span class="card-avg">均價 <span>'+s.avg.toFixed(1)+'</span></span>':'')
-        +(s.turnval!==null?'<span class="card-avg">成交值 <span>'+s.turnval.toFixed(1)+'億</span></span>':'')
       +'</div>'
       +'<div class="card-grid">'
 
         +(function(){var bias=s.pct!==null?s.pct:null;var biasc=bias!==null?(bias>0?'up':bias<0?'dn':''):'';return '<div class="cg-item"><div class="cg-lbl">漲跌幅%</div><div class="cg-val '+biasc+'">'+(bias!==null?((bias>0?'+':'')+bias.toFixed(1)):'--')+'</div></div>';})()
+        +'<div class="cg-item"><div class="cg-lbl">成交值(億)</div><div class="cg-val">'+(s.turnval!==null?s.turnval.toFixed(1):'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">股本(億)</div><div class="cg-val">'+(s.capital!==null?s.capital.toFixed(1):'--')+'</div></div>'
+        +'<div class="cg-item"><div class="cg-lbl">每股淨值</div><div class="cg-val">'+(s.bvps!==null?s.bvps.toFixed(1):'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">融資%</div><div class="cg-val '+mc+'">'+(s.margin!==null?s.margin.toFixed(1):'--')+'</div></div>'
                 +(function(){var roe=s.roe;var roec=roe!==null?(roe>=3.75?'up':roe<1.25?'dn':''):'';return '<div class="cg-item"><div class="cg-lbl">單季ROE%</div><div class="cg-val '+roec+'">'+(roe!==null?roe.toFixed(1):'--')+'</div></div>';})()
         +'<div class="cg-item"><div class="cg-lbl">RS%</div><div class="cg-val">'+(s.rs!==null?s.rs.toFixed(1):'--')+'</div></div>'
@@ -2916,7 +2917,7 @@ function parseXL(file){
 function processRows(rows,filename){
   var keys=Object.keys(rows[0]);
   function fc(arr){for(var i=0;i<arr.length;i++)for(var j=0;j<keys.length;j++)if(keys[j].indexOf(arr[i])>=0)return keys[j];return null;}
-  var COL={code:fc(['代碼']),name:fc(['商品','名稱']),close:fc(['昨收']),pct:fc(['漲幅']),avg:fc(['均價']),volume:fc(['成交']),turnover:fc(['換手率']),turnval:fc(['成交值']),capital:fc(['股本']),margin:fc(['融資維持']),ind:fc(['所有細產業','細產業','產業']),pos:fc(['產業地位']),rs:fc(['RS%']),grossmargin:fc(['毛利率']),eps:fc(['盈餘(單)','單季','EPS']),bigbuy:fc(['外盤特大單%','外盤特大單','特大單%']),revgrowth:fc(['營收年增率','營收年增']),pe:fc(['本益比','PE(市盈率)','PE']),roe:fc(['ROE','股東權益報酬率']),news:fc(['公司動態'])};
+  var COL={code:fc(['代碼']),name:fc(['商品','名稱']),close:fc(['昨收']),pct:fc(['漲幅']),avg:fc(['均價']),volume:fc(['成交']),turnover:fc(['換手率']),turnval:fc(['成交值']),capital:fc(['股本']),bvps:fc(['每股淨值','淨值']),margin:fc(['融資維持']),ind:fc(['所有細產業','細產業','產業']),pos:fc(['產業地位']),rs:fc(['RS%']),grossmargin:fc(['毛利率']),eps:fc(['盈餘(單)','單季','EPS']),bigbuy:fc(['外盤特大單%','外盤特大單','特大單%']),revgrowth:fc(['營收年增率','營收年增']),pe:fc(['本益比','PE(市盈率)','PE']),roe:fc(['ROE','股東權益報酬率']),news:fc(['公司動態'])};
   function sf(v){if(v===null||v===undefined||v===''||v==='--')return null;var n=parseFloat(v);return isNaN(n)?null:n;}
   var nd=[];
   rows.forEach(function(r){
@@ -2925,7 +2926,7 @@ function processRows(rows,filename){
     // 代碼欄可能是數字(2302)、帶空格(' 2302 ')或小數('2302.0')，統一正規化為4位字串
     var rawCode=String(r[COL.code]).trim().replace(/\.0+$/,'');
     var cleanCode=/^\d+$/.test(rawCode)?rawCode.padStart(4,'0'):rawCode;
-    nd.push({code:cleanCode,name:COL.name?String(r[COL.name]||'').trim():'',close:COL.close?sf(r[COL.close]):null,pct:COL.pct?sf(r[COL.pct]):null,avg:COL.avg?sf(r[COL.avg]):null,volume:COL.volume?sf(r[COL.volume]):null,turnover:COL.turnover?sf(r[COL.turnover]):null,turnval:COL.turnval?sf(r[COL.turnval]):null,capital:COL.capital?sf(r[COL.capital]):null,margin:COL.margin?sf(r[COL.margin]):null,position:COL.pos&&r[COL.pos]?String(r[COL.pos]).trim():'',tags:ts,rs:COL.rs?sf(r[COL.rs]):null,grossmargin:COL.grossmargin?sf(r[COL.grossmargin]):null,eps:COL.eps?sf(r[COL.eps]):null,bigbuy:COL.bigbuy?sf(r[COL.bigbuy]):null,revgrowth:COL.revgrowth?sf(r[COL.revgrowth]):null,pe:COL.pe?sf(r[COL.pe]):null,roe:COL.roe?sf(r[COL.roe]):null,news:COL.news&&r[COL.news]?String(r[COL.news]).trim():''});
+    nd.push({code:cleanCode,name:COL.name?String(r[COL.name]||'').trim():'',close:COL.close?sf(r[COL.close]):null,pct:COL.pct?sf(r[COL.pct]):null,avg:COL.avg?sf(r[COL.avg]):null,volume:COL.volume?sf(r[COL.volume]):null,turnover:COL.turnover?sf(r[COL.turnover]):null,turnval:COL.turnval?sf(r[COL.turnval]):null,capital:COL.capital?sf(r[COL.capital]):null,bvps:COL.bvps?sf(r[COL.bvps]):null,margin:COL.margin?sf(r[COL.margin]):null,position:COL.pos&&r[COL.pos]?String(r[COL.pos]).trim():'',tags:ts,rs:COL.rs?sf(r[COL.rs]):null,grossmargin:COL.grossmargin?sf(r[COL.grossmargin]):null,eps:COL.eps?sf(r[COL.eps]):null,bigbuy:COL.bigbuy?sf(r[COL.bigbuy]):null,revgrowth:COL.revgrowth?sf(r[COL.revgrowth]):null,pe:COL.pe?sf(r[COL.pe]):null,roe:COL.roe?sf(r[COL.roe]):null,news:COL.news&&r[COL.news]?String(r[COL.news]).trim():''});
   });
   if(!nd.length){alert('沒有讀到有效資料');return;}
   D_RAW=nd;
