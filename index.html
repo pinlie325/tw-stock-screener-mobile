@@ -1034,7 +1034,8 @@ function adminRemoveUser(email){
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
         <div><label style="display:block;font-size:13px;color:#8b949e;margin-bottom:4px;">融資維持率%</label><input type="number" id="val-marginRatio" style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:18px;padding:10px;box-sizing:border-box;"></div>
         <div><label style="display:block;font-size:13px;color:#8b949e;margin-bottom:4px;">股本(億)</label><input type="number" id="val-capital" style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:18px;padding:10px;box-sizing:border-box;"></div>
-        <div style="grid-column:1/-1;"><label style="display:block;font-size:13px;color:#8b949e;margin-bottom:4px;">ROE(單季)%</label><input type="number" id="val-roe" style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:18px;padding:10px;box-sizing:border-box;"></div>
+        <div><label style="display:block;font-size:13px;color:#8b949e;margin-bottom:4px;">ROE(單季)%</label><input type="number" id="val-roe" style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:18px;padding:10px;box-sizing:border-box;"></div>
+        <div><label style="display:block;font-size:13px;color:#8b949e;margin-bottom:4px;">每股淨值（參考，算股價淨值比用）</label><input type="number" id="val-bvps" style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:18px;padding:10px;box-sizing:border-box;"></div>
       </div>
     </div>
 
@@ -1070,7 +1071,7 @@ function adminRemoveUser(email){
         <div id="val-verdictTag" style="display:inline-block;font-size:25px;font-weight:800;padding:6px 16px;border-radius:20px;margin-bottom:8px;">-</div>
         <div id="val-verdictDesc" style="font-size:17px;color:#8b949e;line-height:1.6;">-</div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
         <div style="background:#1c2129;border:1px solid #30363d;border-radius:10px;padding:10px;text-align:center;">
           <div style="font-size:13px;color:#8b949e;margin-bottom:4px;">折現合理價</div>
           <div id="val-fairValue" style="font-size:18px;font-weight:700;">-</div>
@@ -1082,6 +1083,10 @@ function adminRemoveUser(email){
         <div style="background:#1c2129;border:1px solid #30363d;border-radius:10px;padding:10px;text-align:center;">
           <div style="font-size:13px;color:#8b949e;margin-bottom:4px;">PEG</div>
           <div id="val-peg" style="font-size:18px;font-weight:700;">-</div>
+        </div>
+        <div style="background:#1c2129;border:1px solid #30363d;border-radius:10px;padding:10px;text-align:center;">
+          <div style="font-size:13px;color:#8b949e;margin-bottom:4px;">股價淨值比</div>
+          <div id="val-pb" style="font-size:18px;font-weight:700;">-</div>
         </div>
       </div>
       <div id="val-target-compare" style="display:none;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:12px;margin-bottom:12px;">
@@ -4389,6 +4394,7 @@ function openValuationTool(code){
   document.getElementById('val-marginRatio').value = s.margin!==null ? s.margin.toFixed(1) : '';
   document.getElementById('val-roe').value = s.roe!==null && s.roe!==undefined ? s.roe.toFixed(1) : '';
   document.getElementById('val-capital').value = s.capital!==null ? s.capital.toFixed(1) : '';
+  document.getElementById('val-bvps').value = s.bvps!==null && s.bvps!==undefined ? s.bvps.toFixed(1) : '';
 
   document.getElementById('val-sma20').value = '';
   document.getElementById('val-sma60').value = '';
@@ -4645,6 +4651,15 @@ function valCalc(){
     pegEl.textContent = (pe/g1).toFixed(2);
   } else {
     pegEl.textContent = '-';
+  }
+
+  // 股價淨值比（PB）：純參考資訊，不影響DCF估值結果，淨值資料沒有就顯示"-"
+  var pbEl = document.getElementById('val-pb');
+  var bvps = valNum('val-bvps');
+  if(price!==null && bvps!==null && bvps>0){
+    pbEl.textContent = (price/bvps).toFixed(2);
+  } else {
+    pbEl.textContent = '-';
   }
 
   var marginLight = document.getElementById('val-marginLight');
