@@ -102,6 +102,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:var(--bg-page)
 /* ── CARDS ── */
 .cards{flex:1;padding:8px 10px 64px;display:grid;grid-template-columns:1fr;gap:8px;overflow-y:auto;align-content:start}
 @media(min-width:640px){.cards{grid-template-columns:1fr 1fr;padding:10px 12px 64px}}
+@media(min-width:640px){#sector-flow-detail{left:auto !important;width:420px !important;max-width:90vw;box-shadow:-8px 0 24px #0008;border-left:1px solid var(--border);}}
 @media(max-width:480px){
   .cg-item{padding:4px 6px;min-height:36px}
   .cg-lbl{font-size:10px;white-space:nowrap}
@@ -933,6 +934,9 @@ function adminRemoveUser(email){
     <button onclick="openMacroBoard()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
       🌍 市場參考看板（原油／美元／VIX／美債）
     </button>
+    <button onclick="openSectorFlowBoard()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
+      🫧 族群資金流回放（細產業，概算）
+    </button>
     <button onclick="openEconCalendar()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
       🗓 財經行事曆
     </button>
@@ -986,6 +990,49 @@ function adminRemoveUser(email){
     </div>
     <div id="macro-board-grid" style="display:grid;grid-template-columns:1fr;gap:10px;"></div>
     <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin-top:14px;">資料來源：Yahoo Finance，僅供參考，可能有延遲，實際交易請以正式報價為準。</p>
+  </div>
+</div>
+
+<!-- SECTOR FLOW MODAL -->
+<div id="sector-flow-modal" style="display:none;position:fixed;inset:0;background:var(--bg-page);z-index:9999;flex-direction:column">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg-panel);flex-shrink:0">
+    <span style="font-size:16px;font-weight:700;color:var(--text-primary)">🫧 族群資金流回放</span>
+    <button onclick="sectorFlowStopPlay();document.getElementById('sector-flow-modal').style.display='none'" style="background:none;border:none;color:var(--text-secondary);font-size:22px;cursor:pointer">✕</button>
+  </div>
+  <div style="flex:1;overflow-y:auto;padding:14px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <span id="sector-flow-updated" style="font-size:11px;color:var(--text-dim);">尚未載入</span>
+      <button id="sector-flow-refresh-btn" onclick="openSectorFlowBoard(true)" style="background:#1f6feb22;border:1px solid #58a6ff77;border-radius:14px;color:#58a6ff;font-size:12px;padding:5px 12px;cursor:pointer;">🔄 重新整理</button>
+    </div>
+    <div id="sector-flow-canvas-wrap" style="position:relative;background:var(--bg-panel);border:1px solid var(--border);border-radius:8px;overflow:hidden;min-height:420px;">
+      <canvas id="sector-flow-canvas" style="display:block;width:100%;cursor:pointer" onclick="sectorFlowCanvasClick(event)"></canvas>
+      <div id="sector-flow-loading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:13px;text-align:center;padding:20px;box-sizing:border-box;">⏳ 讀取最近20天資料中...</div>
+    </div>
+    <div id="sector-flow-summary" style="text-align:center;font-size:12px;line-height:1.8;margin-top:10px;">
+      <div id="sector-flow-best-in" style="color:#f85149;font-weight:600;"></div>
+      <div id="sector-flow-best-out" style="color:#3fb950;font-weight:600;"></div>
+    </div>
+    <div id="sector-flow-date-label" style="text-align:center;font-size:19px;font-weight:700;color:var(--text-primary);margin-top:8px;"></div>
+    <div id="sector-flow-slider-wrap" style="display:none;align-items:center;gap:8px;margin-top:8px;">
+      <span id="sector-flow-date-start" style="font-size:11px;color:var(--text-dim);flex-shrink:0;width:36px;"></span>
+      <input type="range" id="sector-flow-slider" min="0" max="0" value="0" step="1" oninput="sectorFlowSliderChange()" style="flex:1;">
+      <span id="sector-flow-date-end" style="font-size:11px;color:var(--text-dim);flex-shrink:0;width:36px;text-align:right;"></span>
+    </div>
+    <div id="sector-flow-controls" style="display:none;align-items:center;justify-content:center;gap:18px;margin-top:10px;">
+      <button onclick="sectorFlowStep(-1)" style="background:none;border:none;color:var(--text-primary);font-size:20px;cursor:pointer;padding:4px 10px;">‹</button>
+      <button id="sector-flow-play-btn" onclick="sectorFlowTogglePlay()" style="flex-shrink:0;width:44px;height:44px;border-radius:50%;background:var(--bg-panel-alt);border:1px solid var(--border);color:var(--text-primary);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">▶</button>
+      <button onclick="sectorFlowStep(1)" style="background:none;border:none;color:var(--text-primary);font-size:20px;cursor:pointer;padding:4px 10px;">›</button>
+    </div>
+    <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin-top:12px;">用「漲跌%×成交值(億)」概算各族群資金流向（非真實主力買賣超資料，僅供參考），以「細產業」標籤分組。拖曳時間軸、按‹›單步、或按▶播放，每一格顯示以該日為終點、往前5天的滾動資金流。橫軸＝資金流入/流出（億），縱軸＝流向速度有沒有加快，圈越大代表近幾日成交越活躍。</p>
+  </div>
+
+  <!-- 泡泡詳情面板：點某個族群的泡泡才會蓋在上面顯示 -->
+  <div id="sector-flow-detail" style="display:none;position:absolute;inset:0;background:var(--bg-page);z-index:10;flex-direction:column;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg-panel);flex-shrink:0">
+      <span id="sector-flow-detail-title" style="font-size:16px;font-weight:700;color:var(--text-primary)"></span>
+      <button onclick="closeSectorFlowDetail()" style="background:none;border:none;color:var(--text-secondary);font-size:22px;cursor:pointer">✕</button>
+    </div>
+    <div id="sector-flow-detail-body" style="flex:1;overflow-y:auto;padding:14px;"></div>
   </div>
 </div>
 
@@ -3168,6 +3215,448 @@ function loadGdFile(i, keepOpen){
       if(keepOpen) renderGdFiles(gdFiles);
     })
     .catch(function(e){toast('❌ 載入失敗：'+e.message,'#da3633');});
+}
+
+// ============================================================
+// 族群資金流回放：用「漲跌%×成交值(億)」當每天的資金流概算，
+// 抓雲端資料夾裡最近20天的Excel快照，逐日按「細產業」標籤算出當天各族群
+// 的資金流+成交值，存成陣列。拖時間軸/播放時，只是從這個已經抓好的陣列
+// 裡取「以選定日為終點、往前5天」的滾動窗重新加總、重畫，純本地運算不用
+// 再打API，秒切換。
+// 不是真正的主力買賣超資料，只是常見的替代算法，僅供參考。
+// ============================================================
+var SECTOR_FLOW_FETCH_DAYS = 20; // 一次抓最近幾個交易日的檔案
+var SECTOR_FLOW_WINDOW = 5;      // 每一格畫面用往前幾天的滾動窗
+var SECTOR_FLOW_TOP_N = 30;
+var _sectorFlowCache = null; // {dayAggs:[{date,name,byTag:{tag:{flow,vol,count}}}], }
+var _sectorFlowPlayTimer = null;
+var _sectorFlowLastNodes = null; // 上一次畫出來的泡泡座標，點擊時用來判斷點到哪一顆
+var _sectorFlowLastDayCount = 0;
+
+function openSectorFlowBoard(forceRefresh){
+  document.getElementById('settings-modal').style.display = 'none';
+  document.getElementById('sector-flow-modal').style.display = 'flex';
+  if(_sectorFlowCache && !forceRefresh){
+    _renderSectorFlowAtIndex(_sectorFlowCache.dayAggs.length - 1);
+    return;
+  }
+  _loadSectorFlowData();
+}
+
+// 跟processRows()一樣的欄位模糊比對邏輯，只抓算資金流會用到的幾欄，其餘欄位不處理，比較快
+function _parseSectorFlowRows(rows){
+  if(!rows || !rows.length) return [];
+  var keys = Object.keys(rows[0]);
+  function fc(arr){for(var i=0;i<arr.length;i++)for(var j=0;j<keys.length;j++)if(keys[j].indexOf(arr[i])>=0)return keys[j];return null;}
+  var COL = { code: fc(['代碼']), pct: fc(['漲幅']), turnval: fc(['成交值']), ind: fc(['所有細產業','細產業','產業']) };
+  function sf(v){ if(v===null||v===undefined||v===''||v==='--') return null; var n=parseFloat(v); return isNaN(n)?null:n; }
+  if(!COL.code) return [];
+  var out = [];
+  rows.forEach(function(r){
+    if(!r[COL.code]) return;
+    var tags = COL.ind && r[COL.ind] ? String(r[COL.ind]).split(',').map(function(t){return t.trim();}).filter(function(t){return t && t!=='null';}) : [];
+    var pct = COL.pct ? sf(r[COL.pct]) : null;
+    var turnval = COL.turnval ? sf(r[COL.turnval]) : null;
+    if(pct===null || turnval===null || !tags.length) return;
+    out.push({ tags: tags, pct: pct, turnval: turnval });
+  });
+  return out;
+}
+
+// 把一天的股票列表，按細產業標籤加總成 {tag:{flow,vol,count}}
+function _aggregateDayByTag(rows){
+  var byTag = {};
+  rows.forEach(function(row){
+    var flow = row.pct * row.turnval; // 概算：漲跌%×成交值(億)
+    row.tags.forEach(function(tag){
+      if(!byTag[tag]) byTag[tag] = { flow: 0, vol: 0, count: 0 };
+      byTag[tag].flow += flow;
+      byTag[tag].vol += row.turnval;
+      byTag[tag].count++;
+    });
+  });
+  return byTag;
+}
+
+function _loadSectorFlowData(){
+  var loadingEl = document.getElementById('sector-flow-loading');
+  var updatedEl = document.getElementById('sector-flow-updated');
+  var sliderWrap = document.getElementById('sector-flow-slider-wrap');
+  if(sliderWrap) sliderWrap.style.display = 'none';
+  sectorFlowStopPlay();
+  var doneCount = 0;
+  function updateProgress(){
+    doneCount++;
+    if(loadingEl) loadingEl.textContent = '⏳ 讀取最近'+SECTOR_FLOW_FETCH_DAYS+'天資料中...（'+doneCount+'/'+SECTOR_FLOW_FETCH_DAYS+'）';
+  }
+  if(loadingEl){ loadingEl.style.display='flex'; loadingEl.textContent='⏳ 連線雲端，準備讀取最近'+SECTOR_FLOW_FETCH_DAYS+'天資料...'; }
+  if(updatedEl) updatedEl.textContent = '讀取中...';
+
+  fetch(GAS_URL+'?action=list')
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(!d.ok || !d.files || !d.files.length) throw new Error(d.error || '沒有雲端檔案');
+      var files = _sortFilesByModified(d.files.slice()).slice(0, SECTOR_FLOW_FETCH_DAYS);
+      // 由舊到新排序，時間軸才會是「從左到右愈來愈新」
+      files.sort(function(a,b){
+        var ta=a.modified?new Date(a.modified).getTime():0;
+        var tb=b.modified?new Date(b.modified).getTime():0;
+        return ta-tb;
+      });
+      return Promise.all(files.map(function(f){
+        return fetch(GAS_URL+'?action=file&id='+f.id)
+          .then(function(r){ return r.json(); })
+          .then(function(fd){
+            updateProgress();
+            if(!fd.ok) return null;
+            var binary=atob(fd.base64);
+            var bytes=new Uint8Array(binary.length);
+            for(var i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
+            var wb=XLSX.read(bytes.buffer,{type:'array'});
+            var ws=wb.Sheets[wb.SheetNames[0]];
+            var rows=XLSX.utils.sheet_to_json(ws,{defval:null});
+            var parsed = _parseSectorFlowRows(rows);
+            // 解析完當天股票列表後，馬上按標籤加總成byTag，原始逐股列表不用留著，省記憶體
+            return { date: f.modified, name: f.name, byTag: _aggregateDayByTag(parsed) };
+          })
+          .catch(function(){ updateProgress(); return null; });
+      }));
+    })
+    .then(function(dayAggs){
+      dayAggs = dayAggs.filter(function(d){ return d && Object.keys(d.byTag).length; });
+      if(!dayAggs.length) throw new Error('沒有讀到有效的每日資料');
+      _sectorFlowCache = { dayAggs: dayAggs };
+      var slider = document.getElementById('sector-flow-slider');
+      if(slider){ slider.min = 0; slider.max = dayAggs.length - 1; slider.value = dayAggs.length - 1; }
+      if(sliderWrap) sliderWrap.style.display = 'flex';
+      var controlsEl = document.getElementById('sector-flow-controls');
+      if(controlsEl) controlsEl.style.display = 'flex';
+      var startLbl = document.getElementById('sector-flow-date-start');
+      var endLbl = document.getElementById('sector-flow-date-end');
+      if(startLbl) startLbl.textContent = _fmtDate(dayAggs[0].date);
+      if(endLbl) endLbl.textContent = _fmtDate(dayAggs[dayAggs.length-1].date);
+      _renderSectorFlowAtIndex(dayAggs.length - 1);
+    })
+    .catch(function(e){
+      if(loadingEl){ loadingEl.style.display='flex'; loadingEl.textContent='❌ 讀取失敗：'+e.message; }
+      if(updatedEl) updatedEl.textContent = '讀取失敗';
+    });
+}
+
+// 從已經抓好的逐日byTag陣列，取「以endIndex為終點、往前windowSize天」算出這個時間點的族群資金流列表
+function _computeSectorFlowWindow(dayAggs, endIndex, windowSize){
+  var startIndex = Math.max(0, endIndex - windowSize + 1);
+  var windowDays = dayAggs.slice(startIndex, endIndex + 1); // 由舊到新
+  var n = windowDays.length;
+  var merged = {}; // tag -> {flowByDay:[...], volByDay:[...], count}
+  windowDays.forEach(function(day, di){
+    Object.keys(day.byTag).forEach(function(tag){
+      if(!merged[tag]) merged[tag] = { flowByDay: new Array(n).fill(0), volByDay: new Array(n).fill(0), count: 0 };
+      merged[tag].flowByDay[di] += day.byTag[tag].flow;
+      merged[tag].volByDay[di] += day.byTag[tag].vol;
+      merged[tag].count += day.byTag[tag].count;
+    });
+  });
+
+  var list = Object.keys(merged).map(function(tag){
+    var t = merged[tag];
+    var totalFlow = t.flowByDay.reduce(function(a,b){return a+b;}, 0);
+    var totalVol = t.volByDay.reduce(function(a,b){return a+b;}, 0);
+    // 加速度：窗內近半段平均每天流量 - 前半段平均每天流量（正值＝流向在加快，負值＝在放緩或反轉）
+    var half = Math.max(1, Math.floor(n/2));
+    var recentDays = t.flowByDay.slice(n-half);
+    var earlierDays = t.flowByDay.slice(0, n-half);
+    var recentAvg = recentDays.length ? recentDays.reduce(function(a,b){return a+b;},0)/recentDays.length : 0;
+    var earlierAvg = earlierDays.length ? earlierDays.reduce(function(a,b){return a+b;},0)/earlierDays.length : recentAvg;
+    var accel = recentAvg - earlierAvg;
+    return { tag: tag, flow: totalFlow, vol: totalVol, accel: accel, avgCount: Math.round(t.count/n) };
+  }).filter(function(x){ return x.avgCount >= 2; }); // 平均要有至少2檔股票才算，避免太雜訊的小標籤
+
+  list.sort(function(a,b){ return Math.abs(b.flow) - Math.abs(a.flow); });
+  return { tags: list.slice(0, SECTOR_FLOW_TOP_N), dayCount: n };
+}
+
+function _fmtDate(iso){
+  if(!iso) return '';
+  var d = new Date(iso);
+  return (d.getMonth()+1)+'/'+d.getDate();
+}
+function _fmtDateWithWeekday(iso){
+  if(!iso) return '';
+  var d = new Date(iso);
+  var wk = ['週日','週一','週二','週三','週四','週五','週六'][d.getDay()];
+  return (d.getMonth()+1)+'/'+d.getDate()+' '+wk;
+}
+
+function sectorFlowSliderChange(){
+  var slider = document.getElementById('sector-flow-slider');
+  if(!slider || !_sectorFlowCache) return;
+  _renderSectorFlowAtIndex(parseInt(slider.value, 10));
+}
+
+function sectorFlowStep(delta){
+  var slider = document.getElementById('sector-flow-slider');
+  if(!slider || !_sectorFlowCache) return;
+  sectorFlowStopPlay();
+  var v = parseInt(slider.value, 10) + delta;
+  v = Math.max(parseInt(slider.min,10), Math.min(parseInt(slider.max,10), v));
+  slider.value = v;
+  _renderSectorFlowAtIndex(v);
+}
+
+function sectorFlowTogglePlay(){
+  if(_sectorFlowPlayTimer){ sectorFlowStopPlay(); return; }
+  var slider = document.getElementById('sector-flow-slider');
+  var btn = document.getElementById('sector-flow-play-btn');
+  if(!slider || !_sectorFlowCache) return;
+  if(btn) btn.textContent = '⏸';
+  _sectorFlowPlayTimer = setInterval(function(){
+    var v = parseInt(slider.value, 10);
+    var max = parseInt(slider.max, 10);
+    v = (v >= max) ? 0 : v + 1; // 播到底就從頭開始
+    slider.value = v;
+    _renderSectorFlowAtIndex(v);
+  }, 500);
+}
+
+function sectorFlowStopPlay(){
+  if(_sectorFlowPlayTimer){ clearInterval(_sectorFlowPlayTimer); _sectorFlowPlayTimer = null; }
+  var btn = document.getElementById('sector-flow-play-btn');
+  if(btn) btn.textContent = '▶';
+}
+
+// 點泡泡：判斷點到哪一顆，打開該族群的詳情面板
+function sectorFlowCanvasClick(e){
+  if(!_sectorFlowLastNodes || !_sectorFlowLastNodes.length) return;
+  var canvas = document.getElementById('sector-flow-canvas');
+  var rect = canvas.getBoundingClientRect();
+  var x = e.clientX - rect.left;
+  var y = e.clientY - rect.top;
+  var hit = null;
+  for(var i=0;i<_sectorFlowLastNodes.length;i++){
+    var n = _sectorFlowLastNodes[i];
+    var dx = x-n.x, dy = y-n.y;
+    if(Math.sqrt(dx*dx+dy*dy) <= n.r){ hit = n; break; }
+  }
+  if(hit) openSectorFlowDetail(hit.tag);
+}
+
+function openSectorFlowDetail(t){
+  sectorFlowStopPlay();
+  var titleEl = document.getElementById('sector-flow-detail-title');
+  var bodyEl = document.getElementById('sector-flow-detail-body');
+  if(titleEl) titleEl.textContent = t.tag;
+
+  var dir = t.accel > 0 ? (t.flow >= 0 ? '↑ 流入加速' : '↑ 流出放緩') : (t.flow >= 0 ? '↓ 流入放緩' : '↓ 流出加速');
+  var dirColor = t.accel > 0 ? '#f85149' : '#3fb950';
+  var flowColor = t.flow >= 0 ? '#f85149' : '#3fb950';
+
+  var statsHtml =
+    '<div style="background:var(--bg-panel);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:14px;">'
+      +'<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);">'
+        +'<span style="color:var(--text-secondary);font-size:13px;">近'+_sectorFlowLastDayCount+'日資金流概算</span>'
+        +'<span style="color:'+flowColor+';font-weight:700;font-size:14px;">'+(t.flow>=0?'+':'')+t.flow.toFixed(1)+'億</span>'
+      +'</div>'
+      +'<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);">'
+        +'<span style="color:var(--text-secondary);font-size:13px;">近'+_sectorFlowLastDayCount+'日成交值</span>'
+        +'<span style="color:var(--text-primary);font-weight:700;font-size:14px;">'+t.vol.toFixed(1)+'億</span>'
+      +'</div>'
+      +'<div style="display:flex;justify-content:space-between;padding:6px 0;">'
+        +'<span style="color:var(--text-secondary);font-size:13px;">流向變化</span>'
+        +'<span style="color:'+dirColor+';font-weight:700;font-size:14px;">'+dir+'</span>'
+      +'</div>'
+    +'</div>'
+    +'<p style="font-size:11px;color:var(--text-dim);line-height:1.5;margin-bottom:10px;">資金流概算是把這段期間每天「漲跌%×成交值(億)」加總，不是真實的法人買賣超，僅供參考。下面是目前清單中屬於「'+t.tag+'」的個股，依當天漲跌幅排序：</p>';
+
+  // 個股清單：用目前主清單D（最新一天的資料）裡屬於這個標籤的股票，因為逐日歷史只有加總沒留個股，這裡沒辦法算「近N日」，只能用最新一天
+  var stocks = (typeof D !== 'undefined' ? D : []).filter(function(s){
+    return s.tags && s.tags.indexOf(t.tag) >= 0;
+  }).slice().sort(function(a,b){ return (b.pct||-999) - (a.pct||-999); });
+
+  var tableHtml;
+  if(!stocks.length){
+    tableHtml = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:13px;">目前清單中沒有這個標籤的個股</div>';
+  } else {
+    tableHtml = '<div style="display:flex;font-size:11px;color:var(--text-dim);padding:4px 6px;border-bottom:1px solid var(--border);">'
+      +'<span style="width:52px;flex-shrink:0;">代碼</span><span style="flex:1;">名稱</span><span style="width:60px;text-align:right;flex-shrink:0;">漲跌%</span><span style="width:64px;text-align:right;flex-shrink:0;">成交值</span>'
+    +'</div>'
+    + stocks.map(function(s){
+      var pctColor = (s.pct||0) > 0 ? '#f85149' : (s.pct||0) < 0 ? '#3fb950' : 'var(--text-secondary)';
+      return '<div onclick="jumpFromSectorFlow(\''+s.code+'\')" style="display:flex;align-items:center;padding:7px 6px;border-bottom:1px solid var(--bg-panel-alt);cursor:pointer;">'
+        +'<span style="width:52px;flex-shrink:0;font-family:monospace;color:#79c0ff;font-size:12px;">'+s.code+'</span>'
+        +'<span style="flex:1;color:var(--text-primary);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+s.name+'</span>'
+        +'<span style="width:60px;text-align:right;flex-shrink:0;color:'+pctColor+';font-size:12px;font-weight:600;">'+(s.pct!==null&&s.pct!==undefined?((s.pct>0?'+':'')+s.pct.toFixed(1)+'%'):'--')+'</span>'
+        +'<span style="width:64px;text-align:right;flex-shrink:0;color:var(--text-secondary);font-size:12px;">'+(s.turnval!==null&&s.turnval!==undefined?s.turnval.toFixed(1):'--')+'</span>'
+      +'</div>';
+    }).join('');
+  }
+
+  if(bodyEl) bodyEl.innerHTML = statsHtml + tableHtml;
+  var detailEl = document.getElementById('sector-flow-detail');
+  if(detailEl) detailEl.style.display = 'flex';
+}
+
+function closeSectorFlowDetail(){
+  var detailEl = document.getElementById('sector-flow-detail');
+  if(detailEl) detailEl.style.display = 'none';
+}
+
+function jumpFromSectorFlow(code){
+  closeSectorFlowDetail();
+  sectorFlowStopPlay();
+  document.getElementById('sector-flow-modal').style.display = 'none';
+  sel = [];
+  window._hcatCodes = null;
+  renderSelTags();
+  render();
+  jumpToCardWithFilter(code, null, null);
+}
+
+function _renderSectorFlowAtIndex(endIndex){
+  var loadingEl = document.getElementById('sector-flow-loading');
+  var updatedEl = document.getElementById('sector-flow-updated');
+  var dateLabelEl = document.getElementById('sector-flow-date-label');
+  var bestInEl = document.getElementById('sector-flow-best-in');
+  var bestOutEl = document.getElementById('sector-flow-best-out');
+  if(!_sectorFlowCache || !_sectorFlowCache.dayAggs.length){
+    if(loadingEl){ loadingEl.style.display='flex'; loadingEl.textContent='😕 沒有足夠資料畫圖'; }
+    return;
+  }
+  var dayAggs = _sectorFlowCache.dayAggs;
+  endIndex = Math.max(0, Math.min(dayAggs.length - 1, endIndex));
+  var win = _computeSectorFlowWindow(dayAggs, endIndex, SECTOR_FLOW_WINDOW);
+  if(!win.tags.length){
+    if(loadingEl){ loadingEl.style.display='flex'; loadingEl.textContent='😕 這個時間點沒有足夠資料畫圖'; }
+    if(dateLabelEl) dateLabelEl.textContent = '';
+    if(bestInEl) bestInEl.textContent = '';
+    if(bestOutEl) bestOutEl.textContent = '';
+    return;
+  }
+  if(loadingEl) loadingEl.style.display = 'none';
+  if(updatedEl){
+    updatedEl.textContent = '共讀到'+dayAggs.length+'天資料';
+  }
+  if(dateLabelEl){
+    dateLabelEl.textContent = _fmtDateWithWeekday(dayAggs[endIndex].date);
+  }
+  var byFlow = win.tags.slice().sort(function(a,b){return b.flow-a.flow;});
+  var bestIn = byFlow[0];
+  var bestOut = byFlow[byFlow.length-1];
+  if(bestInEl) bestInEl.textContent = bestIn ? ('近'+win.dayCount+'日買最多　'+bestIn.tag+'　+'+bestIn.flow.toFixed(0)+'億') : '';
+  if(bestOutEl) bestOutEl.textContent = (bestOut && bestOut!==bestIn) ? ('近'+win.dayCount+'日賣最多　'+bestOut.tag+'　'+bestOut.flow.toFixed(0)+'億') : '';
+  var canvas = document.getElementById('sector-flow-canvas');
+  var wrap = document.getElementById('sector-flow-canvas-wrap');
+  var dpr = window.devicePixelRatio || 1;
+  var W = wrap.offsetWidth || 360;
+  var H = Math.min(600, Math.max(380, Math.round(W*0.6))); // 高度上限600，避免寬螢幕時比例被拉得太誇張
+  canvas.width = W*dpr;
+  canvas.height = H*dpr;
+  canvas.style.width = W+'px';
+  canvas.style.height = H+'px';
+  var ctx = canvas.getContext('2d');
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.scale(dpr, dpr);
+  drawSectorFlowChart(ctx, W, H, win.tags, win.dayCount);
+}
+
+// 泡泡碰撞避讓：讓氣泡盡量待在原本資料算出來的位置附近，但互相重疊時輕輕推開，
+// 排版才會像參考的Tide介面一樣乾淨，不會整團疊在一起看不清楚。
+function _resolveBubbleCollisions(nodes, iterations, bounds){
+  for(var iter=0; iter<iterations; iter++){
+    for(var i=0;i<nodes.length;i++){
+      for(var j=i+1;j<nodes.length;j++){
+        var a=nodes[i], b=nodes[j];
+        var dx=b.x-a.x, dy=b.y-a.y;
+        var dist=Math.sqrt(dx*dx+dy*dy) || 0.01;
+        var minDist=a.r+b.r+3;
+        if(dist<minDist){
+          var overlap=(minDist-dist)/2;
+          var ux=dx/dist, uy=dy/dist;
+          a.x-=ux*overlap; a.y-=uy*overlap;
+          b.x+=ux*overlap; b.y+=uy*overlap;
+        }
+      }
+    }
+    // 每輪結束後把所有泡泡夾回圖表範圍內
+    nodes.forEach(function(n){
+      n.x = Math.max(bounds.l+n.r, Math.min(bounds.r-n.r, n.x));
+      n.y = Math.max(bounds.t+n.r, Math.min(bounds.b-n.r, n.y));
+    });
+  }
+}
+
+function drawSectorFlowChart(ctx, W, H, tags, dayCount){
+  ctx.clearRect(0,0,W,H);
+  // canvas無法直接吃CSS變數，先讀出目前主題的實際色碼
+  var cs = getComputedStyle(document.documentElement);
+  var colText2 = (cs.getPropertyValue('--text-secondary')||'').trim() || '#8b949e';
+  var colTextDim = (cs.getPropertyValue('--text-dim')||'').trim() || '#6e7681';
+  var colGrid = (cs.getPropertyValue('--border')||'').trim() || '#30363d';
+  var colTextP = (cs.getPropertyValue('--text-primary')||'').trim() || '#e6edf3';
+
+  var PAD = {t:34, b:36, l:20, r:20};
+  var plotW = W - PAD.l - PAD.r, plotH = H - PAD.t - PAD.b;
+  var cx = PAD.l + plotW/2, cy = PAD.t + plotH/2;
+
+  var maxFlow = Math.max.apply(null, tags.map(function(t){return Math.abs(t.flow);})) || 1;
+  var maxAccel = Math.max.apply(null, tags.map(function(t){return Math.abs(t.accel);})) || 1;
+  var maxVol = Math.max.apply(null, tags.map(function(t){return t.vol;})) || 1;
+  var minR = 14, maxR = Math.min(60, Math.min(plotW, plotH)*0.15); // 泡泡半徑上限，避免寬螢幕時泡泡爆大
+
+  function px(flow){ return cx + (flow/maxFlow) * (plotW/2 - maxR - 4); }
+  function py(accel){ return cy - (accel/maxAccel) * (plotH/2 - maxR - 4); }
+  function pr(vol){ return minR + Math.sqrt(Math.max(0,vol)/maxVol) * (maxR - minR); }
+
+  // 十字分隔線
+  ctx.strokeStyle = colGrid; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(PAD.l, cy); ctx.lineTo(W-PAD.r, cy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx, PAD.t); ctx.lineTo(cx, H-PAD.b); ctx.stroke();
+
+  // 象限標籤
+  ctx.font = '10px sans-serif'; ctx.fillStyle = colTextDim;
+  ctx.textAlign = 'left'; ctx.fillText('流出但放緩', PAD.l+2, PAD.t+12);
+  ctx.textAlign = 'left'; ctx.fillText('加速流出', PAD.l+2, H-PAD.b-4);
+  ctx.textAlign = 'right'; ctx.fillText('流入但放緩', W-PAD.r-2, H-PAD.b-4);
+  ctx.font = 'bold 10px sans-serif'; ctx.fillStyle = '#d29922';
+  ctx.textAlign = 'right'; ctx.fillText('加速流入 ⭐', W-PAD.r-2, PAD.t+12);
+
+  // 先算出每顆泡泡「理論上」該在的位置(x,y,r)，再用碰撞避讓稍微推開，減少互相重疊
+  var nodes = tags.map(function(t){
+    return { tag: t, x: px(t.flow), y: py(t.accel), r: pr(t.vol) };
+  });
+  _resolveBubbleCollisions(nodes, 50, {l:PAD.l, r:W-PAD.r, t:PAD.t, b:H-PAD.b});
+  _sectorFlowLastNodes = nodes; // 記住這次畫出來的座標，點擊canvas時要用來判斷點到哪一顆泡泡
+  _sectorFlowLastDayCount = dayCount;
+
+  // 泡泡：大的先畫在下面，小的疊在上面，比較不會互相蓋住
+  var sortedNodes = nodes.slice().sort(function(a,b){ return b.r - a.r; });
+  sortedNodes.forEach(function(node){
+    var t = node.tag, x = node.x, y = node.y, r = node.r;
+    var isIn = t.flow >= 0;
+    var color = isIn ? '#f85149' : '#3fb950';
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI*2);
+    ctx.fillStyle = color + '55';
+    ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.3;
+    ctx.stroke();
+    if(r > 18){
+      ctx.fillStyle = colTextP;
+      ctx.font = 'bold '+Math.min(12, 8+r*0.12).toFixed(0)+'px sans-serif';
+      ctx.textAlign = 'center';
+      var label = t.tag.length > 6 ? t.tag.slice(0,6)+'…' : t.tag;
+      ctx.fillText(label, x, y - 2);
+      ctx.font = Math.min(11, 7+r*0.1).toFixed(0)+'px sans-serif';
+      ctx.fillStyle = color;
+      ctx.fillText((t.flow>=0?'+':'')+t.flow.toFixed(0)+'億', x, y + 11);
+    }
+  });
+
+  // X軸端點文字
+  ctx.font = '10px sans-serif'; ctx.fillStyle = colText2;
+  ctx.textAlign = 'left'; ctx.fillText('← 資金流出(億)', PAD.l, H-PAD.b+16);
+  ctx.textAlign = 'right'; ctx.fillText('資金流入(億) →', W-PAD.r, H-PAD.b+16);
 }
 
 var STRATEGY_GAS_URL = 'https://script.google.com/macros/s/AKfycbzonSgY3uZ1Y7HU1Joh_ibrVqBgP5dDJ5k1KMiKu9TRee2Wtk0PT-2VnrnuaNjZ6cgjoA/exec';
