@@ -102,7 +102,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:var(--bg-page)
 /* ── CARDS ── */
 .cards{flex:1;padding:8px 10px 64px;display:grid;grid-template-columns:1fr;gap:8px;overflow-y:auto;align-content:start}
 @media(min-width:640px){.cards{grid-template-columns:1fr 1fr;padding:10px 12px 64px}}
-@media(min-width:640px){#sector-flow-detail{left:auto !important;width:420px !important;max-width:90vw;box-shadow:-8px 0 24px #0008;border-left:1px solid var(--border);}}
+@media(min-width:640px){#dahu-rotation-detail{left:auto !important;width:420px !important;max-width:90vw;box-shadow:-8px 0 24px #0008;border-left:1px solid var(--border);}}
 @media(max-width:480px){
   .cg-item{padding:4px 6px;min-height:36px}
   .cg-lbl{font-size:10px;white-space:nowrap}
@@ -164,7 +164,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:var(--bg-page)
 .card-avg span{color:var(--text-altlight)}
 
 /* Card stats grid */
-.card-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr;gap:5px;margin-bottom:4px}
+.card-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:5px;margin-bottom:4px}
 .cg-item{background:var(--bg-panel);border-radius:6px;padding:4px 7px;display:flex;flex-direction:column;justify-content:space-between;min-height:40px;min-width:0;overflow:hidden}
 .cg-lbl{font-size:11px;color:var(--text-secondary);text-align:left}
 .cg-val{font-size:15px;font-weight:600;color:var(--text-primary);line-height:1.2;text-align:right}
@@ -934,8 +934,8 @@ function adminRemoveUser(email){
     <button onclick="openMacroBoard()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
       🌍 市場參考看板（原油／美元／VIX／美債）
     </button>
-    <button onclick="openSectorFlowBoard()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
-      🫧 族群資金流回放（細產業，概算）
+    <button onclick="openDahuRotationBoard()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
+      🧭 大戶籌碼族群輪動圖
     </button>
     <button onclick="openEconCalendar()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
       🗓 財經行事曆
@@ -961,6 +961,50 @@ function adminRemoveUser(email){
       <button id="note-edit-save-btn" onclick="saveNoteEdit()" style="flex:1;background:#1f6feb;border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:700;padding:10px;cursor:pointer;">儲存</button>
     </div>
     <p id="note-edit-hint" style="font-size:11px;color:var(--text-dim);line-height:1.5;margin:10px 0 0;">備註會同步寫回共用的Google試算表。</p>
+  </div>
+</div>
+
+<!-- DAHU CHIP ROTATION MODAL -->
+<div id="dahu-rotation-modal" style="display:none;position:fixed;inset:0;background:var(--bg-page);z-index:9999;flex-direction:column">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg-panel);flex-shrink:0">
+    <span style="font-size:16px;font-weight:700;color:var(--text-primary)">🧭 大戶籌碼族群輪動圖</span>
+    <button onclick="closeDahuRotationBoard()" style="background:none;border:none;color:var(--text-secondary);font-size:22px;cursor:pointer">✕</button>
+  </div>
+  <div style="flex:1;overflow-y:auto;padding:14px;">
+    <div style="display:flex;gap:6px;margin-bottom:10px;">
+      <button id="dahu-mode-group-btn" onclick="switchDahuRotationMode('group')" style="flex:1;background:#1f6feb;border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;padding:8px 4px;cursor:pointer;">族群檢視</button>
+      <button id="dahu-mode-stock-btn" onclick="switchDahuRotationMode('stock')" style="flex:1;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-secondary);font-size:12px;font-weight:700;padding:8px 4px;cursor:pointer;">個股散點圖</button>
+      <button id="dahu-mode-list-btn" onclick="switchDahuRotationMode('list')" style="flex:1;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-secondary);font-size:12px;font-weight:700;padding:8px 4px;cursor:pointer;">列表</button>
+    </div>
+    <div id="dahu-rotation-canvas-wrap" style="position:relative;background:var(--bg-panel);border:1px solid var(--border);border-radius:8px;overflow:hidden;min-height:420px;">
+      <canvas id="dahu-rotation-canvas" style="display:block;width:100%;cursor:pointer;touch-action:none" onclick="dahuRotationCanvasClick(event)"></canvas>
+      <div id="dahu-rotation-empty" style="display:none;position:absolute;inset:0;align-items:center;justify-content:center;color:var(--text-secondary);font-size:13px;text-align:center;padding:20px;box-sizing:border-box;">尚無資料，請先載入選股Excel</div>
+      <button id="dahu-chart-reset-zoom-btn" onclick="_dahuResetView()" style="display:none;position:absolute;top:8px;right:8px;z-index:5;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;padding:5px 9px;cursor:pointer;">⟲ 重置</button>
+    </div>
+    <div id="dahu-rotation-list" style="display:none;"></div>
+    <div id="dahu-rotation-legend" style="margin-top:12px;padding:10px;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;">
+      <div style="font-size:14px;color:var(--text-primary);font-weight:700;margin-bottom:8px;">四象限定義（X軸：大戶買賣比% 主力參與程度；Y軸：大戶差比% 買超力道）</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+        <div style="background:#1f6feb22;border-left:3px solid #58a6ff;padding:6px 8px;border-radius:4px;"><b style="color:#58a6ff;font-size:13px;">改善區(籌碼改善中)</b><div style="color:var(--text-primary);font-size:12px;margin-top:2px;">買賣比&lt;70% 且 差比≥20%</div></div>
+        <div style="background:#3fb95022;border-left:3px solid #3fb950;padding:6px 8px;border-radius:4px;"><b style="color:#3fb950;font-size:13px;">領先區(強勢主流)</b><div style="color:var(--text-primary);font-size:12px;margin-top:2px;">買賣比≥70% 且 差比≥20%</div></div>
+        <div style="background:var(--bg-panel);border-left:3px solid var(--text-secondary);padding:6px 8px;border-radius:4px;"><b style="color:var(--text-primary);font-size:13px;">落後區(弱勢觀望)</b><div style="color:var(--text-primary);font-size:12px;margin-top:2px;">買賣比&lt;70% 且 差比&lt;20%</div></div>
+        <div style="background:#d2992222;border-left:3px solid #d29922;padding:6px 8px;border-radius:4px;"><b style="color:#d29922;font-size:13px;">弱化區(資金退潮)</b><div style="color:var(--text-primary);font-size:12px;margin-top:2px;">買賣比≥70% 且 差比&lt;20%</div></div>
+      </div>
+      <div style="font-size:12px;color:var(--text-primary);line-height:1.7;margin-top:10px;">
+        <b style="color:var(--text-primary);">族群檢視</b>：以「細產業」標籤分組，但同一個族群裡常常混著領先/改善/弱化/落後好幾種股票，只畫一顆平均泡泡容易失真，所以改成依組內個股實際所在的象限，拆成最多4顆子泡泡（各自用同象限成分股重新算一次成交值加權平均座標），顏色即代表所在象限，泡泡大小依該子群檔數決定，點任一顆子泡泡都會開啟該族群完整明細。<br><br>
+        <b style="color:var(--text-primary);">個股散點圖</b>：不分族群，直接把每一檔成交值較大的個股（前40檔）攤開成一個點，點的顏色就是它自己落在哪一區，每個點旁邊都會標名字，點任一顆直接跳去該股卡片。（族群泡泡圖、個股散點圖都支援雙指縮放、單指拖曳平移、桌面滑鼠滾輪縮放，右上角有重置按鈕可一鍵回到預設大小）<br><br>
+        資料來源：Excel「大戶買賣比」「大戶差比」欄位（依XQ籌碼數據定義），僅供參考。
+      </div>
+    </div>
+  </div>
+
+  <!-- 族群詳情面板：點某個族群的泡泡才會蓋在上面顯示 -->
+  <div id="dahu-rotation-detail" style="display:none;position:absolute;inset:0;background:var(--bg-page);z-index:10;flex-direction:column;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg-panel);flex-shrink:0">
+      <span id="dahu-rotation-detail-title" style="font-size:16px;font-weight:700;color:var(--text-primary)"></span>
+      <button onclick="closeDahuRotationDetail()" style="background:none;border:none;color:var(--text-secondary);font-size:22px;cursor:pointer">✕</button>
+    </div>
+    <div id="dahu-rotation-detail-body" style="flex:1;overflow-y:auto;padding:14px;"></div>
   </div>
 </div>
 
@@ -990,49 +1034,6 @@ function adminRemoveUser(email){
     </div>
     <div id="macro-board-grid" style="display:grid;grid-template-columns:1fr;gap:10px;"></div>
     <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin-top:14px;">資料來源：Yahoo Finance，僅供參考，可能有延遲，實際交易請以正式報價為準。</p>
-  </div>
-</div>
-
-<!-- SECTOR FLOW MODAL -->
-<div id="sector-flow-modal" style="display:none;position:fixed;inset:0;background:var(--bg-page);z-index:9999;flex-direction:column">
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg-panel);flex-shrink:0">
-    <span style="font-size:16px;font-weight:700;color:var(--text-primary)">🫧 族群資金流回放</span>
-    <button onclick="sectorFlowStopPlay();document.getElementById('sector-flow-modal').style.display='none'" style="background:none;border:none;color:var(--text-secondary);font-size:22px;cursor:pointer">✕</button>
-  </div>
-  <div style="flex:1;overflow-y:auto;padding:14px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-      <span id="sector-flow-updated" style="font-size:11px;color:var(--text-dim);">尚未載入</span>
-      <button id="sector-flow-refresh-btn" onclick="openSectorFlowBoard(true)" style="background:#1f6feb22;border:1px solid #58a6ff77;border-radius:14px;color:#58a6ff;font-size:12px;padding:5px 12px;cursor:pointer;">🔄 重新整理</button>
-    </div>
-    <div id="sector-flow-canvas-wrap" style="position:relative;background:var(--bg-panel);border:1px solid var(--border);border-radius:8px;overflow:hidden;min-height:420px;">
-      <canvas id="sector-flow-canvas" style="display:block;width:100%;cursor:pointer" onclick="sectorFlowCanvasClick(event)"></canvas>
-      <div id="sector-flow-loading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:13px;text-align:center;padding:20px;box-sizing:border-box;">⏳ 讀取最近20天資料中...</div>
-    </div>
-    <div id="sector-flow-summary" style="text-align:center;font-size:12px;line-height:1.8;margin-top:10px;">
-      <div id="sector-flow-best-in" style="color:#f85149;font-weight:600;"></div>
-      <div id="sector-flow-best-out" style="color:#3fb950;font-weight:600;"></div>
-    </div>
-    <div id="sector-flow-date-label" style="text-align:center;font-size:19px;font-weight:700;color:var(--text-primary);margin-top:8px;"></div>
-    <div id="sector-flow-slider-wrap" style="display:none;align-items:center;gap:8px;margin-top:8px;">
-      <span id="sector-flow-date-start" style="font-size:11px;color:var(--text-dim);flex-shrink:0;width:36px;"></span>
-      <input type="range" id="sector-flow-slider" min="0" max="0" value="0" step="1" oninput="sectorFlowSliderChange()" style="flex:1;">
-      <span id="sector-flow-date-end" style="font-size:11px;color:var(--text-dim);flex-shrink:0;width:36px;text-align:right;"></span>
-    </div>
-    <div id="sector-flow-controls" style="display:none;align-items:center;justify-content:center;gap:18px;margin-top:10px;">
-      <button onclick="sectorFlowStep(-1)" style="background:none;border:none;color:var(--text-primary);font-size:20px;cursor:pointer;padding:4px 10px;">‹</button>
-      <button id="sector-flow-play-btn" onclick="sectorFlowTogglePlay()" style="flex-shrink:0;width:44px;height:44px;border-radius:50%;background:var(--bg-panel-alt);border:1px solid var(--border);color:var(--text-primary);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">▶</button>
-      <button onclick="sectorFlowStep(1)" style="background:none;border:none;color:var(--text-primary);font-size:20px;cursor:pointer;padding:4px 10px;">›</button>
-    </div>
-    <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin-top:12px;">用「漲跌%×成交值(億)」概算各族群資金流向（非真實主力買賣超資料，僅供參考），以「細產業」標籤分組。拖曳時間軸、按‹›單步、或按▶播放，每一格顯示以該日為終點、往前5天的滾動資金流。橫軸＝資金流入/流出（億），縱軸＝流向速度有沒有加快，圈越大代表近幾日成交越活躍。</p>
-  </div>
-
-  <!-- 泡泡詳情面板：點某個族群的泡泡才會蓋在上面顯示 -->
-  <div id="sector-flow-detail" style="display:none;position:absolute;inset:0;background:var(--bg-page);z-index:10;flex-direction:column;">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg-panel);flex-shrink:0">
-      <span id="sector-flow-detail-title" style="font-size:16px;font-weight:700;color:var(--text-primary)"></span>
-      <button onclick="closeSectorFlowDetail()" style="background:none;border:none;color:var(--text-secondary);font-size:22px;cursor:pointer">✕</button>
-    </div>
-    <div id="sector-flow-detail-body" style="flex:1;overflow-y:auto;padding:14px;"></div>
   </div>
 </div>
 
@@ -2140,7 +2141,9 @@ function render(){
         +'<div class="cg-item"><div class="cg-lbl">融資%</div><div class="cg-val '+mc+'">'+(s.margin!==null?s.margin.toFixed(1):'--')+'</div></div>'
                 +(function(){var roe=s.roe;var roec=roe!==null?(roe>=3.75?'up':roe<1.25?'dn':''):'';return '<div class="cg-item"><div class="cg-lbl">單季ROE%</div><div class="cg-val '+roec+'">'+(roe!==null?roe.toFixed(1):'--')+'</div></div>';})()
         +'<div class="cg-item"><div class="cg-lbl">RS%</div><div class="cg-val">'+(s.rs!==null?s.rs.toFixed(1):'--')+'</div></div>'
-        +'<div class="cg-item"><div class="cg-lbl">外大單%</div><div class="cg-val">'+(s.bigbuy!==null&&s.bigbuy!==undefined?s.bigbuy.toFixed(1):'--')+'</div></div>'
+        +(function(){var db=s.dahubuy;var dbc=db!==null&&db!==undefined?(db>=70?'up':db<30?'dn':''):'';return '<div class="cg-item"><div class="cg-lbl">大戶買賣比%</div><div class="cg-val '+dbc+'">'+(db!==null&&db!==undefined?db.toFixed(1):'--')+'</div></div>';})()
+        +(function(){var dc=s.dahuchai;var dcc=dc!==null&&dc!==undefined?(dc>0?'up':dc<0?'dn':''):'';return '<div class="cg-item"><div class="cg-lbl">大戶差比%</div><div class="cg-val '+dcc+'">'+(dc!==null&&dc!==undefined?((dc>0?'+':'')+dc.toFixed(1)):'--')+'</div></div>';})()
+        +(function(){var q=_dahuStockQuadrant(s.dahubuy,s.dahuchai); return '<div class="cg-item"><div class="cg-lbl">籌碼分區</div><div class="cg-val" style="color:'+q.fg+'">'+q.label+'</div></div>';})() // 跟大戶籌碼族群輪動圖同一套領先/改善/弱化/落後判讀，不用點進圖表也能直接看到這檔股票屬於哪一區
         +'<div class="cg-item"><div class="cg-lbl">毛利率%</div><div class="cg-val '+gmc+'">'+(s.grossmargin!==null?s.grossmargin.toFixed(1):'--')+'</div></div>'
         +(function(){var rg=s.revgrowth;var rgc=rg!==null?(rg>0?'up':rg<0?'dn':''):'';return '<div class="cg-item"><div class="cg-lbl">營收增%</div><div class="cg-val '+rgc+'">'+(rg!==null?((rg>0?'+':'')+rg.toFixed(1)):'--')+'</div></div>';})()
         +'<div class="cg-item"><div class="cg-lbl">單季EPS</div><div class="cg-val '+epsc+'">'+(s.eps!==null?s.eps.toFixed(2):'--')+'</div></div>'
@@ -3034,7 +3037,7 @@ function parseXL(file){
 function processRows(rows,filename){
   var keys=Object.keys(rows[0]);
   function fc(arr){for(var i=0;i<arr.length;i++)for(var j=0;j<keys.length;j++)if(keys[j].indexOf(arr[i])>=0)return keys[j];return null;}
-  var COL={code:fc(['代碼']),name:fc(['商品','名稱']),close:fc(['昨收']),pct:fc(['漲幅']),avg:fc(['均價']),volume:fc(['成交']),turnover:fc(['換手率']),turnval:fc(['成交值']),capital:fc(['股本']),bvps:fc(['每股淨值','淨值']),margin:fc(['融資維持']),ind:fc(['所有細產業','細產業','產業']),pos:fc(['產業地位']),rs:fc(['RS%']),grossmargin:fc(['毛利率']),eps:fc(['盈餘(單)','單季','EPS']),bigbuy:fc(['外盤特大單%','外盤特大單','特大單%']),revgrowth:fc(['營收年增率','營收年增']),pe:fc(['本益比','PE(市盈率)','PE']),roe:fc(['ROE','股東權益報酬率']),news:fc(['公司動態'])};
+  var COL={code:fc(['代碼']),name:fc(['商品','名稱']),close:fc(['昨收']),pct:fc(['漲幅']),avg:fc(['均價']),volume:fc(['成交']),turnover:fc(['換手率']),turnval:fc(['成交值']),capital:fc(['股本']),bvps:fc(['每股淨值','淨值']),margin:fc(['融資維持']),ind:fc(['所有細產業','細產業','產業']),pos:fc(['產業地位']),rs:fc(['RS%']),grossmargin:fc(['毛利率']),eps:fc(['盈餘(單)','單季','EPS']),dahubuy:fc(['大戶買賣比']),dahuchai:fc(['大戶差比']),revgrowth:fc(['營收年增率','營收年增']),pe:fc(['本益比','PE(市盈率)','PE']),roe:fc(['ROE','股東權益報酬率']),news:fc(['公司動態'])};
   function sf(v){if(v===null||v===undefined||v===''||v==='--')return null;var n=parseFloat(v);return isNaN(n)?null:n;}
   var nd=[];
   rows.forEach(function(r){
@@ -3043,7 +3046,7 @@ function processRows(rows,filename){
     // 代碼欄可能是數字(2302)、帶空格(' 2302 ')或小數('2302.0')，統一正規化為4位字串
     var rawCode=String(r[COL.code]).trim().replace(/\.0+$/,'');
     var cleanCode=/^\d+$/.test(rawCode)?rawCode.padStart(4,'0'):rawCode;
-    nd.push({code:cleanCode,name:COL.name?String(r[COL.name]||'').trim():'',close:COL.close?sf(r[COL.close]):null,pct:COL.pct?sf(r[COL.pct]):null,avg:COL.avg?sf(r[COL.avg]):null,volume:COL.volume?sf(r[COL.volume]):null,turnover:COL.turnover?sf(r[COL.turnover]):null,turnval:COL.turnval?sf(r[COL.turnval]):null,capital:COL.capital?sf(r[COL.capital]):null,bvps:COL.bvps?sf(r[COL.bvps]):null,margin:COL.margin?sf(r[COL.margin]):null,position:COL.pos&&r[COL.pos]?String(r[COL.pos]).trim():'',tags:ts,rs:COL.rs?sf(r[COL.rs]):null,grossmargin:COL.grossmargin?sf(r[COL.grossmargin]):null,eps:COL.eps?sf(r[COL.eps]):null,bigbuy:COL.bigbuy?sf(r[COL.bigbuy]):null,revgrowth:COL.revgrowth?sf(r[COL.revgrowth]):null,pe:COL.pe?sf(r[COL.pe]):null,roe:COL.roe?sf(r[COL.roe]):null,news:COL.news&&r[COL.news]?String(r[COL.news]).trim():''});
+    nd.push({code:cleanCode,name:COL.name?String(r[COL.name]||'').trim():'',close:COL.close?sf(r[COL.close]):null,pct:COL.pct?sf(r[COL.pct]):null,avg:COL.avg?sf(r[COL.avg]):null,volume:COL.volume?sf(r[COL.volume]):null,turnover:COL.turnover?sf(r[COL.turnover]):null,turnval:COL.turnval?sf(r[COL.turnval]):null,capital:COL.capital?sf(r[COL.capital]):null,bvps:COL.bvps?sf(r[COL.bvps]):null,margin:COL.margin?sf(r[COL.margin]):null,position:COL.pos&&r[COL.pos]?String(r[COL.pos]).trim():'',tags:ts,rs:COL.rs?sf(r[COL.rs]):null,grossmargin:COL.grossmargin?sf(r[COL.grossmargin]):null,eps:COL.eps?sf(r[COL.eps]):null,dahubuy:COL.dahubuy?sf(r[COL.dahubuy]):null,dahuchai:COL.dahuchai?sf(r[COL.dahuchai]):null,revgrowth:COL.revgrowth?sf(r[COL.revgrowth]):null,pe:COL.pe?sf(r[COL.pe]):null,roe:COL.roe?sf(r[COL.roe]):null,news:COL.news&&r[COL.news]?String(r[COL.news]).trim():''});
   });
   if(!nd.length){alert('沒有讀到有效資料');return;}
   D_RAW=nd;
@@ -3215,448 +3218,6 @@ function loadGdFile(i, keepOpen){
       if(keepOpen) renderGdFiles(gdFiles);
     })
     .catch(function(e){toast('❌ 載入失敗：'+e.message,'#da3633');});
-}
-
-// ============================================================
-// 族群資金流回放：用「漲跌%×成交值(億)」當每天的資金流概算，
-// 抓雲端資料夾裡最近20天的Excel快照，逐日按「細產業」標籤算出當天各族群
-// 的資金流+成交值，存成陣列。拖時間軸/播放時，只是從這個已經抓好的陣列
-// 裡取「以選定日為終點、往前5天」的滾動窗重新加總、重畫，純本地運算不用
-// 再打API，秒切換。
-// 不是真正的主力買賣超資料，只是常見的替代算法，僅供參考。
-// ============================================================
-var SECTOR_FLOW_FETCH_DAYS = 20; // 一次抓最近幾個交易日的檔案
-var SECTOR_FLOW_WINDOW = 5;      // 每一格畫面用往前幾天的滾動窗
-var SECTOR_FLOW_TOP_N = 30;
-var _sectorFlowCache = null; // {dayAggs:[{date,name,byTag:{tag:{flow,vol,count}}}], }
-var _sectorFlowPlayTimer = null;
-var _sectorFlowLastNodes = null; // 上一次畫出來的泡泡座標，點擊時用來判斷點到哪一顆
-var _sectorFlowLastDayCount = 0;
-
-function openSectorFlowBoard(forceRefresh){
-  document.getElementById('settings-modal').style.display = 'none';
-  document.getElementById('sector-flow-modal').style.display = 'flex';
-  if(_sectorFlowCache && !forceRefresh){
-    _renderSectorFlowAtIndex(_sectorFlowCache.dayAggs.length - 1);
-    return;
-  }
-  _loadSectorFlowData();
-}
-
-// 跟processRows()一樣的欄位模糊比對邏輯，只抓算資金流會用到的幾欄，其餘欄位不處理，比較快
-function _parseSectorFlowRows(rows){
-  if(!rows || !rows.length) return [];
-  var keys = Object.keys(rows[0]);
-  function fc(arr){for(var i=0;i<arr.length;i++)for(var j=0;j<keys.length;j++)if(keys[j].indexOf(arr[i])>=0)return keys[j];return null;}
-  var COL = { code: fc(['代碼']), pct: fc(['漲幅']), turnval: fc(['成交值']), ind: fc(['所有細產業','細產業','產業']) };
-  function sf(v){ if(v===null||v===undefined||v===''||v==='--') return null; var n=parseFloat(v); return isNaN(n)?null:n; }
-  if(!COL.code) return [];
-  var out = [];
-  rows.forEach(function(r){
-    if(!r[COL.code]) return;
-    var tags = COL.ind && r[COL.ind] ? String(r[COL.ind]).split(',').map(function(t){return t.trim();}).filter(function(t){return t && t!=='null';}) : [];
-    var pct = COL.pct ? sf(r[COL.pct]) : null;
-    var turnval = COL.turnval ? sf(r[COL.turnval]) : null;
-    if(pct===null || turnval===null || !tags.length) return;
-    out.push({ tags: tags, pct: pct, turnval: turnval });
-  });
-  return out;
-}
-
-// 把一天的股票列表，按細產業標籤加總成 {tag:{flow,vol,count}}
-function _aggregateDayByTag(rows){
-  var byTag = {};
-  rows.forEach(function(row){
-    var flow = row.pct * row.turnval; // 概算：漲跌%×成交值(億)
-    row.tags.forEach(function(tag){
-      if(!byTag[tag]) byTag[tag] = { flow: 0, vol: 0, count: 0 };
-      byTag[tag].flow += flow;
-      byTag[tag].vol += row.turnval;
-      byTag[tag].count++;
-    });
-  });
-  return byTag;
-}
-
-function _loadSectorFlowData(){
-  var loadingEl = document.getElementById('sector-flow-loading');
-  var updatedEl = document.getElementById('sector-flow-updated');
-  var sliderWrap = document.getElementById('sector-flow-slider-wrap');
-  if(sliderWrap) sliderWrap.style.display = 'none';
-  sectorFlowStopPlay();
-  var doneCount = 0;
-  function updateProgress(){
-    doneCount++;
-    if(loadingEl) loadingEl.textContent = '⏳ 讀取最近'+SECTOR_FLOW_FETCH_DAYS+'天資料中...（'+doneCount+'/'+SECTOR_FLOW_FETCH_DAYS+'）';
-  }
-  if(loadingEl){ loadingEl.style.display='flex'; loadingEl.textContent='⏳ 連線雲端，準備讀取最近'+SECTOR_FLOW_FETCH_DAYS+'天資料...'; }
-  if(updatedEl) updatedEl.textContent = '讀取中...';
-
-  fetch(GAS_URL+'?action=list')
-    .then(function(r){ return r.json(); })
-    .then(function(d){
-      if(!d.ok || !d.files || !d.files.length) throw new Error(d.error || '沒有雲端檔案');
-      var files = _sortFilesByModified(d.files.slice()).slice(0, SECTOR_FLOW_FETCH_DAYS);
-      // 由舊到新排序，時間軸才會是「從左到右愈來愈新」
-      files.sort(function(a,b){
-        var ta=a.modified?new Date(a.modified).getTime():0;
-        var tb=b.modified?new Date(b.modified).getTime():0;
-        return ta-tb;
-      });
-      return Promise.all(files.map(function(f){
-        return fetch(GAS_URL+'?action=file&id='+f.id)
-          .then(function(r){ return r.json(); })
-          .then(function(fd){
-            updateProgress();
-            if(!fd.ok) return null;
-            var binary=atob(fd.base64);
-            var bytes=new Uint8Array(binary.length);
-            for(var i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
-            var wb=XLSX.read(bytes.buffer,{type:'array'});
-            var ws=wb.Sheets[wb.SheetNames[0]];
-            var rows=XLSX.utils.sheet_to_json(ws,{defval:null});
-            var parsed = _parseSectorFlowRows(rows);
-            // 解析完當天股票列表後，馬上按標籤加總成byTag，原始逐股列表不用留著，省記憶體
-            return { date: f.modified, name: f.name, byTag: _aggregateDayByTag(parsed) };
-          })
-          .catch(function(){ updateProgress(); return null; });
-      }));
-    })
-    .then(function(dayAggs){
-      dayAggs = dayAggs.filter(function(d){ return d && Object.keys(d.byTag).length; });
-      if(!dayAggs.length) throw new Error('沒有讀到有效的每日資料');
-      _sectorFlowCache = { dayAggs: dayAggs };
-      var slider = document.getElementById('sector-flow-slider');
-      if(slider){ slider.min = 0; slider.max = dayAggs.length - 1; slider.value = dayAggs.length - 1; }
-      if(sliderWrap) sliderWrap.style.display = 'flex';
-      var controlsEl = document.getElementById('sector-flow-controls');
-      if(controlsEl) controlsEl.style.display = 'flex';
-      var startLbl = document.getElementById('sector-flow-date-start');
-      var endLbl = document.getElementById('sector-flow-date-end');
-      if(startLbl) startLbl.textContent = _fmtDate(dayAggs[0].date);
-      if(endLbl) endLbl.textContent = _fmtDate(dayAggs[dayAggs.length-1].date);
-      _renderSectorFlowAtIndex(dayAggs.length - 1);
-    })
-    .catch(function(e){
-      if(loadingEl){ loadingEl.style.display='flex'; loadingEl.textContent='❌ 讀取失敗：'+e.message; }
-      if(updatedEl) updatedEl.textContent = '讀取失敗';
-    });
-}
-
-// 從已經抓好的逐日byTag陣列，取「以endIndex為終點、往前windowSize天」算出這個時間點的族群資金流列表
-function _computeSectorFlowWindow(dayAggs, endIndex, windowSize){
-  var startIndex = Math.max(0, endIndex - windowSize + 1);
-  var windowDays = dayAggs.slice(startIndex, endIndex + 1); // 由舊到新
-  var n = windowDays.length;
-  var merged = {}; // tag -> {flowByDay:[...], volByDay:[...], count}
-  windowDays.forEach(function(day, di){
-    Object.keys(day.byTag).forEach(function(tag){
-      if(!merged[tag]) merged[tag] = { flowByDay: new Array(n).fill(0), volByDay: new Array(n).fill(0), count: 0 };
-      merged[tag].flowByDay[di] += day.byTag[tag].flow;
-      merged[tag].volByDay[di] += day.byTag[tag].vol;
-      merged[tag].count += day.byTag[tag].count;
-    });
-  });
-
-  var list = Object.keys(merged).map(function(tag){
-    var t = merged[tag];
-    var totalFlow = t.flowByDay.reduce(function(a,b){return a+b;}, 0);
-    var totalVol = t.volByDay.reduce(function(a,b){return a+b;}, 0);
-    // 加速度：窗內近半段平均每天流量 - 前半段平均每天流量（正值＝流向在加快，負值＝在放緩或反轉）
-    var half = Math.max(1, Math.floor(n/2));
-    var recentDays = t.flowByDay.slice(n-half);
-    var earlierDays = t.flowByDay.slice(0, n-half);
-    var recentAvg = recentDays.length ? recentDays.reduce(function(a,b){return a+b;},0)/recentDays.length : 0;
-    var earlierAvg = earlierDays.length ? earlierDays.reduce(function(a,b){return a+b;},0)/earlierDays.length : recentAvg;
-    var accel = recentAvg - earlierAvg;
-    return { tag: tag, flow: totalFlow, vol: totalVol, accel: accel, avgCount: Math.round(t.count/n) };
-  }).filter(function(x){ return x.avgCount >= 2; }); // 平均要有至少2檔股票才算，避免太雜訊的小標籤
-
-  list.sort(function(a,b){ return Math.abs(b.flow) - Math.abs(a.flow); });
-  return { tags: list.slice(0, SECTOR_FLOW_TOP_N), dayCount: n };
-}
-
-function _fmtDate(iso){
-  if(!iso) return '';
-  var d = new Date(iso);
-  return (d.getMonth()+1)+'/'+d.getDate();
-}
-function _fmtDateWithWeekday(iso){
-  if(!iso) return '';
-  var d = new Date(iso);
-  var wk = ['週日','週一','週二','週三','週四','週五','週六'][d.getDay()];
-  return (d.getMonth()+1)+'/'+d.getDate()+' '+wk;
-}
-
-function sectorFlowSliderChange(){
-  var slider = document.getElementById('sector-flow-slider');
-  if(!slider || !_sectorFlowCache) return;
-  _renderSectorFlowAtIndex(parseInt(slider.value, 10));
-}
-
-function sectorFlowStep(delta){
-  var slider = document.getElementById('sector-flow-slider');
-  if(!slider || !_sectorFlowCache) return;
-  sectorFlowStopPlay();
-  var v = parseInt(slider.value, 10) + delta;
-  v = Math.max(parseInt(slider.min,10), Math.min(parseInt(slider.max,10), v));
-  slider.value = v;
-  _renderSectorFlowAtIndex(v);
-}
-
-function sectorFlowTogglePlay(){
-  if(_sectorFlowPlayTimer){ sectorFlowStopPlay(); return; }
-  var slider = document.getElementById('sector-flow-slider');
-  var btn = document.getElementById('sector-flow-play-btn');
-  if(!slider || !_sectorFlowCache) return;
-  if(btn) btn.textContent = '⏸';
-  _sectorFlowPlayTimer = setInterval(function(){
-    var v = parseInt(slider.value, 10);
-    var max = parseInt(slider.max, 10);
-    v = (v >= max) ? 0 : v + 1; // 播到底就從頭開始
-    slider.value = v;
-    _renderSectorFlowAtIndex(v);
-  }, 500);
-}
-
-function sectorFlowStopPlay(){
-  if(_sectorFlowPlayTimer){ clearInterval(_sectorFlowPlayTimer); _sectorFlowPlayTimer = null; }
-  var btn = document.getElementById('sector-flow-play-btn');
-  if(btn) btn.textContent = '▶';
-}
-
-// 點泡泡：判斷點到哪一顆，打開該族群的詳情面板
-function sectorFlowCanvasClick(e){
-  if(!_sectorFlowLastNodes || !_sectorFlowLastNodes.length) return;
-  var canvas = document.getElementById('sector-flow-canvas');
-  var rect = canvas.getBoundingClientRect();
-  var x = e.clientX - rect.left;
-  var y = e.clientY - rect.top;
-  var hit = null;
-  for(var i=0;i<_sectorFlowLastNodes.length;i++){
-    var n = _sectorFlowLastNodes[i];
-    var dx = x-n.x, dy = y-n.y;
-    if(Math.sqrt(dx*dx+dy*dy) <= n.r){ hit = n; break; }
-  }
-  if(hit) openSectorFlowDetail(hit.tag);
-}
-
-function openSectorFlowDetail(t){
-  sectorFlowStopPlay();
-  var titleEl = document.getElementById('sector-flow-detail-title');
-  var bodyEl = document.getElementById('sector-flow-detail-body');
-  if(titleEl) titleEl.textContent = t.tag;
-
-  var dir = t.accel > 0 ? (t.flow >= 0 ? '↑ 流入加速' : '↑ 流出放緩') : (t.flow >= 0 ? '↓ 流入放緩' : '↓ 流出加速');
-  var dirColor = t.accel > 0 ? '#f85149' : '#3fb950';
-  var flowColor = t.flow >= 0 ? '#f85149' : '#3fb950';
-
-  var statsHtml =
-    '<div style="background:var(--bg-panel);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:14px;">'
-      +'<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);">'
-        +'<span style="color:var(--text-secondary);font-size:13px;">近'+_sectorFlowLastDayCount+'日資金流概算</span>'
-        +'<span style="color:'+flowColor+';font-weight:700;font-size:14px;">'+(t.flow>=0?'+':'')+t.flow.toFixed(1)+'億</span>'
-      +'</div>'
-      +'<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);">'
-        +'<span style="color:var(--text-secondary);font-size:13px;">近'+_sectorFlowLastDayCount+'日成交值</span>'
-        +'<span style="color:var(--text-primary);font-weight:700;font-size:14px;">'+t.vol.toFixed(1)+'億</span>'
-      +'</div>'
-      +'<div style="display:flex;justify-content:space-between;padding:6px 0;">'
-        +'<span style="color:var(--text-secondary);font-size:13px;">流向變化</span>'
-        +'<span style="color:'+dirColor+';font-weight:700;font-size:14px;">'+dir+'</span>'
-      +'</div>'
-    +'</div>'
-    +'<p style="font-size:11px;color:var(--text-dim);line-height:1.5;margin-bottom:10px;">資金流概算是把這段期間每天「漲跌%×成交值(億)」加總，不是真實的法人買賣超，僅供參考。下面是目前清單中屬於「'+t.tag+'」的個股，依當天漲跌幅排序：</p>';
-
-  // 個股清單：用目前主清單D（最新一天的資料）裡屬於這個標籤的股票，因為逐日歷史只有加總沒留個股，這裡沒辦法算「近N日」，只能用最新一天
-  var stocks = (typeof D !== 'undefined' ? D : []).filter(function(s){
-    return s.tags && s.tags.indexOf(t.tag) >= 0;
-  }).slice().sort(function(a,b){ return (b.pct||-999) - (a.pct||-999); });
-
-  var tableHtml;
-  if(!stocks.length){
-    tableHtml = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:13px;">目前清單中沒有這個標籤的個股</div>';
-  } else {
-    tableHtml = '<div style="display:flex;font-size:11px;color:var(--text-dim);padding:4px 6px;border-bottom:1px solid var(--border);">'
-      +'<span style="width:52px;flex-shrink:0;">代碼</span><span style="flex:1;">名稱</span><span style="width:60px;text-align:right;flex-shrink:0;">漲跌%</span><span style="width:64px;text-align:right;flex-shrink:0;">成交值</span>'
-    +'</div>'
-    + stocks.map(function(s){
-      var pctColor = (s.pct||0) > 0 ? '#f85149' : (s.pct||0) < 0 ? '#3fb950' : 'var(--text-secondary)';
-      return '<div onclick="jumpFromSectorFlow(\''+s.code+'\')" style="display:flex;align-items:center;padding:7px 6px;border-bottom:1px solid var(--bg-panel-alt);cursor:pointer;">'
-        +'<span style="width:52px;flex-shrink:0;font-family:monospace;color:#79c0ff;font-size:12px;">'+s.code+'</span>'
-        +'<span style="flex:1;color:var(--text-primary);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+s.name+'</span>'
-        +'<span style="width:60px;text-align:right;flex-shrink:0;color:'+pctColor+';font-size:12px;font-weight:600;">'+(s.pct!==null&&s.pct!==undefined?((s.pct>0?'+':'')+s.pct.toFixed(1)+'%'):'--')+'</span>'
-        +'<span style="width:64px;text-align:right;flex-shrink:0;color:var(--text-secondary);font-size:12px;">'+(s.turnval!==null&&s.turnval!==undefined?s.turnval.toFixed(1):'--')+'</span>'
-      +'</div>';
-    }).join('');
-  }
-
-  if(bodyEl) bodyEl.innerHTML = statsHtml + tableHtml;
-  var detailEl = document.getElementById('sector-flow-detail');
-  if(detailEl) detailEl.style.display = 'flex';
-}
-
-function closeSectorFlowDetail(){
-  var detailEl = document.getElementById('sector-flow-detail');
-  if(detailEl) detailEl.style.display = 'none';
-}
-
-function jumpFromSectorFlow(code){
-  closeSectorFlowDetail();
-  sectorFlowStopPlay();
-  document.getElementById('sector-flow-modal').style.display = 'none';
-  sel = [];
-  window._hcatCodes = null;
-  renderSelTags();
-  render();
-  jumpToCardWithFilter(code, null, null);
-}
-
-function _renderSectorFlowAtIndex(endIndex){
-  var loadingEl = document.getElementById('sector-flow-loading');
-  var updatedEl = document.getElementById('sector-flow-updated');
-  var dateLabelEl = document.getElementById('sector-flow-date-label');
-  var bestInEl = document.getElementById('sector-flow-best-in');
-  var bestOutEl = document.getElementById('sector-flow-best-out');
-  if(!_sectorFlowCache || !_sectorFlowCache.dayAggs.length){
-    if(loadingEl){ loadingEl.style.display='flex'; loadingEl.textContent='😕 沒有足夠資料畫圖'; }
-    return;
-  }
-  var dayAggs = _sectorFlowCache.dayAggs;
-  endIndex = Math.max(0, Math.min(dayAggs.length - 1, endIndex));
-  var win = _computeSectorFlowWindow(dayAggs, endIndex, SECTOR_FLOW_WINDOW);
-  if(!win.tags.length){
-    if(loadingEl){ loadingEl.style.display='flex'; loadingEl.textContent='😕 這個時間點沒有足夠資料畫圖'; }
-    if(dateLabelEl) dateLabelEl.textContent = '';
-    if(bestInEl) bestInEl.textContent = '';
-    if(bestOutEl) bestOutEl.textContent = '';
-    return;
-  }
-  if(loadingEl) loadingEl.style.display = 'none';
-  if(updatedEl){
-    updatedEl.textContent = '共讀到'+dayAggs.length+'天資料';
-  }
-  if(dateLabelEl){
-    dateLabelEl.textContent = _fmtDateWithWeekday(dayAggs[endIndex].date);
-  }
-  var byFlow = win.tags.slice().sort(function(a,b){return b.flow-a.flow;});
-  var bestIn = byFlow[0];
-  var bestOut = byFlow[byFlow.length-1];
-  if(bestInEl) bestInEl.textContent = bestIn ? ('近'+win.dayCount+'日買最多　'+bestIn.tag+'　+'+bestIn.flow.toFixed(0)+'億') : '';
-  if(bestOutEl) bestOutEl.textContent = (bestOut && bestOut!==bestIn) ? ('近'+win.dayCount+'日賣最多　'+bestOut.tag+'　'+bestOut.flow.toFixed(0)+'億') : '';
-  var canvas = document.getElementById('sector-flow-canvas');
-  var wrap = document.getElementById('sector-flow-canvas-wrap');
-  var dpr = window.devicePixelRatio || 1;
-  var W = wrap.offsetWidth || 360;
-  var H = Math.min(600, Math.max(380, Math.round(W*0.6))); // 高度上限600，避免寬螢幕時比例被拉得太誇張
-  canvas.width = W*dpr;
-  canvas.height = H*dpr;
-  canvas.style.width = W+'px';
-  canvas.style.height = H+'px';
-  var ctx = canvas.getContext('2d');
-  ctx.setTransform(1,0,0,1,0,0);
-  ctx.scale(dpr, dpr);
-  drawSectorFlowChart(ctx, W, H, win.tags, win.dayCount);
-}
-
-// 泡泡碰撞避讓：讓氣泡盡量待在原本資料算出來的位置附近，但互相重疊時輕輕推開，
-// 排版才會像參考的Tide介面一樣乾淨，不會整團疊在一起看不清楚。
-function _resolveBubbleCollisions(nodes, iterations, bounds){
-  for(var iter=0; iter<iterations; iter++){
-    for(var i=0;i<nodes.length;i++){
-      for(var j=i+1;j<nodes.length;j++){
-        var a=nodes[i], b=nodes[j];
-        var dx=b.x-a.x, dy=b.y-a.y;
-        var dist=Math.sqrt(dx*dx+dy*dy) || 0.01;
-        var minDist=a.r+b.r+3;
-        if(dist<minDist){
-          var overlap=(minDist-dist)/2;
-          var ux=dx/dist, uy=dy/dist;
-          a.x-=ux*overlap; a.y-=uy*overlap;
-          b.x+=ux*overlap; b.y+=uy*overlap;
-        }
-      }
-    }
-    // 每輪結束後把所有泡泡夾回圖表範圍內
-    nodes.forEach(function(n){
-      n.x = Math.max(bounds.l+n.r, Math.min(bounds.r-n.r, n.x));
-      n.y = Math.max(bounds.t+n.r, Math.min(bounds.b-n.r, n.y));
-    });
-  }
-}
-
-function drawSectorFlowChart(ctx, W, H, tags, dayCount){
-  ctx.clearRect(0,0,W,H);
-  // canvas無法直接吃CSS變數，先讀出目前主題的實際色碼
-  var cs = getComputedStyle(document.documentElement);
-  var colText2 = (cs.getPropertyValue('--text-secondary')||'').trim() || '#8b949e';
-  var colTextDim = (cs.getPropertyValue('--text-dim')||'').trim() || '#6e7681';
-  var colGrid = (cs.getPropertyValue('--border')||'').trim() || '#30363d';
-  var colTextP = (cs.getPropertyValue('--text-primary')||'').trim() || '#e6edf3';
-
-  var PAD = {t:34, b:36, l:20, r:20};
-  var plotW = W - PAD.l - PAD.r, plotH = H - PAD.t - PAD.b;
-  var cx = PAD.l + plotW/2, cy = PAD.t + plotH/2;
-
-  var maxFlow = Math.max.apply(null, tags.map(function(t){return Math.abs(t.flow);})) || 1;
-  var maxAccel = Math.max.apply(null, tags.map(function(t){return Math.abs(t.accel);})) || 1;
-  var maxVol = Math.max.apply(null, tags.map(function(t){return t.vol;})) || 1;
-  var minR = 14, maxR = Math.min(60, Math.min(plotW, plotH)*0.15); // 泡泡半徑上限，避免寬螢幕時泡泡爆大
-
-  function px(flow){ return cx + (flow/maxFlow) * (plotW/2 - maxR - 4); }
-  function py(accel){ return cy - (accel/maxAccel) * (plotH/2 - maxR - 4); }
-  function pr(vol){ return minR + Math.sqrt(Math.max(0,vol)/maxVol) * (maxR - minR); }
-
-  // 十字分隔線
-  ctx.strokeStyle = colGrid; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(PAD.l, cy); ctx.lineTo(W-PAD.r, cy); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(cx, PAD.t); ctx.lineTo(cx, H-PAD.b); ctx.stroke();
-
-  // 象限標籤
-  ctx.font = '10px sans-serif'; ctx.fillStyle = colTextDim;
-  ctx.textAlign = 'left'; ctx.fillText('流出但放緩', PAD.l+2, PAD.t+12);
-  ctx.textAlign = 'left'; ctx.fillText('加速流出', PAD.l+2, H-PAD.b-4);
-  ctx.textAlign = 'right'; ctx.fillText('流入但放緩', W-PAD.r-2, H-PAD.b-4);
-  ctx.font = 'bold 10px sans-serif'; ctx.fillStyle = '#d29922';
-  ctx.textAlign = 'right'; ctx.fillText('加速流入 ⭐', W-PAD.r-2, PAD.t+12);
-
-  // 先算出每顆泡泡「理論上」該在的位置(x,y,r)，再用碰撞避讓稍微推開，減少互相重疊
-  var nodes = tags.map(function(t){
-    return { tag: t, x: px(t.flow), y: py(t.accel), r: pr(t.vol) };
-  });
-  _resolveBubbleCollisions(nodes, 50, {l:PAD.l, r:W-PAD.r, t:PAD.t, b:H-PAD.b});
-  _sectorFlowLastNodes = nodes; // 記住這次畫出來的座標，點擊canvas時要用來判斷點到哪一顆泡泡
-  _sectorFlowLastDayCount = dayCount;
-
-  // 泡泡：大的先畫在下面，小的疊在上面，比較不會互相蓋住
-  var sortedNodes = nodes.slice().sort(function(a,b){ return b.r - a.r; });
-  sortedNodes.forEach(function(node){
-    var t = node.tag, x = node.x, y = node.y, r = node.r;
-    var isIn = t.flow >= 0;
-    var color = isIn ? '#f85149' : '#3fb950';
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI*2);
-    ctx.fillStyle = color + '55';
-    ctx.fill();
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1.3;
-    ctx.stroke();
-    if(r > 18){
-      ctx.fillStyle = colTextP;
-      ctx.font = 'bold '+Math.min(12, 8+r*0.12).toFixed(0)+'px sans-serif';
-      ctx.textAlign = 'center';
-      var label = t.tag.length > 6 ? t.tag.slice(0,6)+'…' : t.tag;
-      ctx.fillText(label, x, y - 2);
-      ctx.font = Math.min(11, 7+r*0.1).toFixed(0)+'px sans-serif';
-      ctx.fillStyle = color;
-      ctx.fillText((t.flow>=0?'+':'')+t.flow.toFixed(0)+'億', x, y + 11);
-    }
-  });
-
-  // X軸端點文字
-  ctx.font = '10px sans-serif'; ctx.fillStyle = colText2;
-  ctx.textAlign = 'left'; ctx.fillText('← 資金流出(億)', PAD.l, H-PAD.b+16);
-  ctx.textAlign = 'right'; ctx.fillText('資金流入(億) →', W-PAD.r, H-PAD.b+16);
 }
 
 var STRATEGY_GAS_URL = 'https://script.google.com/macros/s/AKfycbzonSgY3uZ1Y7HU1Joh_ibrVqBgP5dDJ5k1KMiKu9TRee2Wtk0PT-2VnrnuaNjZ6cgjoA/exec';
@@ -4489,6 +4050,835 @@ function jumpFromMarginReport(code){
   render();
   jumpToCardWithFilter(code, null, null);
 }
+
+// ============================================================
+// 大戶籌碼族群輪動圖：X軸=大戶買賣比%(主力參與程度) Y軸=大戶差比%(買超力道)
+// 用已經載入的選股資料(D)，依「細產業」標籤分組，每個族群取組內個股的平均值畫成泡泡。
+// 門檻依浦男搜股「大戶籌碼指標」簡報定義：大戶買賣比70%、大戶差比20%為強弱分界。
+// 單日快照，不用另外打API抓歷史檔案，切換/開啟時直接用目前畫面上的資料即時算。
+// ============================================================
+var DAHU_ROTATION_TOP_N = 30;
+var DAHU_ROTATION_MIN_COUNT = 2; // 族群內至少要有幾檔有大戶買賣比/差比資料才畫，避免單一檔股票造成雜訊
+var DAHU_ROTATION_STOCK_TOP_N = 40; // 個股檢視模式最多畫幾檔（依成交值排序取前N檔，太多點會擠成一團連名字都放不下）
+var DAHU_ROTATION_SUBCLUSTER_TOP_N = 40; // 族群檢視拆成子象限泡泡後，最多畫幾顆子泡泡（依檔數排序取前N顆，避免拆太細反而變得雜亂）
+// 圖表的縮放/平移狀態（雙指縮放、拖曳平移共用）：scale=縮放倍率，tx/ty=平移量（CSS像素，未乘dpr）
+var _dahuChartView = {scale:1, tx:0, ty:0};
+var _dahuRotationDrawCache = null; // 記住最後一次畫圖用的 ctx/尺寸/資料，縮放平移時直接重畫，不用重算整份資料
+var _dahuRotationGroups = [];
+var _dahuRotationLastNodes = null;
+var _dahuRotationMode = 'group'; // 'group'=族群檢視（泡泡） / 'stock'=個股檢視（每檔股票一個點）
+
+function openDahuRotationBoard(){
+  toast('🧭 開啟大戶籌碼族群輪動圖...','#1f6feb');
+  try{
+    // 保險：把其他可能還開著的全螢幕視窗都關掉，避免疊在一起互相蓋住
+    ['settings-modal','margin-report-modal','macro-board-modal','econ-calendar-modal','note-edit-modal'].forEach(function(id){
+      var el = document.getElementById(id);
+      if(el) el.style.display = 'none';
+    });
+    var modal = document.getElementById('dahu-rotation-modal');
+    if(!modal){ toast('❌ 找不到大戶籌碼族群輪動圖的視窗元素','#da3633'); return; }
+    document.getElementById('dahu-rotation-detail').style.display = 'none';
+    _dahuRotationMode = 'group';
+    _dahuSetModeButtons('group');
+    var wrap0 = document.getElementById('dahu-rotation-canvas-wrap'), list0 = document.getElementById('dahu-rotation-list'), legend0 = document.getElementById('dahu-rotation-legend');
+    if(wrap0) wrap0.style.display = 'block';
+    if(list0) list0.style.display = 'none';
+    if(legend0) legend0.style.display = 'block'; // 列表模式不需要這段四象限說明，圖表模式(族群/個股)才顯示
+    modal.style.display = 'flex';
+    modal.style.zIndex = '100000';
+    _dahuSetupChartGestures();
+    renderDahuRotationChart();
+  }catch(e){
+    toast('❌ 大戶籌碼族群輪動圖發生錯誤：'+e.message,'#da3633');
+    console.error('openDahuRotationBoard error:', e);
+  }
+}
+function closeDahuRotationBoard(){
+  document.getElementById('dahu-rotation-modal').style.display = 'none';
+}
+
+// canvas畫不出CSS變數，_dahuStockQuadrant() 給HTML標籤用的顏色裡「落後」是 var(--text-secondary)，
+// 直接丟進 ctx.fillStyle 會被瀏覽器忽略、疊代前一次畫的顏色，造成散點圖/子泡泡的落後色不對。
+// 這裡另外提供一份四象限對應的「保證是色碼」版本，統一給canvas畫圖用。
+function _dahuQuadColorHex(label, _cs){
+  if(label==='領先') return '#3fb950';
+  if(label==='改善') return '#58a6ff';
+  if(label==='弱化') return '#d29922';
+  var fallback = (_cs && _cs.getPropertyValue) ? (_cs.getPropertyValue('--text-secondary')||'').trim() : '';
+  return fallback || '#8b949e';
+}
+
+// 大分類（如「電子零件元件」）裡常常同時混著領先/改善/弱化/落後好幾種股票，只畫一顆
+// 加權平均泡泡會讓位置失真、看起來像「全部都在落後」，其實只是被組內少數異常值拉走。
+// 這裡把每個族群依組內個股實際所在的象限拆成最多4顆子泡泡，各自用組內同象限成分股
+// 重新算一次成交值加權平均座標，泡泡大小則依該子群的檔數決定——比原本「一顆平均+
+// 下面一條分佈色條」更直接，一眼就能看出這個族群的哪些成分股在領先、哪些在弱化。
+function _computeDahuRotationSubClusters(groups){
+  var out = [];
+  groups.forEach(function(g){
+    var buckets = {'領先':[], '改善':[], '弱化':[], '落後':[]};
+    g.stocks.forEach(function(s){
+      var q = _dahuStockQuadrant(s.dahubuy, s.dahuchai);
+      if(buckets[q.label]) buckets[q.label].push(s);
+    });
+    Object.keys(buckets).forEach(function(qk){
+      var members = buckets[qk];
+      if(!members.length) return;
+      var sumBuy=0, sumChai=0, sumW=0;
+      members.forEach(function(s){
+        var w = (s.turnval!==null && s.turnval!==undefined && s.turnval>0) ? s.turnval : 0.01;
+        sumBuy += s.dahubuy*w; sumChai += s.dahuchai*w; sumW += w;
+      });
+      out.push({
+        tag: g.tag,
+        qLabel: qk,
+        avgBuy: sumBuy/sumW,
+        avgChai: sumChai/sumW,
+        count: members.length,
+        stocks: members
+      });
+    });
+  });
+  out.sort(function(a,b){ return b.count-a.count; });
+  return out.slice(0, DAHU_ROTATION_SUBCLUSTER_TOP_N);
+}
+
+function _computeDahuRotationGroups(){
+  var groups = {};
+  (D||[]).forEach(function(s){
+    if(s.dahubuy===null||s.dahubuy===undefined||s.dahuchai===null||s.dahuchai===undefined) return;
+    var tags = (s.tags && s.tags.length) ? s.tags : ['未分類'];
+    // 用成交值(億)當權重：同一個細產業標籤裡，可能有100多檔股票，但多數平常沒有大戶特別關注，
+    // 簡單平均會被這些「安靜」的股票拉低，看不出真正有錢在動的族群。改成用成交值加權，
+    // 成交值越大代表當天資金越活躍，對族群平均值的影響力也越大，比較貼近「錢實際在哪裡」。
+    var w = (s.turnval!==null && s.turnval!==undefined && s.turnval>0) ? s.turnval : 0.01; // 成交值缺值時給極小權重，避免整組被單一沒資料的股票搞爛，但也不會完全不算它
+    tags.forEach(function(t){
+      if(!groups[t]) groups[t] = {tag:t, sumBuy:0, sumChai:0, sumW:0, count:0, stocks:[]};
+      groups[t].sumBuy += s.dahubuy*w;
+      groups[t].sumChai += s.dahuchai*w;
+      groups[t].sumW += w;
+      groups[t].count += 1;
+      groups[t].stocks.push(s);
+    });
+  });
+  var arr = Object.keys(groups).map(function(k){
+    var g = groups[k];
+    // 順便算出這個族群裡，個股各自落在哪個象限的檔數分布（領先/改善/弱化/落後），
+    // 因為族群泡泡畫的是加權平均值，平均值落在某一區不代表組內每一檔都在同一區，
+    // 這個分布資訊讓使用者不用點進明細也能看出組內是不是很分散
+    var qCount = {lead:0, improve:0, weaken:0, lagging:0};
+    g.stocks.forEach(function(s){
+      var q = _dahuStockQuadrant(s.dahubuy, s.dahuchai);
+      if(q.label==='領先') qCount.lead++;
+      else if(q.label==='改善') qCount.improve++;
+      else if(q.label==='弱化') qCount.weaken++;
+      else if(q.label==='落後') qCount.lagging++;
+    });
+    return { tag:g.tag, avgBuy:g.sumBuy/g.sumW, avgChai:g.sumChai/g.sumW, count:g.count, stocks:g.stocks, qCount:qCount };
+  }).filter(function(g){ return g.count >= DAHU_ROTATION_MIN_COUNT; });
+  arr.sort(function(a,b){ return b.count - a.count; });
+  return arr.slice(0, DAHU_ROTATION_TOP_N);
+}
+
+// 三個模式共用的按鈕高亮邏輯：被選到的那顆變藍底白字，其餘變回預設樣式
+function _dahuSetModeButtons(mode){
+  var ids = {group:'dahu-mode-group-btn', stock:'dahu-mode-stock-btn', list:'dahu-mode-list-btn'};
+  Object.keys(ids).forEach(function(k){
+    var b = document.getElementById(ids[k]);
+    if(!b) return;
+    if(k === mode){ b.style.background = '#1f6feb'; b.style.border = 'none'; b.style.color = '#fff'; }
+    else { b.style.background = 'var(--bg-panel-alt)'; b.style.border = '1px solid var(--border)'; b.style.color = 'var(--text-secondary)'; }
+  });
+}
+
+function switchDahuRotationMode(mode){
+  if(_dahuRotationMode === mode) return;
+  _dahuRotationMode = mode;
+  document.getElementById('dahu-rotation-detail').style.display = 'none';
+  _dahuSetModeButtons(mode);
+  var wrap = document.getElementById('dahu-rotation-canvas-wrap');
+  var listEl = document.getElementById('dahu-rotation-list');
+  var legendEl = document.getElementById('dahu-rotation-legend');
+  if(mode === 'list'){
+    wrap.style.display = 'none';
+    listEl.style.display = 'block';
+    if(legendEl) legendEl.style.display = 'none'; // 列表本身欄位就很清楚了，不用再重複顯示四象限說明
+    renderDahuRotationList();
+  } else {
+    listEl.style.display = 'none';
+    wrap.style.display = 'block';
+    if(legendEl) legendEl.style.display = 'block';
+    renderDahuRotationChart();
+  }
+}
+
+// 列表模式：跟個股散點圖同一批股票（依成交值取前N檔），改成依「領先／改善／弱化／落後」
+// 四個象限分段列出，比散點圖更適合快速掃過名字、抓出誰在哪一區
+function renderDahuRotationList(){
+  var listEl = document.getElementById('dahu-rotation-list');
+  var stocks = _computeDahuRotationAllStocks(); // 列表不設成交值上限，見上方註解
+  if(!stocks.length){
+    listEl.innerHTML = '<div style="padding:32px 12px;text-align:center;color:var(--text-secondary);font-size:13px;">尚無資料，請先載入選股Excel</div>';
+    return;
+  }
+  var buckets = {'領先':[], '改善':[], '弱化':[], '落後':[]};
+  stocks.forEach(function(s){
+    var q = _dahuStockQuadrant(s.dahubuy, s.dahuchai);
+    if(buckets[q.label]) buckets[q.label].push(s);
+  });
+  Object.keys(buckets).forEach(function(k){
+    buckets[k].sort(function(a,b){ return (b.dahuchai||0)-(a.dahuchai||0); });
+  });
+  var sectionDefs = [
+    {key:'領先', title:'🟢 領先區(強勢主流)', fg:'#3fb950', capAt:null},
+    {key:'改善', title:'🔵 改善區(籌碼改善中)', fg:'#58a6ff', capAt:null},
+    {key:'弱化', title:'🟠 弱化區(資金退潮)', fg:'#d29922', capAt:null},
+    {key:'落後', title:'⚪ 落後區(弱勢觀望)', fg:'var(--text-secondary)', capAt:40} // 落後區通常佔絕大多數個股、也最不需要逐檔細看，只顯示成交值前40檔避免整個列表被灌爆
+  ];
+  var html = sectionDefs.map(function(sec){
+    var rows = buckets[sec.key];
+    if(!rows.length){
+      return '<div style="margin-bottom:14px;">'
+        +'<div style="font-size:13px;font-weight:700;color:'+sec.fg+';padding:8px 6px;background:'+sec.fg+'18;border-radius:6px;">'+sec.title+'（0）</div>'
+        +'<div style="padding:10px 6px;font-size:12px;color:var(--text-dim);">目前沒有股票落在這一區</div>'
+      +'</div>';
+    }
+    var shown = rows;
+    var hiddenCount = 0;
+    if(sec.capAt && rows.length > sec.capAt){
+      shown = rows.slice().sort(function(a,b){ return (b.turnval||0)-(a.turnval||0); }).slice(0, sec.capAt);
+      shown.sort(function(a,b){ return (b.dahuchai||0)-(a.dahuchai||0); });
+      hiddenCount = rows.length - shown.length;
+    }
+    var rowsHtml = shown.map(function(s){
+      var bc = _dahuValColor(s.dahubuy, 'buy');
+      var cc = _dahuValColor(s.dahuchai, 'chai');
+      var pctStr = s.pct!==null&&s.pct!==undefined ? ((s.pct>0?'+':'')+s.pct.toFixed(1)+'%') : '--';
+      var pctColor = s.pct>0?'#f85149':s.pct<0?'#3fb950':'var(--text-secondary)';
+      return '<div onclick="jumpFromDahuRotation(\''+s.code+'\')" style="display:flex;align-items:center;gap:6px;padding:8px 6px;border-bottom:1px solid var(--border);cursor:pointer;">'
+        +'<span style="color:var(--text-secondary);font-family:monospace;font-size:11px;flex-shrink:0;width:42px;">'+s.code+'</span>'
+        +'<span style="color:var(--text-primary);font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+s.name+'</span>'
+        +'<span style="font-size:11px;flex-shrink:0;width:52px;text-align:right;color:'+pctColor+'">'+pctStr+'</span>'
+        +'<span style="font-size:11px;font-weight:700;flex-shrink:0;padding:2px 5px;border-radius:4px;background:'+bc.bg+';color:'+bc.fg+';width:44px;text-align:center;">'+(s.dahubuy!==null&&s.dahubuy!==undefined?s.dahubuy.toFixed(0):'--')+'</span>'
+        +'<span style="font-size:11px;font-weight:700;flex-shrink:0;padding:2px 5px;border-radius:4px;background:'+cc.bg+';color:'+cc.fg+';width:44px;text-align:center;">'+(s.dahuchai!==null&&s.dahuchai!==undefined?((s.dahuchai>0?'+':'')+s.dahuchai.toFixed(0)):'--')+'</span>'
+      +'</div>';
+    }).join('');
+    return '<div style="margin-bottom:14px;">'
+      +'<div style="font-size:13px;font-weight:700;color:'+sec.fg+';padding:8px 6px;background:'+sec.fg+'18;border-radius:6px;margin-bottom:2px;">'+sec.title+'（'+rows.length+'）</div>'
+      +'<div style="display:flex;align-items:center;gap:6px;padding:0 6px 4px;font-size:10px;color:var(--text-dim);">'
+        +'<span style="width:42px;flex-shrink:0;">代碼</span><span style="flex:1;">商品</span><span style="width:52px;flex-shrink:0;text-align:right;">漲跌%</span>'
+        +'<span style="width:44px;flex-shrink:0;text-align:center;">買賣比</span><span style="width:44px;flex-shrink:0;text-align:center;">差比</span>'
+      +'</div>'
+      + rowsHtml
+      + (hiddenCount>0 ? '<div style="padding:8px 6px;font-size:11px;color:var(--text-dim);text-align:center;">（僅顯示成交值前'+sec.capAt+'檔，還有'+hiddenCount+'檔未列出）</div>' : '')
+    +'</div>';
+  }).join('');
+  listEl.innerHTML = html || '<div style="padding:32px 12px;text-align:center;color:var(--text-secondary);font-size:13px;">尚無資料</div>';
+}
+
+// 個股散點圖：不分族群，把每一檔有大戶買賣比/差比資料的個股直接攤開成一個個點，
+// 依成交值排序只取前N檔，避免資料太多點擠成一團看不清楚（僅供「散點圖」使用）
+function _computeDahuRotationStocks(){
+  var arr = _computeDahuRotationAllStocks();
+  arr.sort(function(a,b){ return (b.turnval||0)-(a.turnval||0); });
+  return arr.slice(0, DAHU_ROTATION_STOCK_TOP_N);
+}
+// 列表模式專用：不設成交值上限，把「所有」有大戶買賣比/差比資料的個股都納入，
+// 因為落在領先／改善區的股票不見得是成交值最大的那幾檔，若沿用散點圖的
+// TOP_N篩選會把很多真正該被看到的領先股濾掉，導致列表的領先區看起來是空的
+function _computeDahuRotationAllStocks(){
+  return (D||[]).filter(function(s){
+    return s.dahubuy!==null && s.dahubuy!==undefined && s.dahuchai!==null && s.dahuchai!==undefined;
+  });
+}
+
+function renderDahuRotationChart(){
+  var wrap = document.getElementById('dahu-rotation-canvas-wrap');
+  var emptyEl = document.getElementById('dahu-rotation-empty');
+  var canvas = document.getElementById('dahu-rotation-canvas');
+  var data;
+  if(_dahuRotationMode === 'stock'){
+    data = _computeDahuRotationStocks();
+  } else {
+    var groups = _computeDahuRotationGroups();
+    _dahuRotationGroups = groups; // 點擊子泡泡開明細時，依tag查完整族群成員用這份（未拆分）
+    data = _computeDahuRotationSubClusters(groups); // 畫圖用的是拆成子象限後的泡泡
+  }
+  if(!data.length){
+    emptyEl.style.display = 'flex';
+    var ctx0 = canvas.getContext('2d');
+    ctx0.clearRect(0,0,canvas.width,canvas.height);
+    return;
+  }
+  emptyEl.style.display = 'none';
+  var dpr = window.devicePixelRatio||1;
+  var w = wrap.clientWidth || 360;
+  var H = Math.min(560, Math.max(380, Math.round(w*0.85)));
+  canvas.width = w*dpr;
+  canvas.height = H*dpr;
+  canvas.style.height = H+'px';
+  var ctx = canvas.getContext('2d');
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.scale(dpr,dpr);
+  _dahuChartView = {scale:1, tx:0, ty:0}; // 每次重新整份畫（切換模式/重開視窗）都回到預設縮放
+  _dahuUpdateResetBtn();
+  _dahuRotationDrawCache = {ctx:ctx, W:w, H:H, data:data, mode:_dahuRotationMode};
+  if(_dahuRotationMode === 'stock'){
+    drawDahuRotationStockChart(ctx, w, H, data);
+  } else {
+    drawDahuRotationChart(ctx, w, H, data);
+  }
+}
+
+// 縮放/平移時直接用快取的ctx/資料重畫，不重新計算整份族群/個股資料，拖曳時才夠流暢
+function _dahuRedraw(){
+  var c = _dahuRotationDrawCache;
+  if(!c) return;
+  if(c.mode === 'stock'){ drawDahuRotationStockChart(c.ctx, c.W, c.H, c.data); }
+  else { drawDahuRotationChart(c.ctx, c.W, c.H, c.data); }
+}
+
+// 平移範圍限制：scale=1時幾乎不能拖（留一點緩衝手感），縮放越大可以拖的範圍越大，
+// 但還是會限制在「圖表內容大致還在畫面附近」，不會整個拖到不知道飄去哪裡
+function _dahuClampView(){
+  var c = _dahuRotationDrawCache;
+  if(!c) return;
+  var s = _dahuChartView.scale;
+  var pad = 40;
+  var minTx = (1-s)*c.W - pad, maxTx = pad;
+  var minTy = (1-s)*c.H - pad, maxTy = pad;
+  _dahuChartView.tx = Math.max(minTx, Math.min(maxTx, _dahuChartView.tx));
+  _dahuChartView.ty = Math.max(minTy, Math.min(maxTy, _dahuChartView.ty));
+}
+
+function _dahuUpdateResetBtn(){
+  var btn = document.getElementById('dahu-chart-reset-zoom-btn');
+  if(!btn) return;
+  var changed = Math.abs(_dahuChartView.scale-1) > 0.01 || Math.abs(_dahuChartView.tx) > 1 || Math.abs(_dahuChartView.ty) > 1;
+  btn.style.display = changed ? 'block' : 'none';
+}
+
+function _dahuResetView(){
+  _dahuChartView = {scale:1, tx:0, ty:0};
+  _dahuUpdateResetBtn();
+  _dahuRedraw();
+}
+
+// 觸控/滑鼠手勢：單指拖曳平移、雙指縮放、桌面滾輪縮放（都以手指/滑鼠位置為縮放中心）。
+// 用具名函式（不用匿名函式）方便測試直接呼叫，不用真的模擬瀏覽器的PointerEvent。
+var _dahuPointers = {};
+var _dahuPanStart = null;
+var _dahuPinchStart = null;
+var _dahuGestureMoved = false;
+var _dahuGestureHadMultiTouch = false; // 這次手勢有沒有出現過雙指（放開時瀏覽器通常不會補一個click，跟單指拖曳不一樣）
+var _dahuJustGestured = false; // 手勢剛結束時，緊接著觸發的click不要當成點擊選取
+var _dahuGestureBound = false;
+
+function _dahuPointerDown(e){
+  var canvas = document.getElementById('dahu-rotation-canvas');
+  if(!canvas) return;
+  var rect = canvas.getBoundingClientRect();
+  var wasEmpty = Object.keys(_dahuPointers).length === 0;
+  if(canvas.setPointerCapture){ try{ canvas.setPointerCapture(e.pointerId); }catch(_e){} }
+  _dahuPointers[e.pointerId] = {x:e.clientX-rect.left, y:e.clientY-rect.top};
+  if(wasEmpty){ _dahuGestureMoved = false; _dahuGestureHadMultiTouch = false; }
+  var ids = Object.keys(_dahuPointers);
+  if(ids.length === 1){
+    _dahuPanStart = {x:_dahuPointers[ids[0]].x, y:_dahuPointers[ids[0]].y, tx:_dahuChartView.tx, ty:_dahuChartView.ty};
+    _dahuPinchStart = null;
+  } else if(ids.length === 2){
+    _dahuGestureHadMultiTouch = true;
+    _dahuPanStart = null;
+    var p = ids.map(function(id){ return _dahuPointers[id]; });
+    var dx = p[0].x-p[1].x, dy = p[0].y-p[1].y;
+    _dahuPinchStart = {
+      dist: Math.sqrt(dx*dx+dy*dy) || 1,
+      scale: _dahuChartView.scale,
+      midX: (p[0].x+p[1].x)/2, midY: (p[0].y+p[1].y)/2
+    };
+  }
+}
+
+function _dahuPointerMove(e){
+  if(!_dahuPointers[e.pointerId]) return;
+  var canvas = document.getElementById('dahu-rotation-canvas');
+  if(!canvas) return;
+  var rect = canvas.getBoundingClientRect();
+  _dahuPointers[e.pointerId] = {x:e.clientX-rect.left, y:e.clientY-rect.top};
+  var ids = Object.keys(_dahuPointers);
+  if(ids.length === 1 && _dahuPanStart){
+    var cur = _dahuPointers[ids[0]];
+    var dx = cur.x-_dahuPanStart.x, dy = cur.y-_dahuPanStart.y;
+    if(Math.abs(dx)>3 || Math.abs(dy)>3) _dahuGestureMoved = true;
+    _dahuChartView.tx = _dahuPanStart.tx + dx;
+    _dahuChartView.ty = _dahuPanStart.ty + dy;
+    _dahuUpdateResetBtn();
+    _dahuRedraw();
+  } else if(ids.length === 2 && _dahuPinchStart){
+    var p = ids.map(function(id){ return _dahuPointers[id]; });
+    var dx2 = p[0].x-p[1].x, dy2 = p[0].y-p[1].y;
+    var dist = Math.sqrt(dx2*dx2+dy2*dy2) || 1;
+    var newScale = Math.max(1, Math.min(6, _dahuPinchStart.scale*(dist/_dahuPinchStart.dist)));
+    var midX = (p[0].x+p[1].x)/2, midY = (p[0].y+p[1].y)/2;
+    // 縮放時讓兩指中心點在畫面上對應的內容座標維持不動，才不會邊縮邊亂飄
+    var localX = (_dahuPinchStart.midX - _dahuChartView.tx) / _dahuChartView.scale;
+    var localY = (_dahuPinchStart.midY - _dahuChartView.ty) / _dahuChartView.scale;
+    _dahuChartView.scale = newScale;
+    _dahuChartView.tx = midX - localX*newScale;
+    _dahuChartView.ty = midY - localY*newScale;
+    _dahuGestureMoved = true;
+    _dahuUpdateResetBtn();
+    _dahuRedraw();
+  }
+}
+
+function _dahuPointerEnd(e){
+  delete _dahuPointers[e.pointerId];
+  var ids = Object.keys(_dahuPointers);
+  if(ids.length < 2) _dahuPinchStart = null;
+  if(ids.length < 1) _dahuPanStart = null;
+  if(_dahuGestureMoved){
+    // 只有「單指拖曳」放開手指後，瀏覽器才會補一個click事件、需要攔下來；
+    // 雙指縮放放開手指通常不會觸發click，這裡不設旗標，避免下一次正常單點被誤判成手勢殘留而吃掉
+    if(!_dahuGestureHadMultiTouch) _dahuJustGestured = true;
+    _dahuClampView();
+    _dahuUpdateResetBtn();
+    _dahuRedraw();
+  }
+}
+
+function _dahuWheelZoom(e){
+  e.preventDefault();
+  var canvas = document.getElementById('dahu-rotation-canvas');
+  if(!canvas) return;
+  var rect = canvas.getBoundingClientRect();
+  var mx = e.clientX-rect.left, my = e.clientY-rect.top;
+  var factor = e.deltaY < 0 ? 1.15 : (1/1.15);
+  var newScale = Math.max(1, Math.min(6, _dahuChartView.scale*factor));
+  var localX = (mx - _dahuChartView.tx) / _dahuChartView.scale;
+  var localY = (my - _dahuChartView.ty) / _dahuChartView.scale;
+  _dahuChartView.scale = newScale;
+  _dahuChartView.tx = mx - localX*newScale;
+  _dahuChartView.ty = my - localY*newScale;
+  _dahuClampView();
+  _dahuUpdateResetBtn();
+  _dahuRedraw();
+}
+
+function _dahuSetupChartGestures(){
+  if(_dahuGestureBound) return;
+  var canvas = document.getElementById('dahu-rotation-canvas');
+  if(!canvas) return;
+  _dahuGestureBound = true;
+  canvas.addEventListener('pointerdown', _dahuPointerDown);
+  canvas.addEventListener('pointermove', _dahuPointerMove);
+  canvas.addEventListener('pointerup', _dahuPointerEnd);
+  canvas.addEventListener('pointercancel', _dahuPointerEnd);
+  canvas.addEventListener('pointerleave', _dahuPointerEnd);
+  canvas.addEventListener('wheel', _dahuWheelZoom, {passive:false});
+}
+
+// 簡單的圓圈碰撞避讓：兩顆泡泡重疊時，沿著連心線各自推開重疊量的一半，跑幾輪讓大部分重疊消掉
+function _resolveDahuCollisions(nodes, iterations, bounds){
+  for(var iter=0; iter<iterations; iter++){
+    for(var i=0; i<nodes.length; i++){
+      for(var j=i+1; j<nodes.length; j++){
+        var a = nodes[i], b = nodes[j];
+        var dx = b.x-a.x, dy = b.y-a.y;
+        var dist = Math.sqrt(dx*dx+dy*dy) || 0.01;
+        var minDist = a.r+b.r+2;
+        if(dist < minDist){
+          var overlap = (minDist-dist)/2;
+          var ux = dx/dist, uy = dy/dist;
+          a.x -= ux*overlap; a.y -= uy*overlap;
+          b.x += ux*overlap; b.y += uy*overlap;
+        }
+      }
+    }
+    nodes.forEach(function(n){
+      n.x = Math.max(bounds.l+n.r, Math.min(bounds.r-n.r, n.x));
+      n.y = Math.max(bounds.t+n.r, Math.min(bounds.b-n.r, n.y));
+    });
+  }
+}
+
+function drawDahuRotationChart(ctx, W, H, groups){
+  ctx.clearRect(0,0,W,H);
+  ctx.save();
+  ctx.translate(_dahuChartView.tx, _dahuChartView.ty);
+  ctx.scale(_dahuChartView.scale, _dahuChartView.scale);
+  // canvas畫不出CSS變數(var(--x))，先讀出目前主題實際色碼，畫圖時直接用色碼（K線圖也是用一樣的作法）
+  var _cs = getComputedStyle(document.documentElement);
+  var colText = (_cs.getPropertyValue('--text-primary')||'').trim() || '#e6edf3';
+  var colText2 = (_cs.getPropertyValue('--text-secondary')||'').trim() || '#8b949e';
+  var colTextDim = (_cs.getPropertyValue('--text-dim')||'').trim() || '#6e7681';
+  var colGrid = (_cs.getPropertyValue('--border')||'').trim() || '#30363d';
+
+  var PAD = {t:34, b:34, l:44, r:14};
+  var plotW = W-PAD.l-PAD.r, plotH = H-PAD.t-PAD.b;
+
+  var xMin=0, xMax=100, xThresh=70, yThresh=20;
+  var chais = groups.map(function(g){ return g.avgChai; });
+  var yMin = Math.min.apply(null, chais.concat([0]));
+  var yMax = Math.max.apply(null, chais.concat([yThresh]));
+  var yPad = (yMax-yMin)*0.18 || 10;
+  yMin -= yPad; yMax += yPad;
+
+  function px(v){ return PAD.l + Math.max(0,Math.min(1,(v-xMin)/(xMax-xMin)))*plotW; }
+  function py(v){ return PAD.t + plotH - Math.max(0,Math.min(1,(v-yMin)/(yMax-yMin)))*plotH; }
+
+  // 背景四象限分隔線
+  ctx.strokeStyle = colGrid; ctx.lineWidth = 1; ctx.setLineDash([4,3]);
+  ctx.beginPath(); ctx.moveTo(px(xThresh), PAD.t); ctx.lineTo(px(xThresh), H-PAD.b); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(PAD.l, py(yThresh)); ctx.lineTo(W-PAD.r, py(yThresh)); ctx.stroke();
+  ctx.setLineDash([]);
+  // 外框
+  ctx.strokeStyle = colGrid; ctx.lineWidth = 1;
+  ctx.strokeRect(PAD.l, PAD.t, plotW, plotH);
+
+  // 四象限標籤（依浦男搜股簡報命名）：仿簡報做法，每個象限名稱後面加一塊有色底色的小標籤，
+  // 字體加大加粗，比純文字更醒目，一眼就看出四個區塊分別代表什麼
+  function quadLabel(text, x, y, align, bg, fg){
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = align;
+    var w = ctx.measureText(text).width + 10;
+    var bx = align==='right' ? x-w : x;
+    ctx.fillStyle = bg;
+    if(ctx.roundRect){ ctx.beginPath(); ctx.roundRect(bx, y-11, w, 16, 4); ctx.fill(); }
+    else { ctx.fillRect(bx, y-11, w, 16); }
+    ctx.fillStyle = fg;
+    ctx.textAlign = 'center';
+    ctx.fillText(text, bx+w/2, y);
+  }
+  quadLabel('領先區(強勢主流)', W-PAD.r-4, PAD.t+14, 'right', '#3fb95033', '#3fb950');
+  quadLabel('改善區(籌碼改善中)', PAD.l+4, PAD.t+14, 'left', '#1f6feb33', '#58a6ff');
+  quadLabel('落後區(弱勢觀望)', PAD.l+4, H-PAD.b-8, 'left', colGrid, colTextDim);
+  quadLabel('弱化區(資金退潮)', W-PAD.r-4, H-PAD.b-8, 'right', '#d2992233', '#d29922');
+
+  // 門檻數值標示：X軸70%、Y軸20%分界線各自標上數字，並用紅/綠小圓點標出「強/弱」方向，
+  // 呼應簡報右側的強弱圖例
+  ctx.font = 'bold 10px sans-serif'; ctx.fillStyle = colText;
+  ctx.textAlign = 'center'; ctx.fillText('70%', px(xThresh), H-PAD.b+13);
+  ctx.textAlign = 'right'; ctx.fillText('20%', PAD.l-4, py(yThresh)+3);
+  ctx.font = '9px sans-serif'; ctx.fillStyle = colTextDim;
+  ctx.textAlign = 'right'; ctx.fillText('0%', PAD.l-4, py(0)+3);
+
+  // 泡泡座標與碰撞避讓：groups參數現在是「拆過的子象限泡泡」（每顆都只屬於單一象限），
+  // 大小依該子群檔數決定，顏色直接用象限色（跟四個角落的象限標籤同一套配色），
+  // 不用像以前那樣再另外畫一條組內分佈色條——泡泡本身的位置/顏色/大小就是分佈的真相
+  var counts = groups.map(function(g){ return g.count; });
+  var minCount = Math.min.apply(null, counts), maxCount = Math.max.apply(null, counts);
+  function pr(c){
+    var t = maxCount>minCount ? (c-minCount)/(maxCount-minCount) : 1;
+    return 12 + 34*Math.sqrt(t);
+  }
+  var nodes = groups.map(function(g){
+    return { tag:g.tag, qLabel:g.qLabel, x:px(g.avgBuy), y:py(g.avgChai), r:pr(g.count), avgBuy:g.avgBuy, avgChai:g.avgChai, count:g.count };
+  });
+  _resolveDahuCollisions(nodes, 50, {l:PAD.l, r:W-PAD.r, t:PAD.t, b:H-PAD.b});
+  _dahuRotationLastNodes = nodes;
+
+  var colPanel = (_cs.getPropertyValue('--bg-panel')||'').trim() || '#161b22';
+  var sortedNodes = nodes.slice().sort(function(a,b){ return b.r-a.r; });
+  sortedNodes.forEach(function(node){
+    var color = _dahuQuadColorHex(node.qLabel, _cs);
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, node.r, 0, Math.PI*2);
+    ctx.fillStyle = color+'55';
+    ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.3;
+    ctx.stroke();
+    if(node.r > 16){
+      ctx.fillStyle = colText;
+      ctx.font = 'bold '+Math.min(12, 8+node.r*0.12).toFixed(0)+'px sans-serif';
+      ctx.textAlign = 'center';
+      var label = node.tag.length > 6 ? node.tag.slice(0,6)+'…' : node.tag;
+      ctx.fillText(label, node.x, node.y-2);
+      ctx.font = 'bold '+Math.min(11, 7+node.r*0.1).toFixed(0)+'px sans-serif';
+      ctx.fillStyle = color;
+      ctx.fillText(node.qLabel+'（'+node.count+'）', node.x, node.y+11);
+    }
+  });
+
+  // 太小塞不下兩行字的泡泡，之前完全沒有標示，看起來像沒東西的空心圈——
+  // 改成在泡泡外面補一個小標籤（跟個股散點圖同一套防重疊排版），大泡泡本身的圓
+  // 也算進「已佔用區域」，小標籤會盡量避開，不會疊在大泡泡上面
+  ctx.font = '8px sans-serif';
+  var placedBoxes = nodes.filter(function(n){ return n.r > 16; }).map(function(n){
+    return {l:n.x-n.r, r:n.x+n.r, t:n.y-n.r, b:n.y+n.r};
+  });
+  var smallByImportance = nodes.filter(function(n){ return n.r <= 16; }).sort(function(a,b){ return b.r-a.r; });
+  smallByImportance.forEach(function(node){
+    var tagShort = node.tag.length > 5 ? node.tag.slice(0,5)+'…' : node.tag;
+    var label = tagShort+'·'+node.qLabel;
+    var tw = ctx.measureText(label).width, th = 9;
+    var candidates = [
+      {dx:0, dy:-(node.r+8)},
+      {dx:0, dy:(node.r+10)},
+      {dx:(node.r+tw/2+3), dy:0},
+      {dx:-(node.r+tw/2+3), dy:0},
+      {dx:(node.r+tw/2+3), dy:-(node.r+6)},
+      {dx:-(node.r+tw/2+3), dy:-(node.r+6)},
+      {dx:(node.r+tw/2+3), dy:(node.r+8)},
+      {dx:-(node.r+tw/2+3), dy:(node.r+8)}
+    ];
+    var chosen = candidates[0];
+    for(var i=0;i<candidates.length;i++){
+      var c = candidates[i];
+      var cx = node.x+c.dx, cy = node.y+c.dy;
+      var box = {l:cx-tw/2-1, r:cx+tw/2+1, t:cy-th/2-1, b:cy+th/2+1};
+      var hit = false;
+      for(var j=0;j<placedBoxes.length;j++){
+        var p = placedBoxes[j];
+        if(!(box.r<p.l || box.l>p.r || box.b<p.t || box.t>p.b)){ hit=true; break; }
+      }
+      if(!hit){ chosen = c; break; }
+    }
+    var lx = node.x+chosen.dx, ly = node.y+chosen.dy;
+    placedBoxes.push({l:lx-tw/2-1, r:lx+tw/2+1, t:ly-th/2-1, b:ly+th/2+1});
+    var color = _dahuQuadColorHex(node.qLabel, _cs);
+    ctx.textAlign = 'center';
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = colPanel;
+    ctx.strokeText(label, lx, ly+3);
+    ctx.fillStyle = color;
+    ctx.fillText(label, lx, ly+3);
+  });
+
+  // X/Y軸端點文字
+  ctx.font = '10px sans-serif'; ctx.fillStyle = colText2;
+  ctx.textAlign = 'left'; ctx.fillText('主力參與低', PAD.l, H-PAD.b+22);
+  ctx.textAlign = 'right'; ctx.fillText('大戶買賣比(%)：主力參與高 →', W-PAD.r, H-PAD.b+22);
+  ctx.textAlign = 'left'; ctx.fillText('↑大戶差比(%)：買超力道', PAD.l, PAD.t-8);
+  ctx.restore();
+}
+
+// 個股檢視的繪圖：跟族群泡泡圖用同一套象限背景/軸線，但每個點是單一檔股票本身的
+// 大戶買賣比/大戶差比座標，顏色依它落在哪個象限直接上色（領先綠/改善藍/弱化橘/落後灰），
+// 呼應四個角落的象限標籤色，不用點進去就能看出哪些股票在哪一區
+function drawDahuRotationStockChart(ctx, W, H, stocks){
+  ctx.clearRect(0,0,W,H);
+  ctx.save();
+  ctx.translate(_dahuChartView.tx, _dahuChartView.ty);
+  ctx.scale(_dahuChartView.scale, _dahuChartView.scale);
+  var _cs = getComputedStyle(document.documentElement);
+  var colText = (_cs.getPropertyValue('--text-primary')||'').trim() || '#e6edf3';
+  var colText2 = (_cs.getPropertyValue('--text-secondary')||'').trim() || '#8b949e';
+  var colTextDim = (_cs.getPropertyValue('--text-dim')||'').trim() || '#6e7681';
+  var colGrid = (_cs.getPropertyValue('--border')||'').trim() || '#30363d';
+
+  var PAD = {t:34, b:34, l:44, r:14};
+  var plotW = W-PAD.l-PAD.r, plotH = H-PAD.t-PAD.b;
+
+  var xMin=0, xMax=100, xThresh=70, yThresh=20;
+  var chais = stocks.map(function(s){ return s.dahuchai; });
+  var yMin = Math.min.apply(null, chais.concat([0]));
+  var yMax = Math.max.apply(null, chais.concat([yThresh]));
+  var yPad = (yMax-yMin)*0.12 || 10;
+  yMin -= yPad; yMax += yPad;
+
+  function px(v){ return PAD.l + Math.max(0,Math.min(1,(v-xMin)/(xMax-xMin)))*plotW; }
+  function py(v){ return PAD.t + plotH - Math.max(0,Math.min(1,(v-yMin)/(yMax-yMin)))*plotH; }
+
+  ctx.strokeStyle = colGrid; ctx.lineWidth = 1; ctx.setLineDash([4,3]);
+  ctx.beginPath(); ctx.moveTo(px(xThresh), PAD.t); ctx.lineTo(px(xThresh), H-PAD.b); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(PAD.l, py(yThresh)); ctx.lineTo(W-PAD.r, py(yThresh)); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.strokeStyle = colGrid; ctx.lineWidth = 1;
+  ctx.strokeRect(PAD.l, PAD.t, plotW, plotH);
+
+  function quadLabel(text, x, y, align, bg, fg){
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = align;
+    var w = ctx.measureText(text).width + 10;
+    var bx = align==='right' ? x-w : x;
+    ctx.fillStyle = bg;
+    if(ctx.roundRect){ ctx.beginPath(); ctx.roundRect(bx, y-11, w, 16, 4); ctx.fill(); }
+    else { ctx.fillRect(bx, y-11, w, 16); }
+    ctx.fillStyle = fg;
+    ctx.textAlign = 'center';
+    ctx.fillText(text, bx+w/2, y);
+  }
+  quadLabel('領先區(強勢主流)', W-PAD.r-4, PAD.t+14, 'right', '#3fb95033', '#3fb950');
+  quadLabel('改善區(籌碼改善中)', PAD.l+4, PAD.t+14, 'left', '#1f6feb33', '#58a6ff');
+  quadLabel('落後區(弱勢觀望)', PAD.l+4, H-PAD.b-8, 'left', colGrid, colTextDim);
+  quadLabel('弱化區(資金退潮)', W-PAD.r-4, H-PAD.b-8, 'right', '#d2992233', '#d29922');
+
+  ctx.font = 'bold 10px sans-serif'; ctx.fillStyle = colText;
+  ctx.textAlign = 'center'; ctx.fillText('70%', px(xThresh), H-PAD.b+13);
+  ctx.textAlign = 'right'; ctx.fillText('20%', PAD.l-4, py(yThresh)+3);
+  ctx.font = '9px sans-serif'; ctx.fillStyle = colTextDim;
+  ctx.textAlign = 'right'; ctx.fillText('0%', PAD.l-4, py(0)+3);
+
+  var colPanel = (_cs.getPropertyValue('--bg-panel')||'').trim() || '#161b22';
+  var turnvals = stocks.map(function(s){ return s.turnval||0; });
+  var minTv = Math.min.apply(null, turnvals), maxTv = Math.max.apply(null, turnvals);
+  function pr(tv){
+    var t = maxTv>minTv ? (tv-minTv)/(maxTv-minTv) : 0.5;
+    return 3 + 4*Math.sqrt(Math.max(0,t)); // 縮小點的尺寸差異，讓點跟點之間留更多空間放文字
+  }
+  var nodes = stocks.map(function(s){
+    var q = _dahuStockQuadrant(s.dahubuy, s.dahuchai);
+    return { code:s.code, name:s.name, x:px(s.dahubuy), y:py(s.dahuchai), r:pr(s.turnval||0), dahubuy:s.dahubuy, dahuchai:s.dahuchai, qLabel:q.label, qFg:_dahuQuadColorHex(q.label, _cs) };
+  });
+  // 數值相近的股票會被畫在幾乎同一個座標，點會疊在一起、名字也會蓋住彼此，
+  // 先用跟族群泡泡圖同一套碰撞避讓，把點稍微推開，後面排文字才有機會排得開
+  _resolveDahuCollisions(nodes, 60, {l:PAD.l, r:W-PAD.r, t:PAD.t, b:H-PAD.b});
+  _dahuRotationLastNodes = nodes;
+
+  // 每一檔股票都要有名字可以辨認，不能只標大點——用簡單的貪婪演算法幫每個點找一個
+  // 不會跟其他標籤重疊的位置（先試正上方，不行換下方/左右/斜角），且優先讓成交值大
+  // （點比較大、比較重要）的股票拿到理想位置
+  ctx.font = '8px sans-serif';
+  var placedBoxes = [];
+  var byImportance = nodes.slice().sort(function(a,b){ return b.r-a.r; });
+  byImportance.forEach(function(node){
+    var label = node.name.length > 4 ? node.name.slice(0,4)+'…' : node.name;
+    var tw = ctx.measureText(label).width, th = 9;
+    var candidates = [
+      {dx:0, dy:-(node.r+8)},
+      {dx:0, dy:(node.r+10)},
+      {dx:(node.r+tw/2+3), dy:0},
+      {dx:-(node.r+tw/2+3), dy:0},
+      {dx:(node.r+tw/2+3), dy:-(node.r+6)},
+      {dx:-(node.r+tw/2+3), dy:-(node.r+6)},
+      {dx:(node.r+tw/2+3), dy:(node.r+8)},
+      {dx:-(node.r+tw/2+3), dy:(node.r+8)}
+    ];
+    var chosen = candidates[0];
+    for(var i=0;i<candidates.length;i++){
+      var c = candidates[i];
+      var cx = node.x+c.dx, cy = node.y+c.dy;
+      var box = {l:cx-tw/2-1, r:cx+tw/2+1, t:cy-th/2-1, b:cy+th/2+1};
+      var hit = false;
+      for(var j=0;j<placedBoxes.length;j++){
+        var p = placedBoxes[j];
+        if(!(box.r<p.l || box.l>p.r || box.b<p.t || box.t>p.b)){ hit=true; break; }
+      }
+      if(!hit){ chosen = c; break; }
+    }
+    node._labelX = node.x+chosen.dx;
+    node._labelY = node.y+chosen.dy;
+    node._labelText = label;
+    placedBoxes.push({l:node._labelX-tw/2-1, r:node._labelX+tw/2+1, t:node._labelY-th/2-1, b:node._labelY+th/2+1});
+  });
+
+  var sortedNodes = nodes.slice().sort(function(a,b){ return b.r-a.r; });
+  sortedNodes.forEach(function(node){
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, node.r, 0, Math.PI*2);
+    ctx.fillStyle = node.qFg+'aa';
+    ctx.fill();
+    ctx.strokeStyle = node.qFg;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  });
+  // 文字最後統一畫在所有點的上面，並先描一層底色外框（跟象限背景色一樣深淺），
+  // 這樣字疊在彩色點或格線上也還是看得清楚
+  ctx.font = '8px sans-serif';
+  ctx.textAlign = 'center';
+  sortedNodes.forEach(function(node){
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = colPanel;
+    ctx.strokeText(node._labelText, node._labelX, node._labelY+3);
+    ctx.fillStyle = colText;
+    ctx.fillText(node._labelText, node._labelX, node._labelY+3);
+  });
+
+  ctx.font = '10px sans-serif'; ctx.fillStyle = colText2;
+  ctx.textAlign = 'left'; ctx.fillText('主力參與低', PAD.l, H-PAD.b+22);
+  ctx.textAlign = 'right'; ctx.fillText('大戶買賣比(%)：主力參與高 →', W-PAD.r, H-PAD.b+22);
+  ctx.textAlign = 'left'; ctx.fillText('↑大戶差比(%)：買超力道', PAD.l, PAD.t-8);
+  ctx.restore();
+}
+
+function dahuRotationCanvasClick(e){
+  if(_dahuJustGestured){ _dahuJustGestured = false; return; } // 剛拖曳/縮放完放開手指觸發的click，不要當成點擊選取
+  if(!_dahuRotationLastNodes) return;
+  var canvas = document.getElementById('dahu-rotation-canvas');
+  var rect = canvas.getBoundingClientRect();
+  var sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+  // 點座標是螢幕(CSS像素)空間，泡泡/點的座標是縮放平移前的內容座標，先反向套用目前的view transform換算回內容座標
+  var x = (sx - _dahuChartView.tx) / _dahuChartView.scale;
+  var y = (sy - _dahuChartView.ty) / _dahuChartView.scale;
+  for(var i=0; i<_dahuRotationLastNodes.length; i++){
+    var n = _dahuRotationLastNodes[i];
+    var dx = x-n.x, dy = y-n.y;
+    var hitR = Math.max(n.r, 10/_dahuChartView.scale); // 熱區至少給10個「螢幕」像素方便手指點擊，換算回內容座標要除以縮放倍率
+    if(Math.sqrt(dx*dx+dy*dy) <= hitR){
+      if(n.code){ jumpFromDahuRotation(n.code); } // 個股檢視：直接跳去該檔股票卡片
+      else { openDahuRotationDetail(n.tag); }     // 族群檢視：開啟族群明細
+      return;
+    }
+  }
+}
+
+function _dahuValColor(v, kind){
+  if(v===null||v===undefined) return {bg:'var(--bg-panel-alt)', fg:'var(--text-secondary)'};
+  if(kind==='buy'){
+    if(v>=70) return {bg:'#f8514933', fg:'#f85149'};
+    if(v<30) return {bg:'#3fb95033', fg:'#3fb950'};
+    return {bg:'var(--bg-panel-alt)', fg:'var(--text-primary)'};
+  }
+  if(v>0) return {bg:'#f8514933', fg:'#f85149'};
+  if(v<0) return {bg:'#3fb95033', fg:'#3fb950'};
+  return {bg:'var(--bg-panel-alt)', fg:'var(--text-primary)'};
+}
+
+// 依個股自己的大戶買賣比/大戶差比，判斷它落在哪個象限（跟主圖泡泡用同一套70%/20%門檻）
+function _dahuStockQuadrant(dahubuy, dahuchai){
+  if(dahubuy===null||dahubuy===undefined||dahuchai===null||dahuchai===undefined){
+    return { label:'--', bg:'var(--bg-panel-alt)', fg:'var(--text-dim)' };
+  }
+  var strong = dahubuy>=70, hi = dahuchai>=20;
+  if(strong && hi) return { label:'領先', bg:'#3fb95033', fg:'#3fb950' };
+  if(!strong && hi) return { label:'改善', bg:'#1f6feb33', fg:'#58a6ff' };
+  if(strong && !hi) return { label:'弱化', bg:'#d2992233', fg:'#d29922' };
+  return { label:'落後', bg:'var(--bg-panel-alt)', fg:'var(--text-secondary)' };
+}
+function openDahuRotationDetail(tag){
+  var g = _dahuRotationGroups.filter(function(x){ return x.tag===tag; })[0];
+  if(!g) return;
+  document.getElementById('dahu-rotation-detail-title').textContent = tag+'（'+g.count+'）';
+  var rows = g.stocks.slice().sort(function(a,b){ return (b.dahuchai||0)-(a.dahuchai||0); });
+  var body = rows.map(function(s){
+    var bc = _dahuValColor(s.dahubuy, 'buy');
+    var cc = _dahuValColor(s.dahuchai, 'chai');
+    var qc = _dahuStockQuadrant(s.dahubuy, s.dahuchai);
+    var pctStr = s.pct!==null&&s.pct!==undefined ? ((s.pct>0?'+':'')+s.pct.toFixed(1)+'%') : '--';
+    var pctColor = s.pct>0?'#f85149':s.pct<0?'#3fb950':'var(--text-secondary)';
+    return '<div onclick="jumpFromDahuRotation(\''+s.code+'\')" style="display:flex;align-items:center;gap:6px;padding:8px 6px;border-bottom:1px solid var(--border);cursor:pointer;">'
+      +'<span style="color:var(--text-secondary);font-family:monospace;font-size:11px;flex-shrink:0;width:42px;">'+s.code+'</span>'
+      +'<span style="color:var(--text-primary);font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+s.name+'</span>'
+      +'<span style="font-size:11px;flex-shrink:0;width:52px;text-align:right;color:'+pctColor+'">'+pctStr+'</span>'
+      +'<span style="font-size:11px;font-weight:700;flex-shrink:0;padding:2px 5px;border-radius:4px;background:'+bc.bg+';color:'+bc.fg+';width:44px;text-align:center;">'+(s.dahubuy!==null&&s.dahubuy!==undefined?s.dahubuy.toFixed(0):'--')+'</span>'
+      +'<span style="font-size:11px;font-weight:700;flex-shrink:0;padding:2px 5px;border-radius:4px;background:'+cc.bg+';color:'+cc.fg+';width:44px;text-align:center;">'+(s.dahuchai!==null&&s.dahuchai!==undefined?((s.dahuchai>0?'+':'')+s.dahuchai.toFixed(0)):'--')+'</span>'
+      +'<span style="font-size:11px;font-weight:700;flex-shrink:0;padding:2px 5px;border-radius:4px;background:'+qc.bg+';color:'+qc.fg+';width:36px;text-align:center;">'+qc.label+'</span>'
+    +'</div>';
+  }).join('');
+  document.getElementById('dahu-rotation-detail-body').innerHTML =
+    '<div style="display:flex;align-items:center;gap:6px;padding:0 6px 8px;font-size:10px;color:var(--text-dim);border-bottom:1px solid var(--border);margin-bottom:2px;">'
+    +'<span style="width:42px;flex-shrink:0;">代碼</span><span style="flex:1;">商品</span><span style="width:52px;flex-shrink:0;text-align:right;">漲跌%</span>'
+    +'<span style="width:44px;flex-shrink:0;text-align:center;">買賣比</span><span style="width:44px;flex-shrink:0;text-align:center;">差比</span>'
+    +'<span style="width:36px;flex-shrink:0;text-align:center;">分區</span>'
+    +'</div>'
+    + body;
+  document.getElementById('dahu-rotation-detail').style.display = 'flex';
+}
+function closeDahuRotationDetail(){
+  document.getElementById('dahu-rotation-detail').style.display = 'none';
+}
+function jumpFromDahuRotation(code){
+  document.getElementById('dahu-rotation-detail').style.display = 'none';
+  document.getElementById('dahu-rotation-modal').style.display = 'none';
+  sel = [];
+  window._hcatCodes = null;
+  renderSelTags();
+  render();
+  jumpToCardWithFilter(code, null, null);
+}
 // 市場參考看板：原油／美元指數／VIX／美債殖利率，透過 Apps Script 代理 Yahoo Finance
 var MACRO_LABELS = {
   oil:   {name:'布蘭特原油', unit:'US$', url:'https://www.cnbc.com/quotes/@LCO.1',
@@ -4514,6 +4904,7 @@ function openEconCalendar(){
     script.async = true;
     script.textContent = JSON.stringify({
       colorTheme: 'dark',
+
       isTransparent: false,
       width: '100%',
       height: '100%',
