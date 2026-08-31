@@ -4096,6 +4096,7 @@ function openDahuRotationBoard(){
 }
 function closeDahuRotationBoard(){
   document.getElementById('dahu-rotation-modal').style.display = 'none';
+  _dahuFreeCanvas();
 }
 
 // canvas畫不出CSS變數，_dahuStockQuadrant() 給HTML標籤用的顏色裡「落後」是 var(--text-secondary)，
@@ -4204,6 +4205,7 @@ function switchDahuRotationMode(mode){
     wrap.style.display = 'none';
     listEl.style.display = 'block';
     if(legendEl) legendEl.style.display = 'none'; // 列表本身欄位就很清楚了，不用再重複顯示四象限說明
+    _dahuFreeCanvas(); // 切到列表模式canvas會被藏起來，順便釋放記憶體
     renderDahuRotationList();
   } else {
     listEl.style.display = 'none';
@@ -4357,6 +4359,17 @@ function _dahuUpdateResetBtn(){
   if(!btn) return;
   var changed = Math.abs(_dahuChartView.scale-1) > 0.01 || Math.abs(_dahuChartView.tx) > 1 || Math.abs(_dahuChartView.ty) > 1;
   btn.style.display = changed ? 'block' : 'none';
+}
+
+// iOS Safari 有個已知行為：canvas 只用 display:none 藏起來，並不會釋放它原本佔用的
+// GPU/記憶體（尤其是Retina解析度的canvas），輪動圖開開關關幾次、或反覆切到列表模式再切回來，
+// 沒被釋放的記憶體會一直往上疊，最後被系統判定分頁「有問題」直接把分頁砍掉重載。
+// 把canvas的width/height歸零可以真正釋放這塊記憶體；之後真的要再畫圖時 renderDahuRotationChart()
+// 本來就會重新設定寬高，所以歸零不會影響下次正常顯示。
+function _dahuFreeCanvas(){
+  var canvas = document.getElementById('dahu-rotation-canvas');
+  if(canvas){ canvas.width = 0; canvas.height = 0; }
+  _dahuRotationDrawCache = null; // 快取的ctx跟著canvas一起作廢，避免縮放/平移還想畫一個已經歸零的canvas
 }
 
 function _dahuResetView(){
@@ -4873,10 +4886,14 @@ function closeDahuRotationDetail(){
 function jumpFromDahuRotation(code){
   document.getElementById('dahu-rotation-detail').style.display = 'none';
   document.getElementById('dahu-rotation-modal').style.display = 'none';
+  _dahuFreeCanvas();
+  var hadFilter = (sel && sel.length>0) || !!window._hcatCodes; // 沒有篩選條件在跑的話，卡片列表本來就已經是目前這份，不用整份重畫
   sel = [];
   window._hcatCodes = null;
-  renderSelTags();
-  render();
+  if(hadFilter){
+    renderSelTags();
+    render();
+  }
   jumpToCardWithFilter(code, null, null);
 }
 // 市場參考看板：原油／美元指數／VIX／美債殖利率，透過 Apps Script 代理 Yahoo Finance
