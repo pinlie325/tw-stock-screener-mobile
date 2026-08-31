@@ -4096,7 +4096,7 @@ function openDahuRotationBoard(){
 }
 function closeDahuRotationBoard(){
   document.getElementById('dahu-rotation-modal').style.display = 'none';
-  _dahuFreeCanvas();
+  _dahuFreeCanvasDeferred();
 }
 
 // canvas畫不出CSS變數，_dahuStockQuadrant() 給HTML標籤用的顏色裡「落後」是 var(--text-secondary)，
@@ -4205,7 +4205,7 @@ function switchDahuRotationMode(mode){
     wrap.style.display = 'none';
     listEl.style.display = 'block';
     if(legendEl) legendEl.style.display = 'none'; // 列表本身欄位就很清楚了，不用再重複顯示四象限說明
-    _dahuFreeCanvas(); // 切到列表模式canvas會被藏起來，順便釋放記憶體
+    _dahuFreeCanvasDeferred(); // 切到列表模式canvas會被藏起來，順便釋放記憶體
     renderDahuRotationList();
   } else {
     listEl.style.display = 'none';
@@ -4370,6 +4370,13 @@ function _dahuFreeCanvas(){
   var canvas = document.getElementById('dahu-rotation-canvas');
   if(canvas){ canvas.width = 0; canvas.height = 0; }
   _dahuRotationDrawCache = null; // 快取的ctx跟著canvas一起作廢，避免縮放/平移還想畫一個已經歸零的canvas
+  _dahuRotationLastNodes = null; // 泡泡/點的節點陣列（可能牽著整批股票物件的參照）一起放掉，讓GC有機會回收
+  _dahuRotationGroups = [];
+}
+// 跟 _dahuFreeCanvas 一樣的釋放動作，但延到下一個tick才執行——避免跟同一次點擊裡
+// 緊接著要做的其他DOM操作（例如跳轉卡片時的捲動/highlight）在iOS上撞在一起
+function _dahuFreeCanvasDeferred(){
+  setTimeout(_dahuFreeCanvas, 0);
 }
 
 function _dahuResetView(){
@@ -4886,15 +4893,22 @@ function closeDahuRotationDetail(){
 function jumpFromDahuRotation(code){
   document.getElementById('dahu-rotation-detail').style.display = 'none';
   document.getElementById('dahu-rotation-modal').style.display = 'none';
-  _dahuFreeCanvas();
-  var hadFilter = (sel && sel.length>0) || !!window._hcatCodes; // 沒有篩選條件在跑的話，卡片列表本來就已經是目前這份，不用整份重畫
+  _dahuFreeCanvasDeferred();
   sel = [];
   window._hcatCodes = null;
-  if(hadFilter){
-    renderSelTags();
-    render();
+  renderSelTags();
+  // 改用跟「大聲公」標籤跳轉同一套機制：直接把代碼填進搜尋框觸發搜尋，
+  // 而不是原本的「整份卡片一起重render，再用setTimeout去DOM裡找那張卡片捲過去、閃一下外框」。
+  // 後者這條路徑在手機上會當機（換哪支股票都一樣，只要是從輪動圖跳轉就會），搜尋框這條路徑
+  // 是app裡本來就有、一直穩定在用的既有功能，用同一套風險最低。
+  gnActiveJumpCode = code;
+  var searchInput = document.getElementById('fsearch');
+  if(searchInput){
+    searchInput.value = code;
+    doSearch(code, true);
+    toggleClear(code);
   }
-  jumpToCardWithFilter(code, null, null);
+  window.scrollTo({top:0, behavior:'smooth'});
 }
 // 市場參考看板：原油／美元指數／VIX／美債殖利率，透過 Apps Script 代理 Yahoo Finance
 var MACRO_LABELS = {
