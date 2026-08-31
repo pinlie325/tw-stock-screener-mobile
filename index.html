@@ -4047,8 +4047,16 @@ function jumpFromMarginReport(code){
   sel = [];
   window._hcatCodes = null;
   renderSelTags();
-  render();
-  jumpToCardWithFilter(code, null, null);
+  // 跟大戶籌碼輪動圖同一套改法：改用app裡既有、穩定的搜尋框跳轉機制，取代原本容易出包的
+  // 「整份重render+setTimeout找卡片捲動閃爍外框」
+  gnActiveJumpCode = code;
+  var searchInput = document.getElementById('fsearch');
+  if(searchInput){
+    searchInput.value = code;
+    doSearch(code, true);
+    toggleClear(code);
+  }
+  window.scrollTo({top:0, behavior:'smooth'});
 }
 
 // ============================================================
@@ -4060,7 +4068,7 @@ function jumpFromMarginReport(code){
 var DAHU_ROTATION_TOP_N = 30;
 var DAHU_ROTATION_MIN_COUNT = 2; // 族群內至少要有幾檔有大戶買賣比/差比資料才畫，避免單一檔股票造成雜訊
 var DAHU_ROTATION_STOCK_TOP_N = 40; // 個股檢視模式最多畫幾檔（依成交值排序取前N檔，太多點會擠成一團連名字都放不下）
-var DAHU_ROTATION_SUBCLUSTER_TOP_N = 40; // 族群檢視拆成子象限泡泡後，最多畫幾顆子泡泡（依檔數排序取前N顆，避免拆太細反而變得雜亂）
+var DAHU_ROTATION_SUBCLUSTER_TOP_N = 18; // 族群檢視拆成子象限泡泡後，最多畫幾顆子泡泡——手機螢幕小，之前40顆會擠成一片看不清楚，砍到18顆並優先保留領先/改善/弱化（見下方排序），落後區本來就是「沒什麼特別」的那一區，不用每個都畫出來
 // 圖表的縮放/平移狀態（雙指縮放、拖曳平移共用）：scale=縮放倍率，tx/ty=平移量（CSS像素，未乘dpr）
 var _dahuChartView = {scale:1, tx:0, ty:0};
 var _dahuRotationDrawCache = null; // 記住最後一次畫圖用的 ctx/尺寸/資料，縮放平移時直接重畫，不用重算整份資料
@@ -4141,7 +4149,13 @@ function _computeDahuRotationSubClusters(groups){
       });
     });
   });
-  out.sort(function(a,b){ return b.count-a.count; });
+  // 優先保留領先/改善/弱化這些「有東西可看」的子泡泡，落後區排到最後面——畫面空間有限時，
+  // 與其塞滿一堆「落後」（等於沒訊號），不如把位置留給真正有分化的族群
+  out.sort(function(a,b){
+    var aBoring = a.qLabel==='落後' ? 1 : 0, bBoring = b.qLabel==='落後' ? 1 : 0;
+    if(aBoring !== bBoring) return aBoring - bBoring;
+    return b.count - a.count;
+  });
   return out.slice(0, DAHU_ROTATION_SUBCLUSTER_TOP_N);
 }
 
@@ -4316,7 +4330,7 @@ function renderDahuRotationChart(){
   emptyEl.style.display = 'none';
   var dpr = window.devicePixelRatio||1;
   var w = wrap.clientWidth || 360;
-  var H = Math.min(560, Math.max(380, Math.round(w*0.85)));
+  var H = Math.min(640, Math.max(420, Math.round(w*1.05)));
   canvas.width = w*dpr;
   canvas.height = H*dpr;
   canvas.style.height = H+'px';
@@ -4591,7 +4605,7 @@ function drawDahuRotationChart(ctx, W, H, groups){
   var minCount = Math.min.apply(null, counts), maxCount = Math.max.apply(null, counts);
   function pr(c){
     var t = maxCount>minCount ? (c-minCount)/(maxCount-minCount) : 1;
-    return 12 + 34*Math.sqrt(t);
+    return 10 + 26*Math.sqrt(t); // 現在畫面上的泡泡少很多了，圓可以縮小一點，留更多空間給文字標籤不重疊
   }
   var nodes = groups.map(function(g){
     return { tag:g.tag, qLabel:g.qLabel, x:px(g.avgBuy), y:py(g.avgChai), r:pr(g.count), avgBuy:g.avgBuy, avgChai:g.avgChai, count:g.count };
@@ -5250,8 +5264,15 @@ function jumpFromDisposalReport(code){
   sel = [];
   window._hcatCodes = null;
   renderSelTags();
-  render();
-  jumpToCardWithFilter(code, null, null);
+  // 同上，改用既有的搜尋框跳轉機制
+  gnActiveJumpCode = code;
+  var searchInput = document.getElementById('fsearch');
+  if(searchInput){
+    searchInput.value = code;
+    doSearch(code, true);
+    toggleClear(code);
+  }
+  window.scrollTo({top:0, behavior:'smooth'});
 }
 
 // ══════════ 股價合理性一鍵評估 ══════════
