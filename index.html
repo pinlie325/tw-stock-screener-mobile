@@ -1245,6 +1245,29 @@ function adminRemoveUser(email){
   </div>
 </div>
 
+<!-- STOCK COMPARE MODAL -->
+<div id="compare-modal" style="display:none;position:fixed;inset:0;background:#000a;z-index:9998;align-items:flex-start;justify-content:center;padding:16px;box-sizing:border-box;overflow-y:auto">
+  <div style="background:var(--bg-panel);border:1px solid var(--border);border-radius:12px;width:100%;max-width:520px;margin-top:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg-panel);z-index:1;border-radius:12px 12px 0 0">
+      <span style="font-size:15px;font-weight:700;color:var(--text-primary)"><span style="font-weight:900">⇄</span> 個股對照</span>
+      <button onclick="closeCompareModal()" style="background:none;border:none;color:var(--text-secondary);font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <div style="padding:14px 16px;">
+      <div style="display:flex;gap:8px;">
+        <div style="flex:1;position:relative;">
+          <input id="compare-input-1" type="text" placeholder="股票1 代碼或名稱" autocomplete="off" oninput="compareSearchInput(1,this.value)" style="width:100%;background:var(--bg-page);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:14px;padding:8px 10px;box-sizing:border-box;">
+          <div id="compare-suggest-1" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg-panel);border:1px solid var(--border);border-radius:8px;margin-top:2px;max-height:200px;overflow-y:auto;z-index:5;"></div>
+        </div>
+        <div style="flex:1;position:relative;">
+          <input id="compare-input-2" type="text" placeholder="股票2 代碼或名稱" autocomplete="off" oninput="compareSearchInput(2,this.value)" style="width:100%;background:var(--bg-page);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:14px;padding:8px 10px;box-sizing:border-box;">
+          <div id="compare-suggest-2" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg-panel);border:1px solid var(--border);border-radius:8px;margin-top:2px;max-height:200px;overflow-y:auto;z-index:5;"></div>
+        </div>
+      </div>
+      <div id="compare-table-wrap" style="margin-top:14px;"></div>
+    </div>
+  </div>
+</div>
+
 <!-- STRATEGY FILTER MODAL -->
 <div id="strategy-modal" style="display:none;position:fixed;inset:0;background:#000a;z-index:9998;align-items:center;justify-content:center;padding:16px;box-sizing:border-box">
   <div style="background:var(--bg-panel);border:1px solid var(--border);border-radius:12px;width:100%;max-width:420px;max-height:80vh;overflow-y:auto">
@@ -1288,6 +1311,7 @@ function adminRemoveUser(email){
   <button class="btn-filter" id="fbtn" onclick="openDrawer()">🔍 產業</button>
   <button class="btn-filter" onclick="showCompactList()" title="簡列">🏷️</button>
   <button class="btn-filter" onclick="openStrategyFilter()" title="策略篩選">📌</button>
+  <button class="btn-filter" onclick="openCompareModal()" title="個股對照" style="font-weight:900;font-size:16px;">⇄</button>
 </div>
 <div id="fbar-tags-wrap" style="display:none;align-items:center;gap:5px;padding:0 12px 6px;flex-wrap:wrap">
   <button class="fbar-clear-all" id="fbar-clear-all" onclick="selAll()">✕ 清除全部</button>
@@ -3971,6 +3995,138 @@ function showCompactList(){
     });
   });
   document.getElementById('compact-modal').style.display = 'flex';
+}
+
+// ── 個股對照 ──
+var compareStock1 = null, compareStock2 = null;
+
+function openCompareModal(){
+  document.getElementById('compare-modal').style.display = 'flex';
+  document.getElementById('compare-input-1').value = compareStock1 ? (compareStock1.code+' '+compareStock1.name) : '';
+  document.getElementById('compare-input-2').value = compareStock2 ? (compareStock2.code+' '+compareStock2.name) : '';
+  renderCompareTable();
+}
+function closeCompareModal(){
+  document.getElementById('compare-modal').style.display = 'none';
+  document.getElementById('compare-suggest-1').style.display = 'none';
+  document.getElementById('compare-suggest-2').style.display = 'none';
+}
+
+function compareSearchInput(side, v){
+  var box = document.getElementById('compare-suggest-'+side);
+  var q = (v||'').trim().toLowerCase();
+  if(!q){ box.style.display='none'; box.innerHTML=''; return; }
+  var matches = (D||[]).filter(function(s){
+    return s.code.toLowerCase().indexOf(q)>=0 || s.name.toLowerCase().indexOf(q)>=0;
+  }).slice(0, 8);
+  if(!matches.length){ box.style.display='none'; box.innerHTML=''; return; }
+  box.innerHTML = matches.map(function(s){
+    return '<div onclick="selectCompareStock('+side+',\''+s.code+'\')" style="padding:8px 10px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px;color:var(--text-primary);">'
+      +'<span style="color:var(--text-secondary);font-family:monospace;">'+s.code+'</span> '+s.name
+    +'</div>';
+  }).join('');
+  box.style.display = 'block';
+}
+
+function selectCompareStock(side, code){
+  var s = (D||[]).filter(function(x){ return x.code===code; })[0];
+  if(!s) return;
+  if(side===1) compareStock1 = s; else compareStock2 = s;
+  document.getElementById('compare-input-'+side).value = s.code+' '+s.name;
+  var box = document.getElementById('compare-suggest-'+side);
+  box.style.display = 'none';
+  box.innerHTML = '';
+  renderCompareTable();
+}
+
+function clearCompareStock(side){
+  if(side===1) compareStock1 = null; else compareStock2 = null;
+  document.getElementById('compare-input-'+side).value = '';
+  renderCompareTable();
+}
+
+// 跟卡片格線同一套本益比備援算法（無現成PE時用單季EPS年化概算）
+function _cmpPE(s){
+  if(s.pe!==null && s.pe!==undefined) return s.pe.toFixed(1);
+  var annEps = s.eps!==null ? s.eps*4/0.6 : null;
+  return (annEps && annEps>0 && s.volume!==null) ? (s.volume/annEps).toFixed(1) : null;
+}
+
+var COMPARE_ROWS = [
+  {label:'現價', field:'close', dec:1},
+  {label:'漲跌幅%', field:'pct', dec:1, sign:true, color:function(v){return v>0?'up':v<0?'dn':'';}},
+  {label:'成交值(億)', field:'turnval', dec:1},
+  {label:'股本(億)', field:'capital', dec:1},
+  {label:'每股淨值', field:'bvps', dec:1},
+  {label:'融資%', field:'margin', dec:1, color:function(v){return v<160?'warn':'';}},
+  {label:'單季ROE%', field:'roe', dec:1, color:function(v){return v>=3.75?'up':v<1.25?'dn':'';}},
+  {label:'RS%', field:'rs', dec:1},
+  {label:'大戶買賣比%', field:'dahubuy', dec:1, color:function(v){return v>=70?'up':v<30?'dn':'';}},
+  {label:'大戶差比%', field:'dahuchai', dec:1, sign:true, color:function(v){return v>0?'up':v<0?'dn':'';}},
+  {label:'毛利率%', field:'grossmargin', dec:1},
+  {label:'營收增%', field:'revgrowth', dec:1, sign:true, color:function(v){return v>0?'up':v<0?'dn':'';}},
+  {label:'單季EPS', field:'eps', dec:2, color:function(v){return v>0?'up':v<0?'dn':'';}},
+  {label:'本益比', field:'_pe', dec:1}
+];
+
+function renderCompareTable(){
+  var wrap = document.getElementById('compare-table-wrap');
+  var s1 = compareStock1, s2 = compareStock2;
+  if(!s1 && !s2){
+    wrap.innerHTML = '<div style="text-align:center;color:var(--text-secondary);font-size:13px;padding:24px 0;">請搜尋並選擇兩檔股票進行對照</div>';
+    return;
+  }
+  function quadBadge(s){
+    var q = _dahuStockQuadrant(s.dahubuy, s.dahuchai);
+    return '<div style="display:inline-block;margin-top:5px;padding:3px 12px;border-radius:20px;font-size:12px;font-weight:700;background:'+q.bg+';color:'+q.fg+';">籌碼：'+q.label+'</div>';
+  }
+  function headCell(s, side){
+    if(!s) return '<div style="flex:1;text-align:center;color:var(--text-dim);">--</div>';
+    return '<div style="flex:1;text-align:center;">'
+      +'<div style="display:flex;align-items:center;justify-content:center;gap:2px;">'
+        +'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-primary);font-weight:700;font-size:13px;">'+s.code+' '+s.name+'</span>'
+        +'<span onclick="clearCompareStock('+side+')" title="清除" style="cursor:pointer;color:#f85149;font-weight:700;font-size:12px;line-height:1;background:#f8514922;border-radius:50%;width:18px;height:18px;min-width:18px;display:inline-flex;align-items:center;justify-content:center;flex:none;">✕</span>'
+      +'</div>'
+      + quadBadge(s)
+    +'</div>';
+  }
+  function rowVal(s, row){
+    if(!s) return null;
+    var raw = row.field === '_pe' ? _cmpPE(s) : (s[row.field]!==null && s[row.field]!==undefined ? s[row.field].toFixed(row.dec) : null);
+    if(raw === null || raw === undefined) return null;
+    var vNum = row.field === '_pe' ? parseFloat(raw) : s[row.field];
+    return { raw:raw, num:vNum, maxAbs:0 };
+  }
+  function cellHtml(v, row){
+    if(!v) return '<div style="flex:1;text-align:center;color:var(--text-dim);">--</div>';
+    var txt = (row.sign && v.num>0 ? '+' : '') + v.raw;
+    var cls = row.color ? row.color(v.num) : '';
+    var barColor = cls==='up' ? '#3fb950' : cls==='dn' ? '#f85149' : cls==='warn' ? '#d29922' : '#58a6ff';
+    var pct = v.maxAbs>0 ? Math.max(4, Math.round(Math.abs(v.num)/v.maxAbs*100)) : 0;
+    return '<div style="flex:1;text-align:center;">'
+      +'<div class="cg-val '+cls+'" style="font-size:13px;">'+txt+'</div>'
+      +'<div style="height:3px;background:var(--border);border-radius:2px;margin:4px 8px 0;overflow:hidden;">'
+        +'<div style="height:100%;width:'+pct+'%;background:'+barColor+';border-radius:2px;"></div>'
+      +'</div>'
+    +'</div>';
+  }
+  var head = '<div style="display:flex;align-items:flex-start;font-size:11px;color:var(--text-dim);padding:4px 0 10px;border-bottom:1px solid var(--border);gap:4px;">'
+    +'<div style="flex:1.1;padding-top:6px;">項目</div>'
+    + headCell(s1,1)
+    + headCell(s2,2)
+  +'</div>';
+  var body = COMPARE_ROWS.map(function(row){
+    var v1 = rowVal(s1, row), v2 = rowVal(s2, row);
+    var maxAbs = Math.max(v1?Math.abs(v1.num):0, v2?Math.abs(v2.num):0) || 0;
+    if(v1) v1.maxAbs = maxAbs;
+    if(v2) v2.maxAbs = maxAbs;
+    return '<div style="display:flex;align-items:center;font-size:13px;padding:7px 0;border-bottom:1px solid var(--border);gap:4px;">'
+      +'<div style="flex:1.1;color:var(--text-secondary);">'+row.label+'</div>'
+      + cellHtml(v1, row)
+      + cellHtml(v2, row)
+    +'</div>';
+  }).join('');
+  wrap.innerHTML = head + body;
 }
 
 function openStrategyFilter(){
