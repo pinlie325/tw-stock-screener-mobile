@@ -100,9 +100,20 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:var(--bg-page)
 .su{color:#f85149}.sd2{color:#3fb950}
 
 /* ── CARDS ── */
-.cards{flex:1;padding:8px 10px 64px;display:grid;grid-template-columns:1fr;gap:8px;overflow-y:auto;align-content:start}
+.cards{flex:1;min-height:0;padding:8px 5px 64px;display:grid;grid-template-columns:1fr;gap:8px;overflow-y:auto;align-content:start}
 @media(min-width:640px){.cards{grid-template-columns:1fr 1fr;padding:10px 12px 64px}}
+/* 桌機兩欄檢視時，中間欄縫放一個可拖曳調整欄寬比例的把手（參考Tide潮汐：拖曳調整寬度，雙擊還原預設） */
+#col-resize-handle{display:none;position:fixed;top:95px;bottom:0;left:50%;transform:translateX(-50%);width:20px;z-index:50;align-items:center;justify-content:center;cursor:col-resize}
+@media(min-width:640px){#col-resize-handle.on{display:flex}}
+#col-resize-line{position:absolute;top:0;bottom:0;left:50%;width:1.5px;background:var(--text-secondary);opacity:0.85;transform:translateX(-50%);pointer-events:none}
+#col-resize-grip{position:relative;width:10px;height:28px;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:5px;cursor:col-resize;z-index:1}
+#col-resize-grip::before{content:'';position:absolute;left:3px;top:9px;width:1.5px;height:10px;background:var(--text-secondary);box-shadow:4px 0 0 var(--text-secondary)}
+#col-resize-grip:hover,#col-resize-grip.dragging{border-color:var(--text-secondary)}
+#col-resize-grip:hover::before,#col-resize-grip.dragging::before{background:var(--text-primary);box-shadow:4px 0 0 var(--text-primary)}
+#col-resize-tip{position:absolute;left:20px;top:50%;transform:translateY(-50%);background:#000;color:#fff;font-size:11px;padding:5px 9px;border-radius:5px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .15s}
+#col-resize-handle:hover #col-resize-tip{opacity:0.92}
 @media(min-width:640px){#dahu-rotation-detail{left:auto !important;width:420px !important;max-width:90vw;box-shadow:-8px 0 24px #0008;border-left:1px solid var(--border);}}
+
 @media(max-width:480px){
   .cg-item{padding:4px 6px;min-height:36px}
   .cg-lbl{font-size:10px;white-space:nowrap}
@@ -112,7 +123,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:var(--bg-page)
   .card-price .card-close{flex-shrink:0}
   .card-avg{font-size:11px}
 }
-.card{background:var(--bg-page);border:1px solid var(--border);border-radius:10px;padding:14px 16px;cursor:pointer;transition:border-color .15s;overflow-x:hidden;max-width:100%;box-sizing:border-box;position:relative}
+.card{background:var(--bg-page);border:1px solid var(--border);border-radius:10px;padding:14px 11px;cursor:pointer;transition:border-color .15s;overflow-x:hidden;max-width:100%;box-sizing:border-box;position:relative}
 .card.capturing{outline:2px solid #58a6ff}
 .card-cam{background:none;border:none;font-size:14px;cursor:pointer;padding:0;line-height:1;opacity:0.5}
 .private-note-btn{position:absolute;top:0;left:0;width:0;height:0;border-style:solid;border-width:18px 18px 0 0;border-color:var(--border) transparent transparent transparent;cursor:pointer;z-index:3;border-top-left-radius:10px;transition:border-color .15s;background:none;padding:0;outline:none;appearance:none;box-sizing:content-box;}
@@ -935,7 +946,7 @@ function adminRemoveUser(email){
       🌍 市場參考看板（原油／美元／VIX／美債）
     </button>
     <button onclick="openDahuRotationBoard()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
-      🧭 大戶籌碼族群輪動圖
+      🧭 大戶籌碼趨勢表
     </button>
     <button onclick="openEconCalendar()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
       🗓 財經行事曆
@@ -967,34 +978,18 @@ function adminRemoveUser(email){
 <!-- DAHU CHIP ROTATION MODAL -->
 <div id="dahu-rotation-modal" style="display:none;position:fixed;inset:0;background:var(--bg-page);z-index:9999;flex-direction:column">
   <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg-panel);flex-shrink:0">
-    <span style="font-size:16px;font-weight:700;color:var(--text-primary)">🧭 大戶籌碼族群輪動圖</span>
+    <span style="font-size:16px;font-weight:700;color:var(--text-primary)">🧭 大戶籌碼趨勢表</span>
     <button onclick="closeDahuRotationBoard()" style="background:none;border:none;color:var(--text-secondary);font-size:22px;cursor:pointer">✕</button>
   </div>
   <div style="flex:1;overflow-y:auto;padding:14px;">
-    <div style="display:flex;gap:6px;margin-bottom:10px;">
-      <button id="dahu-mode-group-btn" onclick="switchDahuRotationMode('group')" style="flex:1;background:#1f6feb;border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;padding:8px 4px;cursor:pointer;">族群檢視</button>
-      <button id="dahu-mode-stock-btn" onclick="switchDahuRotationMode('stock')" style="flex:1;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-secondary);font-size:12px;font-weight:700;padding:8px 4px;cursor:pointer;">個股散點圖</button>
-      <button id="dahu-mode-list-btn" onclick="switchDahuRotationMode('list')" style="flex:1;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-secondary);font-size:12px;font-weight:700;padding:8px 4px;cursor:pointer;">列表</button>
+    <div id="dahu-group-flex" style="display:flex;flex-direction:column;gap:10px;">
+      <div id="dahu-quad-stats" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;"></div>
+      <div id="dahu-group-stock-list" style="background:var(--bg-panel);border:1px solid var(--border);border-radius:8px;padding:10px;min-height:420px;"></div>
     </div>
-    <div id="dahu-rotation-canvas-wrap" style="position:relative;background:var(--bg-panel);border:1px solid var(--border);border-radius:8px;overflow:hidden;min-height:420px;">
+    <div id="dahu-rotation-canvas-wrap" style="display:none;position:relative;background:var(--bg-panel);border:1px solid var(--border);border-radius:8px;overflow:hidden;min-height:420px;">
       <canvas id="dahu-rotation-canvas" style="display:block;width:100%;cursor:pointer;touch-action:none" onclick="dahuRotationCanvasClick(event)"></canvas>
       <div id="dahu-rotation-empty" style="display:none;position:absolute;inset:0;align-items:center;justify-content:center;color:var(--text-secondary);font-size:13px;text-align:center;padding:20px;box-sizing:border-box;">尚無資料，請先載入選股Excel</div>
       <button id="dahu-chart-reset-zoom-btn" onclick="_dahuResetView()" style="display:none;position:absolute;top:8px;right:8px;z-index:5;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;padding:5px 9px;cursor:pointer;">⟲ 重置</button>
-    </div>
-    <div id="dahu-rotation-list" style="display:none;"></div>
-    <div id="dahu-rotation-legend" style="margin-top:12px;padding:10px;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;">
-      <div style="font-size:14px;color:var(--text-primary);font-weight:700;margin-bottom:8px;">四象限定義（X軸：大戶買賣比% 主力參與程度；Y軸：大戶差比% 買超力道）</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-        <div style="background:#1f6feb22;border-left:3px solid #58a6ff;padding:6px 8px;border-radius:4px;"><b style="color:#58a6ff;font-size:13px;">改善區(籌碼改善中)</b><div style="color:var(--text-primary);font-size:12px;margin-top:2px;">買賣比&lt;70% 且 差比≥20%</div></div>
-        <div style="background:#3fb95022;border-left:3px solid #3fb950;padding:6px 8px;border-radius:4px;"><b style="color:#3fb950;font-size:13px;">領先區(強勢主流)</b><div style="color:var(--text-primary);font-size:12px;margin-top:2px;">買賣比≥70% 且 差比≥20%</div></div>
-        <div style="background:var(--bg-panel);border-left:3px solid var(--text-secondary);padding:6px 8px;border-radius:4px;"><b style="color:var(--text-primary);font-size:13px;">落後區(弱勢觀望)</b><div style="color:var(--text-primary);font-size:12px;margin-top:2px;">買賣比&lt;70% 且 差比&lt;20%</div></div>
-        <div style="background:#d2992222;border-left:3px solid #d29922;padding:6px 8px;border-radius:4px;"><b style="color:#d29922;font-size:13px;">弱化區(資金退潮)</b><div style="color:var(--text-primary);font-size:12px;margin-top:2px;">買賣比≥70% 且 差比&lt;20%</div></div>
-      </div>
-      <div style="font-size:12px;color:var(--text-primary);line-height:1.7;margin-top:10px;">
-        <b style="color:var(--text-primary);">族群檢視</b>：以「細產業」標籤分組，但同一個族群裡常常混著領先/改善/弱化/落後好幾種股票，只畫一顆平均泡泡容易失真，所以改成依組內個股實際所在的象限，拆成最多4顆子泡泡（各自用同象限成分股重新算一次成交值加權平均座標），顏色即代表所在象限，泡泡大小依該子群檔數決定，點任一顆子泡泡都會開啟該族群完整明細。<br><br>
-        <b style="color:var(--text-primary);">個股散點圖</b>：不分族群，直接把每一檔成交值較大的個股（前40檔）攤開成一個點，點的顏色就是它自己落在哪一區，每個點旁邊都會標名字，點任一顆直接跳去該股卡片。（族群泡泡圖、個股散點圖都支援雙指縮放、單指拖曳平移、桌面滑鼠滾輪縮放，右上角有重置按鈕可一鍵回到預設大小）<br><br>
-        資料來源：Excel「大戶買賣比」「大戶差比」欄位（依XQ籌碼數據定義），僅供參考。
-      </div>
     </div>
   </div>
 
@@ -1383,6 +1378,13 @@ function adminRemoveUser(email){
     <div style="font-size:15px;color:var(--text-secondary);margin-bottom:6px">尚未載入股票資料</div>
     <div style="font-size:13px;color:var(--text-dim)">點擊右上角 ☁ 雲端按鈕載入資料</div>
   </div>
+</div>
+
+<!-- 欄寬拖曳把手（桌機兩欄檢視，放在欄縫中間，可拖曳調整左右欄寬比例） -->
+<div id="col-resize-handle">
+  <div id="col-resize-line"></div>
+  <div id="col-resize-grip" onmousedown="_crGripDown(event)" ontouchstart="_crGripDown(event)" ondblclick="_crGripReset()"></div>
+  <div id="col-resize-tip">拖曳調整寬度．雙擊還原預設</div>
 </div>
 
 <!-- FILTER DRAWER -->
@@ -2182,6 +2184,7 @@ function render(){
   if(Object.keys(strategyMap).length) applyStrategies(); // 重新套用策略
   if(Object.keys(groupMap).length) applyGroups(); // 重新套用集團標籤
   if(Object.keys(conceptMap).length) applyConcepts(); // 重新套用概念股標籤
+  _positionColResizeHandle(); // 卡片實際內容/捲軸出現後寬度可能改變，重新量一次位置避免把手偏掉
 }
 
 // ── TRADINGVIEW CHART ──
@@ -4233,7 +4236,7 @@ var _dahuRotationLastNodes = null;
 var _dahuRotationMode = 'group'; // 'group'=族群檢視（泡泡） / 'stock'=個股檢視（每檔股票一個點）
 
 function openDahuRotationBoard(){
-  toast('🧭 開啟大戶籌碼族群輪動圖...','#1f6feb');
+  toast('🧭 開啟大戶籌碼趨勢表...','#1f6feb');
   try{
     // 保險：把其他可能還開著的全螢幕視窗都關掉，避免疊在一起互相蓋住
     ['settings-modal','margin-report-modal','macro-board-modal','econ-calendar-modal','note-edit-modal'].forEach(function(id){
@@ -4241,20 +4244,13 @@ function openDahuRotationBoard(){
       if(el) el.style.display = 'none';
     });
     var modal = document.getElementById('dahu-rotation-modal');
-    if(!modal){ toast('❌ 找不到大戶籌碼族群輪動圖的視窗元素','#da3633'); return; }
+    if(!modal){ toast('❌ 找不到大戶籌碼趨勢表的視窗元素','#da3633'); return; }
     document.getElementById('dahu-rotation-detail').style.display = 'none';
-    _dahuRotationMode = 'group';
-    _dahuSetModeButtons('group');
-    var wrap0 = document.getElementById('dahu-rotation-canvas-wrap'), list0 = document.getElementById('dahu-rotation-list'), legend0 = document.getElementById('dahu-rotation-legend');
-    if(wrap0) wrap0.style.display = 'block';
-    if(list0) list0.style.display = 'none';
-    if(legend0) legend0.style.display = 'block'; // 列表模式不需要這段四象限說明，圖表模式(族群/個股)才顯示
     modal.style.display = 'flex';
     modal.style.zIndex = '100000';
-    _dahuSetupChartGestures();
-    renderDahuRotationChart();
+    _renderDahuGroupView();
   }catch(e){
-    toast('❌ 大戶籌碼族群輪動圖發生錯誤：'+e.message,'#da3633');
+    toast('❌ 大戶籌碼趨勢表發生錯誤：'+e.message,'#da3633');
     console.error('openDahuRotationBoard error:', e);
   }
 }
@@ -4353,100 +4349,81 @@ function _computeDahuRotationGroups(){
 }
 
 // 三個模式共用的按鈕高亮邏輯：被選到的那顆變藍底白字，其餘變回預設樣式
-function _dahuSetModeButtons(mode){
-  var ids = {group:'dahu-mode-group-btn', stock:'dahu-mode-stock-btn', list:'dahu-mode-list-btn'};
-  Object.keys(ids).forEach(function(k){
-    var b = document.getElementById(ids[k]);
-    if(!b) return;
-    if(k === mode){ b.style.background = '#1f6feb'; b.style.border = 'none'; b.style.color = '#fff'; }
-    else { b.style.background = 'var(--bg-panel-alt)'; b.style.border = '1px solid var(--border)'; b.style.color = 'var(--text-secondary)'; }
-  });
+// 個股列表的單列/表頭樣板，列表模式(四區都顯示)、族群檢視新版(點卡片顯示單一象限)共用，避免兩邊各刻一份樣式跑掉
+// 卡片式雙行列樣板：字級跟卡片本體看齊（代碼/商品/現價都比照卡片放大），
+// 一行塞不下這麼多欄位所以拆兩行，上排是代碼+商品+漲跌%，下排是股價/昨收+大戶買賣比/差比徽章
+function _dahuStockRowHtml(s){
+  var bc = _dahuValColor(s.dahubuy, 'buy');
+  var cc = _dahuValColor(s.dahuchai, 'chai');
+  var pctStr = s.pct!==null&&s.pct!==undefined ? ((s.pct>0?'+':'')+s.pct.toFixed(1)+'%') : '--';
+  var pctColor = s.pct>0?'#f85149':s.pct<0?'#3fb950':'var(--text-secondary)';
+  // s.volume是這份資料裡實際存「現價」的欄位（Excel「成交」欄，命名沿用舊卡片邏輯），s.close才是昨收
+  var priceStr = s.volume!==null&&s.volume!==undefined ? s.volume.toFixed(1) : '--';
+  var prevCloseStr = s.close!==null&&s.close!==undefined ? s.close.toFixed(1) : '--';
+  // 跟卡片本體同一套現價顏色邏輯：現價比昨收高顯示紅色、低顯示綠色
+  var priceColor = (s.volume!==null&&s.volume!==undefined&&s.close!==null&&s.close!==undefined) ? (s.volume>s.close?'#f85149':s.volume<s.close?'#3fb950':'var(--text-primary)') : 'var(--text-primary)';
+  return '<div onclick="jumpFromDahuRotation(\''+s.code+'\')" style="padding:10px 8px;border-bottom:1px solid var(--border);cursor:pointer;">'
+    +'<div style="display:flex;align-items:baseline;gap:8px;">'
+      +'<span style="color:#79c0ff;font-family:monospace;font-size:19.5px;font-weight:700;flex-shrink:0;">'+s.code+'</span>'
+      +'<span style="color:var(--text-primary);font-size:16px;font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+s.name+'</span>'
+      +(s.position?'<span style="font-size:12px;color:var(--text-altlight);font-weight:500;flex-shrink:0;">'+s.position+'</span>':'')
+    +'</div>'
+    +'<div style="display:flex;align-items:center;gap:10px;margin-top:5px;">'
+      +'<span style="font-size:13px;color:'+priceColor+';font-weight:700;flex-shrink:0;">'+priceStr+'</span>'
+      +'<span style="font-size:12px;color:var(--text-dim);flex-shrink:0;">昨收 '+prevCloseStr+'</span>'
+      +'<span style="font-size:12px;font-weight:700;flex-shrink:0;color:'+pctColor+';">'+pctStr+'</span>'
+      +'<span style="flex:1;"></span>'
+      +'<span style="font-size:12px;font-weight:700;flex-shrink:0;padding:3px 7px;border-radius:5px;background:'+bc.bg+';color:'+bc.fg+';">買賣比 '+(s.dahubuy!==null&&s.dahubuy!==undefined?s.dahubuy.toFixed(0):'--')+'</span>'
+      +'<span style="font-size:12px;font-weight:700;flex-shrink:0;padding:3px 7px;border-radius:5px;background:'+cc.bg+';color:'+cc.fg+';">差比 '+(s.dahuchai!==null&&s.dahuchai!==undefined?((s.dahuchai>0?'+':'')+s.dahuchai.toFixed(0)):'--')+'</span>'
+    +'</div>'
+  +'</div>';
 }
-
-function switchDahuRotationMode(mode){
-  if(_dahuRotationMode === mode) return;
-  _dahuRotationMode = mode;
-  document.getElementById('dahu-rotation-detail').style.display = 'none';
-  _dahuSetModeButtons(mode);
-  var wrap = document.getElementById('dahu-rotation-canvas-wrap');
-  var listEl = document.getElementById('dahu-rotation-list');
-  var legendEl = document.getElementById('dahu-rotation-legend');
-  if(mode === 'list'){
-    wrap.style.display = 'none';
-    listEl.style.display = 'block';
-    if(legendEl) legendEl.style.display = 'none'; // 列表本身欄位就很清楚了，不用再重複顯示四象限說明
-    _dahuFreeCanvasDeferred(); // 切到列表模式canvas會被藏起來，順便釋放記憶體
-    renderDahuRotationList();
-  } else {
-    listEl.style.display = 'none';
-    wrap.style.display = 'block';
-    if(legendEl) legendEl.style.display = 'block';
-    renderDahuRotationChart();
+function _dahuStockListHeaderHtml(){
+  return ''; // 雙行卡片式版面每個數字旁邊都有自己的文字標籤，不用再另外放一列表頭
+}
+// ── 族群檢視新版：左邊(手機版上方)四張可點的統計卡片，右邊(手機版下方)是選中那個象限的個股列表 ──
+var _dahuActiveQuad = null;
+var DAHU_QUAD_CAP = {'落後': 60}; // 落後區量體通常最大，跟原本列表模式一樣限制顯示筆數避免灌爆
+function _renderDahuGroupView(){
+  _renderDahuQuadStats();
+  var stocks = _computeDahuRotationAllStocks();
+  var order = ['領先','改善','弱化','落後'];
+  var valid = _dahuActiveQuad && stocks.some(function(s){ return _dahuStockQuadrant(s.dahubuy, s.dahuchai).label === _dahuActiveQuad; });
+  if(!valid){
+    // 預設選第一個有資料的象限，都沒有資料就選領先（會顯示空狀態文字）
+    _dahuActiveQuad = order.filter(function(k){
+      return stocks.some(function(s){ return _dahuStockQuadrant(s.dahubuy, s.dahuchai).label === k; });
+    })[0] || '領先';
   }
+  _renderDahuQuadStats(); // 套用選中樣式
+  _renderDahuGroupStockList(_dahuActiveQuad);
 }
-
-// 列表模式：跟個股散點圖同一批股票（依成交值取前N檔），改成依「領先／改善／弱化／落後」
-// 四個象限分段列出，比散點圖更適合快速掃過名字、抓出誰在哪一區
-function renderDahuRotationList(){
-  var listEl = document.getElementById('dahu-rotation-list');
-  var stocks = _computeDahuRotationAllStocks(); // 列表不設成交值上限，見上方註解
+function _selectDahuQuadCard(label){
+  _dahuActiveQuad = label;
+  _renderDahuQuadStats();
+  _renderDahuGroupStockList(label);
+}
+function _renderDahuGroupStockList(label){
+  var wrap = document.getElementById('dahu-group-stock-list');
+  if(!wrap) return;
+  var stocks = _computeDahuRotationAllStocks().filter(function(s){
+    return _dahuStockQuadrant(s.dahubuy, s.dahuchai).label === label;
+  });
   if(!stocks.length){
-    listEl.innerHTML = '<div style="padding:32px 12px;text-align:center;color:var(--text-secondary);font-size:13px;">尚無資料，請先載入選股Excel</div>';
+    wrap.innerHTML = '<div style="padding:32px 12px;text-align:center;color:var(--text-secondary);font-size:13px;">這一區目前沒有股票，請先載入選股Excel或換一個分類看看</div>';
     return;
   }
-  var buckets = {'領先':[], '改善':[], '弱化':[], '落後':[]};
-  stocks.forEach(function(s){
-    var q = _dahuStockQuadrant(s.dahubuy, s.dahuchai);
-    if(buckets[q.label]) buckets[q.label].push(s);
-  });
-  Object.keys(buckets).forEach(function(k){
-    buckets[k].sort(function(a,b){ return (b.dahuchai||0)-(a.dahuchai||0); });
-  });
-  var sectionDefs = [
-    {key:'領先', title:'🟢 領先區(強勢主流)', fg:'#3fb950', capAt:null},
-    {key:'改善', title:'🔵 改善區(籌碼改善中)', fg:'#58a6ff', capAt:null},
-    {key:'弱化', title:'🟠 弱化區(資金退潮)', fg:'#d29922', capAt:null},
-    {key:'落後', title:'⚪ 落後區(弱勢觀望)', fg:'var(--text-secondary)', capAt:40} // 落後區通常佔絕大多數個股、也最不需要逐檔細看，只顯示成交值前40檔避免整個列表被灌爆
-  ];
-  var html = sectionDefs.map(function(sec){
-    var rows = buckets[sec.key];
-    if(!rows.length){
-      return '<div style="margin-bottom:14px;">'
-        +'<div style="font-size:13px;font-weight:700;color:'+sec.fg+';padding:8px 6px;background:'+sec.fg+'18;border-radius:6px;">'+sec.title+'（0）</div>'
-        +'<div style="padding:10px 6px;font-size:12px;color:var(--text-dim);">目前沒有股票落在這一區</div>'
-      +'</div>';
-    }
-    var shown = rows;
-    var hiddenCount = 0;
-    if(sec.capAt && rows.length > sec.capAt){
-      shown = rows.slice().sort(function(a,b){ return (b.turnval||0)-(a.turnval||0); }).slice(0, sec.capAt);
-      shown.sort(function(a,b){ return (b.dahuchai||0)-(a.dahuchai||0); });
-      hiddenCount = rows.length - shown.length;
-    }
-    var rowsHtml = shown.map(function(s){
-      var bc = _dahuValColor(s.dahubuy, 'buy');
-      var cc = _dahuValColor(s.dahuchai, 'chai');
-      var pctStr = s.pct!==null&&s.pct!==undefined ? ((s.pct>0?'+':'')+s.pct.toFixed(1)+'%') : '--';
-      var pctColor = s.pct>0?'#f85149':s.pct<0?'#3fb950':'var(--text-secondary)';
-      return '<div onclick="jumpFromDahuRotation(\''+s.code+'\')" style="display:flex;align-items:center;gap:6px;padding:8px 6px;border-bottom:1px solid var(--border);cursor:pointer;">'
-        +'<span style="color:var(--text-secondary);font-family:monospace;font-size:11px;flex-shrink:0;width:42px;">'+s.code+'</span>'
-        +'<span style="color:var(--text-primary);font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+s.name+'</span>'
-        +'<span style="font-size:11px;flex-shrink:0;width:52px;text-align:right;color:'+pctColor+'">'+pctStr+'</span>'
-        +'<span style="font-size:11px;font-weight:700;flex-shrink:0;padding:2px 5px;border-radius:4px;background:'+bc.bg+';color:'+bc.fg+';width:44px;text-align:center;">'+(s.dahubuy!==null&&s.dahubuy!==undefined?s.dahubuy.toFixed(0):'--')+'</span>'
-        +'<span style="font-size:11px;font-weight:700;flex-shrink:0;padding:2px 5px;border-radius:4px;background:'+cc.bg+';color:'+cc.fg+';width:44px;text-align:center;">'+(s.dahuchai!==null&&s.dahuchai!==undefined?((s.dahuchai>0?'+':'')+s.dahuchai.toFixed(0)):'--')+'</span>'
-      +'</div>';
-    }).join('');
-    return '<div style="margin-bottom:14px;">'
-      +'<div style="font-size:13px;font-weight:700;color:'+sec.fg+';padding:8px 6px;background:'+sec.fg+'18;border-radius:6px;margin-bottom:2px;">'+sec.title+'（'+rows.length+'）</div>'
-      +'<div style="display:flex;align-items:center;gap:6px;padding:0 6px 4px;font-size:10px;color:var(--text-dim);">'
-        +'<span style="width:42px;flex-shrink:0;">代碼</span><span style="flex:1;">商品</span><span style="width:52px;flex-shrink:0;text-align:right;">漲跌%</span>'
-        +'<span style="width:44px;flex-shrink:0;text-align:center;">買賣比</span><span style="width:44px;flex-shrink:0;text-align:center;">差比</span>'
-      +'</div>'
-      + rowsHtml
-      + (hiddenCount>0 ? '<div style="padding:8px 6px;font-size:11px;color:var(--text-dim);text-align:center;">（僅顯示成交值前'+sec.capAt+'檔，還有'+hiddenCount+'檔未列出）</div>' : '')
-    +'</div>';
-  }).join('');
-  listEl.innerHTML = html || '<div style="padding:32px 12px;text-align:center;color:var(--text-secondary);font-size:13px;">尚無資料</div>';
+  stocks.sort(function(a,b){ return (b.dahuchai||0)-(a.dahuchai||0); });
+  var capAt = DAHU_QUAD_CAP[label] || null;
+  var shown = stocks, hiddenCount = 0;
+  if(capAt && stocks.length > capAt){
+    shown = stocks.slice().sort(function(a,b){ return (b.turnval||0)-(a.turnval||0); }).slice(0, capAt);
+    shown.sort(function(a,b){ return (b.dahuchai||0)-(a.dahuchai||0); });
+    hiddenCount = stocks.length - shown.length;
+  }
+  wrap.innerHTML = _dahuStockListHeaderHtml()
+    + shown.map(_dahuStockRowHtml).join('')
+    + (hiddenCount>0 ? '<div style="padding:8px 6px;font-size:11px;color:var(--text-dim);text-align:center;">（僅顯示成交值前'+capAt+'檔，還有'+hiddenCount+'檔未列出）</div>' : '');
 }
 
 // 個股散點圖：不分族群，把每一檔有大戶買賣比/差比資料的個股直接攤開成一個個點，
@@ -4463,6 +4440,34 @@ function _computeDahuRotationAllStocks(){
   return (D||[]).filter(function(s){
     return s.dahubuy!==null && s.dahubuy!==undefined && s.dahuchai!==null && s.dahuchai!==undefined;
   });
+}
+
+// 族群檢視上方的四象限統計卡片（參考Tide潮汐左側漲潮/輪動/觀望/退潮那組卡片的排法，
+// 換成我們自己這套領先/改善/弱化/落後的籌碼分區統計，一眼看出目前整體大戶籌碼氣氛）
+var DAHU_QUAD_STAT_DEFS = [
+  {key:'領先', sub:'強勢主流', desc:'買賣比≥70%<br>差比≥20%', color:'#3fb950', bg:'#3fb95015'},
+  {key:'改善', sub:'籌碼改善中', desc:'買賣比<70%<br>差比≥20%', color:'#58a6ff', bg:'#1f6feb15'},
+  {key:'弱化', sub:'資金退潮', desc:'買賣比≥70%<br>差比<20%', color:'#d29922', bg:'#d2992215'},
+  {key:'落後', sub:'弱勢觀望', desc:'買賣比<70%<br>差比<20%', color:'var(--text-secondary)', bg:'var(--bg-panel-alt)'}
+];
+function _renderDahuQuadStats(){
+  var wrap = document.getElementById('dahu-quad-stats');
+  if(!wrap) return;
+  var stocks = _computeDahuRotationAllStocks();
+  var counts = {'領先':0, '改善':0, '弱化':0, '落後':0};
+  stocks.forEach(function(s){
+    var q = _dahuStockQuadrant(s.dahubuy, s.dahuchai);
+    if(counts.hasOwnProperty(q.label)) counts[q.label]++;
+  });
+  wrap.innerHTML = DAHU_QUAD_STAT_DEFS.map(function(d){
+    var active = _dahuActiveQuad === d.key;
+    return '<div onclick="_selectDahuQuadCard(\''+d.key+'\')" style="cursor:pointer;background:'+d.bg+';border:1.5px solid '+(active?d.color:'var(--border)')+';border-radius:9px;padding:8px 4px;transition:border-color .15s;text-align:center;">'
+      +'<div style="font-size:12px;color:'+d.color+';font-weight:700;">'+d.key+'</div>'
+      +'<div style="font-size:9px;color:'+d.color+';opacity:0.85;margin-top:1px;">'+d.sub+'</div>'
+      +'<div style="font-size:20px;font-weight:800;color:'+d.color+';line-height:1.3;margin-top:2px;">'+counts[d.key]+'</div>'
+      +'<div style="font-size:9px;color:var(--text-secondary);margin-top:3px;line-height:1.4;padding-top:3px;border-top:1px solid '+d.color+'33;">'+d.desc+'</div>'
+    +'</div>';
+  }).join('');
 }
 
 function renderDahuRotationChart(){
@@ -6018,6 +6023,93 @@ window.addEventListener('load', function(){
   autoLoadLatestStockFile();
 });
 window.addEventListener('resize', adjustPadding);
+
+// ── 欄寬拖曳把手（桌機兩欄檢視，中間欄縫，參考Tide潮汐：拖曳調整寬度、雙擊還原預設） ──
+var _colSplit = parseFloat(localStorage.getItem('cardsColSplit')) || 50; // 左欄佔比%
+var _crDragging = false, _crStartX = 0, _crStartSplit = 50;
+function _applyColSplit(pct){
+  pct = Math.max(25, Math.min(75, pct));
+  _colSplit = pct;
+  try{ localStorage.setItem('cardsColSplit', pct); }catch(e){}
+  _syncColSplitToDOM();
+}
+// 手機是單欄(1fr)，桌機才是可拖曳的兩欄比例；用grid的百分比欄寬不會自動扣掉欄縫(gap)，
+// 兩欄用百分比各佔一半時實際會比容器寬「多」一個gap，導致中間把手位置跟卡片真正的縫隙對不齊，
+// 所以改用calc()，欄寬先扣掉gap再依比例分配，並用.cards實際量到的位置精準算出縫隙中心點。
+function _syncColSplitToDOM(){
+  var cardsEl = document.getElementById('cards');
+  if(!cardsEl) return;
+  if(window.innerWidth < 640){
+    cardsEl.style.gridTemplateColumns = ''; // 交還給CSS控制（單欄1fr），避免JS設的inline樣式蓋掉手機版面
+  } else {
+    var cs = getComputedStyle(cardsEl);
+    var gap = parseFloat(cs.columnGap || cs.gap) || 0;
+    cardsEl.style.gridTemplateColumns = 'calc((100% - '+gap+'px) * '+(_colSplit/100)+') calc((100% - '+gap+'px) * '+((100-_colSplit)/100)+')';
+  }
+  _positionColResizeHandle();
+}
+function _positionColResizeHandle(){
+  var handle = document.getElementById('col-resize-handle');
+  var cardsEl = document.getElementById('cards');
+  if(!handle || !cardsEl) return;
+  if(window.innerWidth < 640){ handle.classList.remove('on'); return; }
+  handle.classList.add('on');
+  var rect = cardsEl.getBoundingClientRect();
+  var cs = getComputedStyle(cardsEl);
+  var padL = parseFloat(cs.paddingLeft) || 0;
+  var padR = parseFloat(cs.paddingRight) || 0;
+  var gap = parseFloat(cs.columnGap || cs.gap) || 0;
+  var contentW = rect.width - padL - padR;
+  var col1W = (contentW - gap) * (_colSplit/100);
+  var gapCenterX = rect.left + padL + col1W + gap/2;
+  handle.style.left = gapCenterX + 'px';
+  // 垂直範圍跟著.cards實際可視區走（把下方懸浮的.bbar高度扣掉），這樣把手才會真正上下置中在卡片區域，
+  // 而不是置中在含被bbar蓋住那段空白的整個視窗高度
+  var bbar = document.getElementById('bbar');
+  var bbarH = bbar ? bbar.getBoundingClientRect().height : 0;
+  handle.style.top = rect.top + 'px';
+  handle.style.bottom = bbarH + 'px';
+}
+function _crGripDown(e){
+  e.preventDefault(); e.stopPropagation();
+  _crDragging = true;
+  var grip = document.getElementById('col-resize-grip');
+  if(grip) grip.classList.add('dragging');
+  _crStartX = (e.touches ? e.touches[0].clientX : e.clientX);
+  _crStartSplit = _colSplit;
+  document.addEventListener('mousemove', _crGripMove);
+  document.addEventListener('mouseup', _crGripUp);
+  document.addEventListener('touchmove', _crGripMove, {passive:false});
+  document.addEventListener('touchend', _crGripUp);
+}
+function _crGripMove(e){
+  if(!_crDragging) return;
+  e.preventDefault();
+  var cardsEl = document.getElementById('cards');
+  if(!cardsEl) return;
+  var x = (e.touches ? e.touches[0].clientX : e.clientX);
+  var dx = x - _crStartX;
+  var w = cardsEl.clientWidth || window.innerWidth;
+  if(!w) return;
+  var deltaPct = (dx / w) * 100;
+  _applyColSplit(_crStartSplit + deltaPct);
+}
+function _crGripUp(){
+  _crDragging = false;
+  var grip = document.getElementById('col-resize-grip');
+  if(grip) grip.classList.remove('dragging');
+  document.removeEventListener('mousemove', _crGripMove);
+  document.removeEventListener('mouseup', _crGripUp);
+  document.removeEventListener('touchmove', _crGripMove);
+  document.removeEventListener('touchend', _crGripUp);
+}
+function _crGripReset(){
+  _applyColSplit(50);
+}
+(function(){
+  _syncColSplitToDOM();
+  window.addEventListener('resize', _syncColSplitToDOM);
+})();
 </script>
 </body>
 </html>
