@@ -2133,7 +2133,6 @@ function render(){
               +(function(){var e=getExchLabel(s.code);return '<span class="card-exch '+e.cls+'">'+e.txt+'</span>';})()
               +'<span class="card-name">'+s.name+'</span>'
               +(function(){if(s.disposal){var ft=s.disposal.freq?(s.disposal.freq+'分盤'):'處置中';return '<span title="'+s.disposal.reason.replace(/"/g,'&quot;')+'　期間 '+s.disposal.periodRaw+'" style="background:#f8514933;color:#f85149;border:1px solid #f85149;border-radius:4px;font-size:10px;padding:1px 5px;font-weight:700;">⚠'+ft+'</span>';}if(s.attention){return '<span title="'+s.attention.reason.replace(/"/g,'&quot;')+'　'+s.attention.date+'" style="background:#d2992233;color:#d29922;border:1px solid #d29922;border-radius:4px;font-size:10px;padding:1px 5px;font-weight:700;">注意</span>';}return '';})()
-              +'<button class="card-cam" onclick="event.stopPropagation();toggleFavorite(\''+s.code+'\',\''+s.name.replace(/'/g,"\\'")+'\',this)">'+(favMap[s.code]?'❤️':'🤍')+'</button>'
               +'<button class="card-cam" onclick="event.stopPropagation();openNoteEdit(\''+s.code+'\',\''+s.name.replace(/'/g,"\\'")+'\',\'shared\')">'+(sharedNoteMap[s.code]?'💬':'💬+')+'</button>'
             +'</div>'
           +'<div class="card-pattern" id="pattern-'+s.code+'"></div>'
@@ -2154,7 +2153,7 @@ function render(){
         +'<button class="card-line" style="background:#1f6feb22;border-color:#58a6ff;color:#58a6ff;cursor:pointer;" onclick="event.stopPropagation();openValuationTool(\''+s.code+'\')">🎯評估</button>'
       +'</div>'
       +'<div class="card-price" style="margin-bottom:6px">'
-        +'<button class="card-cam" style="margin-right:2px" onclick="event.stopPropagation();cardScreenshot(event,this.closest(\'.card\'))">📷</button>'
+        +'<button class="card-cam" style="margin-right:2px" onclick="event.stopPropagation();toggleFavorite(\''+s.code+'\',\''+s.name.replace(/'/g,"\\'")+'\',this)">'+(favMap[s.code]?'❤️':'🤍')+'</button>'
         +(s.close!==null?'<span class="card-avg">昨收 <span>'+s.close.toFixed(1)+'</span></span>':'')
         +(s.avg!==null?'<span class="card-avg">均價 <span>'+s.avg.toFixed(1)+'</span></span>':'')
       +'</div>'
@@ -2174,6 +2173,7 @@ function render(){
         +(function(){var rg=s.revgrowth;var rgc=rg!==null?(rg>0?'up':rg<0?'dn':''):'';return '<div class="cg-item"><div class="cg-lbl">營收增%</div><div class="cg-val '+rgc+'">'+(rg!==null?((rg>0?'+':'')+rg.toFixed(1)):'--')+'</div></div>';})()
         +'<div class="cg-item"><div class="cg-lbl">單季EPS</div><div class="cg-val '+epsc+'">'+(s.eps!==null?s.eps.toFixed(2):'--')+'</div></div>'
         +(function(){var pe; if(s.pe!==null&&s.pe!==undefined){pe=s.pe.toFixed(1);}else{var annEps=s.eps!==null?s.eps*4/0.6:null;pe=(annEps&&annEps>0&&s.volume!==null)?(s.volume/(annEps)).toFixed(1):null;}return '<div class="cg-item"><div class="cg-lbl">本益比</div><div class="cg-val">'+(pe!==null?pe:'--')+'</div></div>';})()
+        +'<div class="cg-item" style="display:flex;align-items:center;justify-content:center;"><button class="card-cam" style="font-size:20px;opacity:0.7" onclick="event.stopPropagation();cardScreenshot(event,this.closest(\'.card\'))">📷</button></div>'
       +'</div>'
       // Yahoo K線圖區塊（延遲建立：展開時才產生內容，初始渲染只留空殼，大幅減少每張卡片的HTML量）
       +'<div class="yf-wrap" id="yf-'+s.code+'"></div>'
