@@ -856,6 +856,9 @@ function adminRemoveUser(email){
 </script>
 
 <!-- BOTTOM BAR：跟上方header一樣是整條橫幅背景，不是懸浮圓形按鈕。👤跟🚪只有登入後才會顯示，▲用grid固定在正中間 -->
+<!-- 返回大戶籌碼浮檔鈕：從大戶籌碼趨勢表點個股跳過來後才會顯示，點一下就直接回到原本選到的分區 -->
+<button id="dahu-return-fab" onclick="returnToDahuBoard()" style="display:none;position:fixed;right:14px;bottom:70px;z-index:850;background:#1f6feb;border:none;border-radius:20px;color:#fff;padding:9px 16px;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:700;box-shadow:0 2px 10px #0006;">↩ 返回大戶籌碼</button>
+
 <div class="bbar" id="bbar">
   <button id="logout-btn" onclick="doLogout()" style="display:none;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:#f85149;width:38px;height:38px;align-items:center;justify-content:center;cursor:pointer;font-size:15px;" title="登出">🚪</button>
   <button id="admin-btn" onclick="openAdminPanel()" style="display:none;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:#58a6ff;width:38px;height:38px;align-items:center;justify-content:center;cursor:pointer;font-size:17px;">👤</button>
@@ -1428,6 +1431,7 @@ var D_RAW=[]; // 完整未過濾清單，黑名單增減時都從這裡重新套
 var noteMap={}, sharedNoteMap={}, sharedNoteHistory={}, favMap={};
 var generalNoteHistory=[]; // 留言板：不綁特定股票代碼的獨立留言，陣列，每則 {time, text, name}，新到舊排序
 var gnActiveJumpCode = null; // 記錄目前的搜尋是不是從大聲公點標籤跳過來的，是的話再按一次大聲公鈕就變成清除搜尋
+var _dahuReturnPending = false; // 記錄目前搜尋是不是從大戶籌碼趨勢表點個股跳過來的，是的話顯示「返回大戶籌碼」浮檔鈕
 // ── 排除股票清單（黑名單）：存在共用試算表的「黑名單」分頁，載入Excel時自動濾掉，只有管理者能新增/移除 ──
 var EXCLUDE_CODES = [];
 var EXCLUDE_NAMES = {};
@@ -1831,6 +1835,7 @@ function doSearch(v, immediate){
   searchQ=v ? v.trim().toLowerCase() : '';
   // 如果使用者自己改了搜尋內容（不是大聲公跳轉當下設的那個代碼），就取消「跳轉來的搜尋」標記
   if(gnActiveJumpCode && v !== gnActiveJumpCode){ gnActiveJumpCode = null; }
+  if(_dahuReturnPending && v !== gnActiveJumpCode){ _dahuReturnPending = false; _hideDahuReturnFab(); }
   if(_searchDebounceTimer){ clearTimeout(_searchDebounceTimer); _searchDebounceTimer = null; }
   if(immediate){ render(); } else { _searchDebounceTimer = setTimeout(render, 150); }
 }
@@ -3635,11 +3640,14 @@ function applyGroups(){
     if(groups && groups.length){
       var badge=document.createElement('span');
       badge.className='stag card-group-badge';
-      badge.style.cssText='background:#3a2f1a;color:#d29922;border-color:#d2992255;';
-      badge.innerHTML='🏢 '+groups.map(function(g){
+      badge.style.cssText='background:#3a2f1a;color:#d29922;border-color:#d2992255;max-width:100%;overflow:hidden;box-sizing:border-box;';
+      var GROUP_SHOW_MAX=2; // 手機寬度有限，集團名稱太多會整行溢出被卡片裁切，只先顯示前幾個，剩下的用+N顯示
+      var shownGroups=groups.slice(0,GROUP_SHOW_MAX);
+      var extraCount=groups.length-shownGroups.length;
+      badge.innerHTML='🏢 '+shownGroups.map(function(g){
         var safe=g.replace(/'/g,"\\'").replace(/"/g,'&quot;');
         return '<span onclick="event.stopPropagation();filterByGroup(\''+safe+'\')">'+g+'</span>';
-      }).join('　');
+      }).join('　')+(extraCount>0?'　<span style="opacity:.75" title="'+groups.slice(GROUP_SHOW_MAX).join('、').replace(/"/g,'&quot;')+'">+'+extraCount+'</span>':'');
       var bar=getOrCreateStrategyBar(card);
       bar.insertBefore(badge, bar.firstChild); // 集團永遠排在策略標籤最前面
     }
@@ -4236,6 +4244,7 @@ var _dahuRotationLastNodes = null;
 var _dahuRotationMode = 'group'; // 'group'=族群檢視（泡泡） / 'stock'=個股檢視（每檔股票一個點）
 
 function openDahuRotationBoard(){
+  _hideDahuReturnFab();
   toast('🧭 開啟大戶籌碼趨勢表...','#1f6feb');
   try{
     // 保險：把其他可能還開著的全螢幕視窗都關掉，避免疊在一起互相蓋住
@@ -5084,6 +5093,21 @@ function jumpFromDahuRotation(code){
     toggleClear(code);
   }
   window.scrollTo({top:0, behavior:'smooth'});
+  _dahuReturnPending = true;
+  _showDahuReturnFab();
+}
+function _showDahuReturnFab(){
+  var el = document.getElementById('dahu-return-fab');
+  if(el) el.style.display = 'flex';
+}
+function _hideDahuReturnFab(){
+  var el = document.getElementById('dahu-return-fab');
+  if(el) el.style.display = 'none';
+}
+function returnToDahuBoard(){
+  _dahuReturnPending = false;
+  _hideDahuReturnFab();
+  openDahuRotationBoard();
 }
 // 市場參考看板：原油／美元指數／VIX／美債殖利率，透過 Apps Script 代理 Yahoo Finance
 var MACRO_LABELS = {
