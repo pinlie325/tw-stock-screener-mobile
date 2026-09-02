@@ -74,10 +74,11 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:var(--bg-page)
 .fbar-search:focus{border-color:#58a6ff}
 .fbar-clear{position:absolute;right:4px;background:none;border:none;color:var(--text-secondary);font-size:18px;cursor:pointer;padding:4px 8px;line-height:1;display:none}
 .fbar-clear:hover{color:var(--text-primary)}
-#num-keypad{display:none;position:fixed;top:95px;right:10px;z-index:120;background:var(--bg-panel);border:1px solid var(--border);border-radius:10px;padding:6px;box-shadow:0 4px 10px #0006;grid-template-columns:repeat(3,1fr);gap:5px;box-sizing:border-box;width:150px}
-.numkey{width:100%;height:38px;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;-webkit-user-select:none;box-sizing:border-box}
+#num-keypad{display:none;position:fixed;top:95px;right:10px;z-index:120;background:var(--bg-panel);border:1px solid var(--border);border-radius:10px;padding:7px;box-shadow:0 4px 10px #0006;grid-template-columns:repeat(3,1fr);gap:6px;box-sizing:border-box;width:180px}
+.numkey{width:100%;height:48px;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);font-size:19px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;-webkit-user-select:none;box-sizing:border-box}
 .numkey:active{background:#1f3a5f;border-color:#58a6ff}
-.numkey-close{color:var(--text-secondary);font-size:14px}
+.numkey-ac{color:#f85149;font-size:14px;font-weight:800}
+.numkey-enter{color:#58a6ff;font-size:20px;font-weight:700}
 #fsearch-suggest{display:none;position:fixed;top:95px;left:12px;right:172px;z-index:118;background:var(--bg-panel);border:1px solid var(--border);border-radius:8px;max-height:260px;overflow-y:auto;box-shadow:0 4px 10px #0006;box-sizing:border-box}
 .fsearch-suggest-item{padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:14px;color:var(--text-primary);display:flex;align-items:center;gap:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fsearch-suggest-item:last-child{border-bottom:none}
@@ -1339,8 +1340,8 @@ function adminRemoveUser(email){
   <button class="numkey" data-k="8" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" ontouchend="event.preventDefault();_numKeypadInput('8')" onclick="_numKeypadInput('8')">8</button>
   <button class="numkey" data-k="9" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" ontouchend="event.preventDefault();_numKeypadInput('9')" onclick="_numKeypadInput('9')">9</button>
   <button class="numkey" data-k="0" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" ontouchend="event.preventDefault();_numKeypadInput('0')" onclick="_numKeypadInput('0')">0</button>
-  <button class="numkey" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" ontouchend="event.preventDefault();_numKeypadBackspace()" onclick="_numKeypadBackspace()">⌫</button>
-  <button class="numkey numkey-close" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" ontouchend="event.preventDefault();hideNumKeypad()" onclick="hideNumKeypad()">✕</button>
+  <button class="numkey numkey-ac" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" ontouchend="event.preventDefault();_numKeypadClearAll()" onclick="_numKeypadClearAll()">AC</button>
+  <button class="numkey numkey-enter" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" ontouchend="event.preventDefault();_numKeypadEnter()" onclick="_numKeypadEnter()">↵</button>
 </div>
 <div id="fsearch-suggest"></div>
 <!-- SORT BAR -->
@@ -1818,7 +1819,17 @@ function toggleClear(v){var b=document.getElementById('fclear');if(b)b.style.dis
 // 這裡在搜尋欄取得焦點時另外浮出一排大顆數字鍵，方便快速輸入代碼；輸入名稱時仍可用原生鍵盤照打。
 function showNumKeypad(){
   var el = document.getElementById('num-keypad');
-  if(el) el.style.display = 'grid';
+  if(!el) return;
+  // 鍵盤水平位置對齊「產業」按鈕，畫面寬度不同時位置才不會亂跑
+  var fbtn = document.getElementById('fbtn');
+  if(fbtn){
+    var r = fbtn.getBoundingClientRect();
+    var left = Math.min(r.left, window.innerWidth - el.offsetWidth - 10);
+    if(left < 10) left = 10;
+    el.style.left = left + 'px';
+    el.style.right = 'auto';
+  }
+  el.style.display = 'grid';
 }
 function hideNumKeypad(){
   var el = document.getElementById('num-keypad');
@@ -1830,13 +1841,25 @@ function _numKeypadInput(d){
   i.value = (i.value || '') + d;
   doSearch(i.value);
   toggleClear(i.value);
+  fsearchSuggestInput(i.value);
 }
-function _numKeypadBackspace(){
+function _numKeypadClearAll(){
   var i = document.getElementById('fsearch');
   if(!i) return;
-  i.value = (i.value || '').slice(0, -1);
-  doSearch(i.value);
-  toggleClear(i.value);
+  i.value = '';
+  doSearch('', true);
+  toggleClear('');
+  fsearchSuggestInput('');
+}
+function _numKeypadEnter(){
+  var i = document.getElementById('fsearch');
+  if(i){
+    doSearch(i.value, true);
+    toggleClear(i.value);
+  }
+  hideFsearchSuggest();
+  hideNumKeypad();
+  if(i) i.blur();
 }
 
 // ── 搜尋欄自動完成選單：跟「個股對照」的建議清單同一套邏輯，打字時列出代碼/名稱符合的個股，
