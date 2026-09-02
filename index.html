@@ -60,7 +60,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:var(--bg-page)
 
 /* ── HEADER ── */
 .hdr{background:var(--bg-panel);border-bottom:1px solid var(--border);padding:9px 14px;display:flex;align-items:center;gap:8px;position:fixed;top:0;left:0;right:0;z-index:100;}
-.bbar{background:var(--bg-panel);border-top:1px solid var(--border);padding:8px 14px;display:flex;align-items:center;justify-content:center;gap:14px;position:fixed;left:0;right:0;bottom:0;z-index:900;}
+.bbar{background:var(--bg-panel);border-top:1px solid var(--border);padding:8px 14px;display:flex;align-items:center;justify-content:center;gap:16px;position:fixed;left:0;right:0;bottom:0;z-index:900;}
 .hdr-t{font-size:14px;font-weight:700;color:#58a6ff;white-space:nowrap}
 .hdr-sub{font-size:12px;color:var(--text-secondary);margin-left:4px}
 .hdr-r{margin-left:auto;display:flex;gap:6px}
@@ -74,10 +74,15 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:var(--bg-page)
 .fbar-search:focus{border-color:#58a6ff}
 .fbar-clear{position:absolute;right:4px;background:none;border:none;color:var(--text-secondary);font-size:18px;cursor:pointer;padding:4px 8px;line-height:1;display:none}
 .fbar-clear:hover{color:var(--text-primary)}
-#num-keypad{display:none;position:fixed;top:95px;left:0;right:0;z-index:120;background:var(--bg-panel);border-bottom:1px solid var(--border);padding:8px 10px;box-shadow:0 4px 10px #0006;grid-template-columns:repeat(3,1fr);gap:8px;box-sizing:border-box;max-width:340px;margin:0 auto}
-.numkey{width:100%;height:52px;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:22px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;-webkit-user-select:none;box-sizing:border-box}
+#num-keypad{display:none;position:fixed;top:95px;right:10px;z-index:120;background:var(--bg-panel);border:1px solid var(--border);border-radius:10px;padding:6px;box-shadow:0 4px 10px #0006;grid-template-columns:repeat(3,1fr);gap:5px;box-sizing:border-box;width:150px}
+.numkey{width:100%;height:38px;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;-webkit-user-select:none;box-sizing:border-box}
 .numkey:active{background:#1f3a5f;border-color:#58a6ff}
 .numkey-close{color:var(--text-secondary);font-size:14px}
+#fsearch-suggest{display:none;position:fixed;top:95px;left:12px;right:172px;z-index:118;background:var(--bg-panel);border:1px solid var(--border);border-radius:8px;max-height:260px;overflow-y:auto;box-shadow:0 4px 10px #0006;box-sizing:border-box}
+.fsearch-suggest-item{padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:14px;color:var(--text-primary);display:flex;align-items:center;gap:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fsearch-suggest-item:last-child{border-bottom:none}
+.fsearch-suggest-item:active{background:#1f3a5f}
+.fsearch-suggest-code{color:var(--text-secondary);font-family:monospace;flex-shrink:0}
 .fbar-tags{display:flex;flex-wrap:wrap;gap:5px;padding:0 12px 6px;min-height:0}
 .fbar-tags:empty{display:none}
 .fbar-sel-tag{display:inline-flex;align-items:center;gap:4px;background:#1f3a5f;color:#79c0ff;border:1px solid #1f6feb55;border-radius:12px;font-size:11px;padding:2px 8px;cursor:pointer}
@@ -864,11 +869,12 @@ function adminRemoveUser(email){
 <button id="report-return-fab" onclick="_reportReturnClick()" style="display:none;position:fixed;right:14px;bottom:70px;z-index:850;background:#1f6feb;border:none;border-radius:20px;color:#fff;padding:9px 16px;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:700;box-shadow:0 2px 10px #0006;white-space:nowrap;"></button>
 
 <div class="bbar" id="bbar">
-  <button id="logout-btn" onclick="doLogout()" style="display:none;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:#f85149;width:38px;height:38px;align-items:center;justify-content:center;cursor:pointer;font-size:15px;" title="登出">🚪</button>
-  <button id="admin-btn" onclick="openAdminPanel()" style="display:none;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:#58a6ff;width:38px;height:38px;align-items:center;justify-content:center;cursor:pointer;font-size:17px;">👤</button>
-  <button id="float-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" style="background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-secondary);padding:0 34px;height:38px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;cursor:pointer;font-size:13px;">▲</button>
-  <button id="general-note-btn" onclick="generalNoteBtnClick()" style="background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-secondary);font-size:13px;padding:0 14px;height:38px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;cursor:pointer;white-space:nowrap;">📣</button>
-  <button onclick="openSettings()" title="設定" style="background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-secondary);width:38px;height:38px;align-items:center;justify-content:center;cursor:pointer;font-size:17px;">⚙️</button>
+  <button id="logout-btn" onclick="doLogout()" style="display:none;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:10px;color:#f85149;width:44px;height:44px;align-items:center;justify-content:center;cursor:pointer;font-size:17px;box-sizing:border-box;" title="登出">🚪</button>
+  <button id="admin-btn" onclick="openAdminPanel()" style="display:none;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:10px;color:#58a6ff;width:44px;height:44px;align-items:center;justify-content:center;cursor:pointer;font-size:18px;box-sizing:border-box;">👤</button>
+  <button id="float-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" style="background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:10px;color:var(--text-secondary);width:44px;height:44px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;cursor:pointer;font-size:15px;">▲</button>
+  <button id="dahu-quick-btn" onclick="openDahuRotationBoard()" title="大戶籌碼趨勢表" style="background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:10px;color:var(--text-secondary);width:44px;height:44px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;cursor:pointer;font-size:18px;">🐋</button>
+  <button id="general-note-btn" onclick="generalNoteBtnClick()" style="position:relative;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:10px;color:var(--text-secondary);width:44px;height:44px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;cursor:pointer;font-size:18px;">📣<span id="general-note-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:#f85149;color:#fff;font-size:10px;font-weight:700;line-height:1;min-width:16px;height:16px;border-radius:8px;align-items:center;justify-content:center;padding:0 3px;box-sizing:border-box;"></span></button>
+  <button onclick="openSettings()" title="設定" style="background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:10px;color:var(--text-secondary);width:44px;height:44px;align-items:center;justify-content:center;cursor:pointer;font-size:18px;box-sizing:border-box;">⚙️</button>
 </div>
 
 <!-- ADMIN MODAL -->
@@ -1307,7 +1313,7 @@ function adminRemoveUser(email){
 <!-- FILTER BAR -->
 <div class="fbar">
   <div class="fbar-search-wrap">
-    <input class="fbar-search" id="fsearch" type="text" inputmode="search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="搜尋代碼或名稱..." oninput="doSearch(this.value);toggleClear(this.value)" onfocus="showNumKeypad()" onblur="hideNumKeypad()">
+    <input class="fbar-search" id="fsearch" type="text" inputmode="search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="搜尋代碼或名稱..." oninput="doSearch(this.value);toggleClear(this.value);fsearchSuggestInput(this.value)" onfocus="showNumKeypad();fsearchSuggestInput(this.value)" onblur="hideNumKeypad();hideFsearchSuggest()">
     <button class="fbar-clear" id="fclear" onclick="clearSearch()">✕</button>
   </div>
   <button class="btn-filter" id="fbtn" onclick="openDrawer()">🔍 產業</button>
@@ -1336,6 +1342,7 @@ function adminRemoveUser(email){
   <button class="numkey" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" ontouchend="event.preventDefault();_numKeypadBackspace()" onclick="_numKeypadBackspace()">⌫</button>
   <button class="numkey numkey-close" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" ontouchend="event.preventDefault();hideNumKeypad()" onclick="hideNumKeypad()">✕</button>
 </div>
+<div id="fsearch-suggest"></div>
 <!-- SORT BAR -->
 <div class="sbar" id="sbar">
   <button class="sbtn on" data-k="pct" onclick="setSrtToggle(this,'pct','漲跌幅 ↑','漲跌幅 ↓')">漲跌幅 ↑</button>
@@ -1549,8 +1556,12 @@ function updateGeneralNoteBtn(){
   var btn = document.getElementById('general-note-btn');
   if(!btn) return;
   var n = generalNoteHistory.length;
-  // 白色在深色底上太搶眼，改用跟其他底部icon一樣低調的灰色，只顯示數字不寫「大聲公」文字
-  btn.textContent = n ? ('📣 '+n) : '📣';
+  // 底部按鈕統一大小後，留言數改用右上角小紅點徽章顯示，不再讓按鈕本身撐寬跟其他icon不一樣大
+  var badge = document.getElementById('general-note-badge');
+  if(badge){
+    if(n){ badge.textContent = n > 99 ? '99+' : String(n); badge.style.display = 'flex'; }
+    else { badge.style.display = 'none'; badge.textContent = ''; }
+  }
 }
 function openGeneralNoteModal(){
   renderGeneralNoteList();
@@ -1828,6 +1839,42 @@ function _numKeypadBackspace(){
   toggleClear(i.value);
 }
 
+// ── 搜尋欄自動完成選單：跟「個股對照」的建議清單同一套邏輯，打字時列出代碼/名稱符合的個股，
+// 點一下直接跳轉鎖定那一檔，比在下面卡片列表裡滑動找快很多。
+function fsearchSuggestInput(v){
+  var box = document.getElementById('fsearch-suggest');
+  if(!box) return;
+  var q = (v || '').trim().toLowerCase();
+  if(!q){ box.style.display = 'none'; box.innerHTML = ''; return; }
+  var matches = (D || []).filter(function(s){
+    return (s.code && s.code.toLowerCase().indexOf(q) >= 0) || (s.name && s.name.toLowerCase().indexOf(q) >= 0);
+  }).slice(0, 8);
+  if(!matches.length){ box.style.display = 'none'; box.innerHTML = ''; return; }
+  box.innerHTML = matches.map(function(s){
+    return '<div class="fsearch-suggest-item" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" ontouchend="event.preventDefault();selectFsearchSuggest(\''+s.code+'\')" onclick="selectFsearchSuggest(\''+s.code+'\')">'
+      +'<span class="fsearch-suggest-code">'+s.code+'</span><span>'+s.name+'</span>'
+    +'</div>';
+  }).join('');
+  box.style.display = 'block';
+}
+function hideFsearchSuggest(){
+  var box = document.getElementById('fsearch-suggest');
+  if(box){ box.style.display = 'none'; box.innerHTML = ''; }
+}
+function selectFsearchSuggest(code){
+  var i = document.getElementById('fsearch');
+  if(i) i.value = code;
+  doSearch(code, true);
+  toggleClear(code);
+  hideFsearchSuggest();
+  hideNumKeypad();
+  if(i) i.blur();
+  setTimeout(function(){
+    var card = document.querySelector('#cards .card');
+    if(card) card.scrollIntoView({block:'start', behavior:'instant'});
+  }, 60);
+}
+
 function clearSearch(){
   // 記住目前畫面上第一張可見卡片的代碼
   var firstCard = document.querySelector('#cards .card');
@@ -1835,7 +1882,7 @@ function clearSearch(){
   var targetCode = firstCode ? firstCode.textContent.trim() : null;
 
   var i=document.getElementById('fsearch');
-  if(i){i.value='';doSearch('', true);toggleClear('');}
+  if(i){i.value='';doSearch('', true);toggleClear('');hideFsearchSuggest();}
 
   // render 後捲到該卡片
   if(targetCode){
