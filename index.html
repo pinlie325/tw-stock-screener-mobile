@@ -276,7 +276,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:var(--bg-page)
 .yf-close{color:var(--text-secondary);cursor:pointer;font-size:18px;padding:0 4px;line-height:1}
 
 /* ── TOAST ── */
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) scale(0.9);background:#238636;color:#fff;padding:10px 20px;border-radius:8px;font-size:14px;display:none;z-index:1050;white-space:nowrap;opacity:0;transition:opacity .18s,transform .18s}
+.toast{position:fixed;bottom:68px;left:50%;transform:translateX(-50%) scale(0.9);background:#238636;color:#fff;padding:10px 20px;border-radius:8px;font-size:14px;display:none;z-index:1050;white-space:nowrap;opacity:0;transition:opacity .18s,transform .18s}
 .toast.show{opacity:1;transform:translateX(-50%) scale(1)}
 
 /* ── XQ COPY BANNER ── */
@@ -4478,7 +4478,6 @@ var _dahuRotationMode = 'group'; // 'group'=族群檢視（泡泡） / 'stock'=�
 
 function openDahuRotationBoard(){
   _hideReportReturnFab();
-  toast('🐋 開啟大戶籌碼趨勢表...','#1f6feb');
   try{
     // 保險：把其他可能還開著的全螢幕視窗都關掉，避免疊在一起互相蓋住
     ['settings-modal','margin-report-modal','macro-board-modal','econ-calendar-modal','note-edit-modal'].forEach(function(id){
