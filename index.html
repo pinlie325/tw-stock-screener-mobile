@@ -867,7 +867,7 @@ function adminRemoveUser(email){
 
 <!-- BOTTOM BAR：跟上方header一樣是整條橫幅背景，不是懸浮圓形按鈕。👤跟🚪只有登入後才會顯示，▲用grid固定在正中間 -->
 <!-- 返回大戶籌碼浮檔鈕：從大戶籌碼趨勢表點個股跳過來後才會顯示，點一下就直接回到原本選到的分區 -->
-<button id="report-return-fab" onclick="_reportReturnClick()" style="display:none;position:fixed;right:14px;bottom:70px;z-index:850;background:#1f6feb;border:none;border-radius:20px;color:#fff;padding:9px 16px;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:700;box-shadow:0 2px 10px #0006;white-space:nowrap;"></button>
+<button id="report-return-fab" onclick="_reportReturnClick()" style="display:none;position:fixed;right:14px;bottom:70px;z-index:850;background:#1f6feb;border:none;border-radius:20px;color:#fff;padding:9px 16px;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:700;line-height:1.3;box-shadow:0 2px 10px #0006;white-space:nowrap;"></button>
 
 <div class="bbar" id="bbar">
   <button id="logout-btn" onclick="doLogout()" style="display:none;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:10px;color:#f85149;width:44px;height:44px;align-items:center;justify-content:center;cursor:pointer;font-size:17px;box-sizing:border-box;" title="登出">🚪</button>
@@ -2392,7 +2392,7 @@ function cardScreenshot(e, el) {
 
   // 顯示提示 banner（左下角小按鈕，不蓋卡片）
   var tip = document.createElement('div');
-  tip.style.cssText = 'position:fixed;left:14px;bottom:14px;background:#238636;color:#fff;font-size:13px;font-weight:700;padding:9px 16px;border-radius:20px;z-index:9999;font-family:sans-serif;white-space:nowrap;box-shadow:0 2px 10px #0006;cursor:pointer';
+  tip.style.cssText = 'position:fixed;left:14px;bottom:14px;background:#238636;color:#fff;font-size:13px;font-weight:700;line-height:1.3;padding:9px 16px;border-radius:20px;z-index:9999;font-family:sans-serif;white-space:nowrap;box-shadow:0 2px 10px #0006;cursor:pointer;display:inline-flex;align-items:center';
   tip.textContent = '📸 截圖模式　按此離開';
   tip.onclick = function() {
     _screenshotModeOn = false;
