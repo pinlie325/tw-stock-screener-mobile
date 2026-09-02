@@ -79,7 +79,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:var(--bg-page)
 .numkey:active{background:#1f3a5f;border-color:#58a6ff}
 .numkey-ac{color:#f85149;font-size:14px;font-weight:800}
 .numkey-enter{color:#58a6ff;font-size:20px;font-weight:700}
-#fsearch-suggest{display:none;position:fixed;top:95px;left:12px;right:172px;z-index:118;background:var(--bg-panel);border:1px solid var(--border);border-radius:8px;max-height:260px;overflow-y:auto;box-shadow:0 4px 10px #0006;box-sizing:border-box}
+#fsearch-suggest{display:none;position:fixed;top:95px;z-index:118;background:var(--bg-panel);border:1px solid var(--border);border-radius:8px;max-height:260px;overflow-y:auto;box-shadow:0 4px 10px #0006;box-sizing:border-box}
 .fsearch-suggest-item{padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:14px;color:var(--text-primary);display:flex;align-items:center;gap:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fsearch-suggest-item:last-child{border-bottom:none}
 .fsearch-suggest-item:active{background:#1f3a5f}
@@ -1320,7 +1320,7 @@ function adminRemoveUser(email){
   <button class="btn-filter" id="fbtn" onclick="openDrawer()">🔍 產業</button>
   <button class="btn-filter" onclick="showCompactList()" title="簡列">🏷️</button>
   <button class="btn-filter" onclick="openStrategyFilter()" title="策略篩選">📌</button>
-  <button class="btn-filter" onclick="openCompareModal()" title="個股對照" style="font-weight:900;font-size:16px;">⇄</button>
+  <button class="btn-filter" id="fbtn-compare" onclick="openCompareModal()" title="個股對照" style="font-weight:900;font-size:16px;">⇄</button>
 </div>
 <div id="fbar-tags-wrap" style="display:none;align-items:center;gap:5px;padding:0 12px 6px;flex-wrap:wrap">
   <button class="fbar-clear-all" id="fbar-clear-all" onclick="selAll()">✕ 清除全部</button>
@@ -1820,14 +1820,20 @@ function toggleClear(v){var b=document.getElementById('fclear');if(b)b.style.dis
 function showNumKeypad(){
   var el = document.getElementById('num-keypad');
   if(!el) return;
-  // 鍵盤水平位置對齊「產業」按鈕，畫面寬度不同時位置才不會亂跑
-  var fbtn = document.getElementById('fbtn');
+  // 鍵盤外緣(右邊)對齊「個股對照」按鈕的外緣(右邊)。用CSS本來就固定的寬度(跟#num-keypad的
+  // width:180px一致)換算right值，不用去量display:none元素的寬度(那個量不準，之前害鍵盤跑出畫面外)。
+  var KEYPAD_W = 180;
+  var fbtn = document.getElementById('fbtn-compare');
   if(fbtn){
     var r = fbtn.getBoundingClientRect();
-    var left = Math.min(r.left, window.innerWidth - el.offsetWidth - 10);
-    if(left < 10) left = 10;
-    el.style.left = left + 'px';
-    el.style.right = 'auto';
+    var right = window.innerWidth - r.right;
+    if(right < 10) right = 10;
+    // 防呆：這樣算出來的話，如果鍵盤左邊會超出畫面左邊界，改成貼齊畫面左邊界
+    if(window.innerWidth - right - KEYPAD_W < 10){
+      right = window.innerWidth - KEYPAD_W - 10;
+    }
+    el.style.right = right + 'px';
+    el.style.left = 'auto';
   }
   el.style.display = 'grid';
 }
@@ -1869,6 +1875,13 @@ function fsearchSuggestInput(v){
   if(!box) return;
   var q = (v || '').trim().toLowerCase();
   if(!q){ box.style.display = 'none'; box.innerHTML = ''; return; }
+  // 選單左右邊線對齊搜尋框本身的左右邊線
+  var searchEl = document.getElementById('fsearch');
+  if(searchEl){
+    var sr = searchEl.getBoundingClientRect();
+    box.style.left = sr.left + 'px';
+    box.style.right = (window.innerWidth - sr.right) + 'px';
+  }
   var matches = (D || []).filter(function(s){
     return (s.code && s.code.toLowerCase().indexOf(q) >= 0) || (s.name && s.name.toLowerCase().indexOf(q) >= 0);
   }).slice(0, 8);
