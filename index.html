@@ -1323,18 +1323,18 @@ function adminRemoveUser(email){
 </div>
 
 <div id="num-keypad">
-  <button class="numkey" data-k="1" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" onclick="_numKeypadInput('1')">1</button>
-  <button class="numkey" data-k="2" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" onclick="_numKeypadInput('2')">2</button>
-  <button class="numkey" data-k="3" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" onclick="_numKeypadInput('3')">3</button>
-  <button class="numkey" data-k="4" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" onclick="_numKeypadInput('4')">4</button>
-  <button class="numkey" data-k="5" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" onclick="_numKeypadInput('5')">5</button>
-  <button class="numkey" data-k="6" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" onclick="_numKeypadInput('6')">6</button>
-  <button class="numkey" data-k="7" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" onclick="_numKeypadInput('7')">7</button>
-  <button class="numkey" data-k="8" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" onclick="_numKeypadInput('8')">8</button>
-  <button class="numkey" data-k="9" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" onclick="_numKeypadInput('9')">9</button>
-  <button class="numkey" data-k="0" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" onclick="_numKeypadInput('0')">0</button>
-  <button class="numkey" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" onclick="_numKeypadBackspace()">⌫</button>
-  <button class="numkey numkey-close" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" onclick="hideNumKeypad()">✕</button>
+  <button class="numkey" data-k="1" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" ontouchend="event.preventDefault();_numKeypadInput('1')" onclick="_numKeypadInput('1')">1</button>
+  <button class="numkey" data-k="2" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" ontouchend="event.preventDefault();_numKeypadInput('2')" onclick="_numKeypadInput('2')">2</button>
+  <button class="numkey" data-k="3" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" ontouchend="event.preventDefault();_numKeypadInput('3')" onclick="_numKeypadInput('3')">3</button>
+  <button class="numkey" data-k="4" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" ontouchend="event.preventDefault();_numKeypadInput('4')" onclick="_numKeypadInput('4')">4</button>
+  <button class="numkey" data-k="5" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" ontouchend="event.preventDefault();_numKeypadInput('5')" onclick="_numKeypadInput('5')">5</button>
+  <button class="numkey" data-k="6" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" ontouchend="event.preventDefault();_numKeypadInput('6')" onclick="_numKeypadInput('6')">6</button>
+  <button class="numkey" data-k="7" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" ontouchend="event.preventDefault();_numKeypadInput('7')" onclick="_numKeypadInput('7')">7</button>
+  <button class="numkey" data-k="8" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" ontouchend="event.preventDefault();_numKeypadInput('8')" onclick="_numKeypadInput('8')">8</button>
+  <button class="numkey" data-k="9" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" ontouchend="event.preventDefault();_numKeypadInput('9')" onclick="_numKeypadInput('9')">9</button>
+  <button class="numkey" data-k="0" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" ontouchend="event.preventDefault();_numKeypadInput('0')" onclick="_numKeypadInput('0')">0</button>
+  <button class="numkey" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" ontouchend="event.preventDefault();_numKeypadBackspace()" onclick="_numKeypadBackspace()">⌫</button>
+  <button class="numkey numkey-close" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" ontouchend="event.preventDefault();hideNumKeypad()" onclick="hideNumKeypad()">✕</button>
 </div>
 <!-- SORT BAR -->
 <div class="sbar" id="sbar">
