@@ -867,7 +867,7 @@ function adminRemoveUser(email){
 
 <!-- BOTTOM BAR：跟上方header一樣是整條橫幅背景，不是懸浮圓形按鈕。👤跟🚪只有登入後才會顯示，▲用grid固定在正中間 -->
 <!-- 返回大戶籌碼浮檔鈕：從大戶籌碼趨勢表點個股跳過來後才會顯示，點一下就直接回到原本選到的分區 -->
-<button id="report-return-fab" onclick="_reportReturnClick()" style="display:none;position:fixed;right:14px;bottom:70px;z-index:850;background:#1f6feb;border:none;border-radius:20px;color:#fff;padding:9px 16px;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:700;line-height:1.3;box-shadow:0 2px 10px #0006;white-space:nowrap;"></button>
+<button id="report-return-fab" onclick="_reportReturnClick()" style="display:none;position:fixed;right:14px;bottom:70px;z-index:850;background:#1f6feb;border:none;border-radius:20px;color:#fff;width:180px;height:36px;padding:0 12px;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-size:13px;font-weight:700;box-shadow:0 2px 10px #0006;white-space:nowrap;box-sizing:border-box;overflow:hidden;text-overflow:ellipsis;"></button>
 
 <div class="bbar" id="bbar">
   <button id="logout-btn" onclick="doLogout()" style="display:none;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:10px;color:#f85149;width:44px;height:44px;align-items:center;justify-content:center;cursor:pointer;font-size:17px;box-sizing:border-box;" title="登出">🚪</button>
@@ -960,13 +960,13 @@ function adminRemoveUser(email){
       🗓 財經行事曆
     </button>
     <button onclick="openMarginReport()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
-      📊 各族群融資維持率報表
+      🏭 各族群融資維持率報表
     </button>
     <button onclick="openDisposalReport()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
       🚨 處置股名單
     </button>
     <button onclick="openDahuRotationBoard()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;text-align:left">
-      🧭 大戶籌碼趨勢表
+      🐋 大戶籌碼趨勢表
     </button>
   </div>
 </div>
@@ -992,7 +992,7 @@ function adminRemoveUser(email){
 <!-- DAHU CHIP ROTATION MODAL -->
 <div id="dahu-rotation-modal" style="display:none;position:fixed;inset:0;background:var(--bg-page);z-index:9999;flex-direction:column">
   <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg-panel);flex-shrink:0">
-    <span style="font-size:16px;font-weight:700;color:var(--text-primary)">🧭 大戶籌碼趨勢表</span>
+    <span style="font-size:16px;font-weight:700;color:var(--text-primary)">🐋 大戶籌碼趨勢表</span>
     <button onclick="closeDahuRotationBoard()" style="background:none;border:none;color:var(--text-secondary);font-size:22px;cursor:pointer">✕</button>
   </div>
   <div style="flex:1;overflow-y:auto;padding:14px;">
@@ -1049,7 +1049,7 @@ function adminRemoveUser(email){
 <!-- MARGIN REPORT MODAL -->
 <div id="margin-report-modal" style="display:none;position:fixed;inset:0;background:var(--bg-page);z-index:9999;flex-direction:column">
   <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg-panel);flex-shrink:0">
-    <span style="font-size:16px;font-weight:700;color:var(--text-primary)">📊 各族群融資維持率</span>
+    <span style="font-size:16px;font-weight:700;color:var(--text-primary)">🏭 各族群融資維持率</span>
     <button onclick="document.getElementById('margin-report-modal').style.display='none'" style="background:none;border:none;color:var(--text-secondary);font-size:22px;cursor:pointer">✕</button>
   </div>
   <div id="margin-report-nav" style="display:flex;gap:6px;padding:8px 12px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:var(--bg-panel);border-bottom:1px solid var(--border);flex-shrink:0;cursor:grab"></div>
@@ -2392,7 +2392,7 @@ function cardScreenshot(e, el) {
 
   // 顯示提示 banner（左下角小按鈕，不蓋卡片）
   var tip = document.createElement('div');
-  tip.style.cssText = 'position:fixed;left:14px;bottom:14px;background:#238636;color:#fff;font-size:13px;font-weight:700;line-height:1.3;padding:9px 16px;border-radius:20px;z-index:9999;font-family:sans-serif;white-space:nowrap;box-shadow:0 2px 10px #0006;cursor:pointer;display:inline-flex;align-items:center';
+  tip.style.cssText = 'position:fixed;left:14px;bottom:14px;background:#238636;color:#fff;font-size:13px;font-weight:700;width:180px;height:36px;padding:0 12px;border-radius:20px;z-index:9999;font-family:sans-serif;white-space:nowrap;box-shadow:0 2px 10px #0006;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;overflow:hidden;text-overflow:ellipsis';
   tip.textContent = '📸 截圖模式　按此離開';
   tip.onclick = function() {
     _screenshotModeOn = false;
@@ -4478,7 +4478,7 @@ var _dahuRotationMode = 'group'; // 'group'=族群檢視（泡泡） / 'stock'=�
 
 function openDahuRotationBoard(){
   _hideReportReturnFab();
-  toast('🧭 開啟大戶籌碼趨勢表...','#1f6feb');
+  toast('🐋 開啟大戶籌碼趨勢表...','#1f6feb');
   try{
     // 保險：把其他可能還開著的全螢幕視窗都關掉，避免疊在一起互相蓋住
     ['settings-modal','margin-report-modal','macro-board-modal','econ-calendar-modal','note-edit-modal'].forEach(function(id){
