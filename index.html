@@ -1415,7 +1415,6 @@ function adminRemoveUser(email){
   <div id="col-resize-grip"></div>
   <div id="col-resize-tip">拖曳調整寬度．雙擊還原預設</div>
 </div>
-
 <!-- FILTER DRAWER -->
 <div class="drawer-bg" id="dbg" onclick="closeDrawer()"></div>
 <div class="drawer" id="drawer">
@@ -2539,7 +2538,6 @@ function getTVSymbol(code){
   return 'TWSE:'+c;
 }
 
-
 function openChart(e, code, name){
   var txt=code;
   if(navigator.clipboard && navigator.clipboard.writeText){
@@ -2921,19 +2919,24 @@ function fetchRealTimePrice(code, cardEl){
     .catch(function(){});
 }
 
-function tvLoad(code, interval){
-  var frameDiv=document.getElementById('yf-frame-'+code);
+function tvLoad(code, interval, opts){
+  // opts.frameId/opts.ns：讓桌面固定圖表面板可以共用這整套抓資料/畫圖/滑動邏輯，
+  // 不用複製一份——沒有傳opts時完全比照原本行為（手機卡片內嵌圖表）。
+  opts = opts || {};
+  var frameId = opts.frameId || ('yf-frame-'+code);
+  var ns = opts.ns || code;
+  var frameDiv=document.getElementById(frameId);
   if(!frameDiv) return;
 
   // 上市+上櫃：統一用 FinMind API Canvas K線
   var dpr=window.devicePixelRatio||1;
   frameDiv.innerHTML=
     '<div style="position:relative;background:var(--bg-page);border-radius:6px;overflow:hidden">'
-    +'<canvas id="kc-'+code+'" style="display:block;width:100%"></canvas>'
-    +'<div id="kl-'+code+'" style="position:absolute;inset:0;display:flex;align-items:center;'
+    +'<canvas id="kc-'+ns+'" style="display:block;width:100%"></canvas>'
+    +'<div id="kl-'+ns+'" style="position:absolute;inset:0;display:flex;align-items:center;'
     +'justify-content:center;color:var(--text-secondary);font-size:13px;background:var(--bg-page);border-radius:6px;">⏳ 載入中...</div>'
     +'</div>';
-  var canvas=document.getElementById('kc-'+code);
+  var canvas=document.getElementById('kc-'+ns);
   function initC(){
     var w=canvas.parentElement.offsetWidth||360;
     canvas.width=w*dpr;
@@ -2943,7 +2946,7 @@ function tvLoad(code, interval){
   }
   initC();
   fetchKData(code, interval, function(data){
-    var ld=document.getElementById('kl-'+code);
+    var ld=document.getElementById('kl-'+ns);
     if(ld) ld.style.display='none';
     if(canvas.width<50*dpr) initC();
     drawKChart(canvas, data);
@@ -4504,7 +4507,7 @@ function closeDahuRotationBoard(){
 // 直接丟進 ctx.fillStyle 會被瀏覽器忽略、疊代前一次畫的顏色，造成散點圖/子泡泡的落後色不對。
 // 這裡另外提供一份四象限對應的「保證是色碼」版本，統一給canvas畫圖用。
 function _dahuQuadColorHex(label, _cs){
-  if(label==='領先') return '#3fb950';
+  if(label==='領先') return '#f85149';
   if(label==='改善') return '#58a6ff';
   if(label==='弱化') return '#d29922';
   var fallback = (_cs && _cs.getPropertyValue) ? (_cs.getPropertyValue('--text-secondary')||'').trim() : '';
@@ -4686,7 +4689,7 @@ function _computeDahuRotationAllStocks(){
 // 族群檢視上方的四象限統計卡片（參考Tide潮汐左側漲潮/輪動/觀望/退潮那組卡片的排法，
 // 換成我們自己這套領先/改善/弱化/落後的籌碼分區統計，一眼看出目前整體大戶籌碼氣氛）
 var DAHU_QUAD_STAT_DEFS = [
-  {key:'領先', sub:'強勢主流', desc:'買賣比≥70%<br>差比≥20%', color:'#3fb950', bg:'#3fb95015'},
+  {key:'領先', sub:'強勢主流', desc:'買賣比≥70%<br>差比≥20%', color:'#f85149', bg:'#f8514915'},
   {key:'改善', sub:'籌碼改善中', desc:'買賣比<70%<br>差比≥20%', color:'#58a6ff', bg:'#1f6feb15'},
   {key:'弱化', sub:'資金退潮', desc:'買賣比≥70%<br>差比<20%', color:'#d29922', bg:'#d2992215'},
   {key:'落後', sub:'弱勢觀望', desc:'買賣比<70%<br>差比<20%', color:'var(--text-secondary)', bg:'var(--bg-panel-alt)'}
@@ -4987,7 +4990,7 @@ function drawDahuRotationChart(ctx, W, H, groups){
     ctx.textAlign = 'center';
     ctx.fillText(text, bx+w/2, y);
   }
-  quadLabel('領先區(強勢主流)', W-PAD.r-4, PAD.t+14, 'right', '#3fb95033', '#3fb950');
+  quadLabel('領先區(強勢主流)', W-PAD.r-4, PAD.t+14, 'right', '#f8514933', '#f85149');
   quadLabel('改善區(籌碼改善中)', PAD.l+4, PAD.t+14, 'left', '#1f6feb33', '#58a6ff');
   quadLabel('落後區(弱勢觀望)', PAD.l+4, H-PAD.b-8, 'left', colGrid, colTextDim);
   quadLabel('弱化區(資金退潮)', W-PAD.r-4, H-PAD.b-8, 'right', '#d2992233', '#d29922');
@@ -5092,7 +5095,7 @@ function drawDahuRotationChart(ctx, W, H, groups){
 }
 
 // 個股檢視的繪圖：跟族群泡泡圖用同一套象限背景/軸線，但每個點是單一檔股票本身的
-// 大戶買賣比/大戶差比座標，顏色依它落在哪個象限直接上色（領先綠/改善藍/弱化橘/落後灰），
+// 大戶買賣比/大戶差比座標，顏色依它落在哪個象限直接上色（領先紅/改善藍/弱化橘/落後灰），
 // 呼應四個角落的象限標籤色，不用點進去就能看出哪些股票在哪一區
 function drawDahuRotationStockChart(ctx, W, H, stocks){
   ctx.clearRect(0,0,W,H);
@@ -5137,7 +5140,7 @@ function drawDahuRotationStockChart(ctx, W, H, stocks){
     ctx.textAlign = 'center';
     ctx.fillText(text, bx+w/2, y);
   }
-  quadLabel('領先區(強勢主流)', W-PAD.r-4, PAD.t+14, 'right', '#3fb95033', '#3fb950');
+  quadLabel('領先區(強勢主流)', W-PAD.r-4, PAD.t+14, 'right', '#f8514933', '#f85149');
   quadLabel('改善區(籌碼改善中)', PAD.l+4, PAD.t+14, 'left', '#1f6feb33', '#58a6ff');
   quadLabel('落後區(弱勢觀望)', PAD.l+4, H-PAD.b-8, 'left', colGrid, colTextDim);
   quadLabel('弱化區(資金退潮)', W-PAD.r-4, H-PAD.b-8, 'right', '#d2992233', '#d29922');
@@ -5269,7 +5272,7 @@ function _dahuStockQuadrant(dahubuy, dahuchai){
     return { label:'--', bg:'var(--bg-panel-alt)', fg:'var(--text-dim)' };
   }
   var strong = dahubuy>=70, hi = dahuchai>=20;
-  if(strong && hi) return { label:'領先', bg:'#3fb95033', fg:'#3fb950' };
+  if(strong && hi) return { label:'領先', bg:'#f8514933', fg:'#f85149' };
   if(!strong && hi) return { label:'改善', bg:'#1f6feb33', fg:'#58a6ff' };
   if(strong && !hi) return { label:'弱化', bg:'#d2992233', fg:'#d29922' };
   return { label:'落後', bg:'var(--bg-panel-alt)', fg:'var(--text-secondary)' };
