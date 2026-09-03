@@ -99,6 +99,12 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:var(--bg-page)
 /* ── SORT BAR ── */
 .sbar{padding:7px 12px;display:flex;flex-wrap:nowrap;gap:5px;background:var(--bg-page);border-bottom:1px solid var(--bg-panel-alt);position:fixed;top:95px;left:0;right:0;z-index:98;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;cursor:grab}
 .sbar::-webkit-scrollbar{display:none}
+/* 大戶籌碼趨勢表清單拉桿：桌面版預設拉桿又寬又亮很搶眼，改細一點、顏色跟背景融在一起，低調不搶版面 */
+#dahu-rotation-body{scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+#dahu-rotation-body::-webkit-scrollbar{width:7px}
+#dahu-rotation-body::-webkit-scrollbar-track{background:transparent}
+#dahu-rotation-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+#dahu-rotation-body::-webkit-scrollbar-thumb:hover{background:var(--text-dim)}
 .sbar .sbtn{flex-shrink:0}
 .sbtn{background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:16px;padding:5px 12px;font-size:12px;color:var(--text-secondary);cursor:pointer;white-space:nowrap}
 .sbtn.on{background:#1f6feb22;border-color:#58a6ff;color:#58a6ff}
@@ -995,7 +1001,7 @@ function adminRemoveUser(email){
     <span style="font-size:16px;font-weight:700;color:var(--text-primary)">🐋 大戶籌碼趨勢表</span>
     <button onclick="closeDahuRotationBoard()" style="background:none;border:none;color:var(--text-secondary);font-size:22px;cursor:pointer">✕</button>
   </div>
-  <div style="flex:1;overflow-y:auto;padding:14px;">
+  <div id="dahu-rotation-body" style="flex:1;overflow-y:auto;padding:14px;">
     <div id="dahu-group-flex" style="display:flex;flex-direction:column;gap:10px;">
       <div id="dahu-quad-stats" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;"></div>
       <div id="dahu-group-stock-list" style="background:var(--bg-panel);border:1px solid var(--border);border-radius:8px;padding:10px;min-height:420px;overflow-x:hidden;"></div>
@@ -1404,8 +1410,10 @@ function adminRemoveUser(email){
       <rect x="44" y="56" width="12" height="6" rx="3" fill="#1f6feb44" stroke="#58a6ff66" stroke-width="1"/>
       <rect x="60" y="56" width="8" height="6" rx="3" fill="#1f6feb44" stroke="#58a6ff66" stroke-width="1"/>
     </svg>
-    <div style="font-size:15px;color:var(--text-secondary);margin-bottom:6px">尚未載入股票資料</div>
-    <div style="font-size:13px;color:var(--text-dim)">點擊右上角 ☁ 雲端按鈕載入資料</div>
+    <div id="cards-empty-msg">
+      <div style="font-size:15px;color:var(--text-secondary);margin-bottom:6px">尚未載入股票資料</div>
+      <div style="font-size:13px;color:var(--text-dim)">點擊右上角 ☁ 雲端按鈕載入資料</div>
+    </div>
   </div>
 </div>
 
@@ -3261,6 +3269,18 @@ function processRows(rows,filename){
 }
 
 // ── GAS / DRIVE ──
+// fetch()本身沒有逾時機制，遇到後端冷啟動、網路卡住等狀況會一直卡在loading動畫，
+// 使用者只會看到轉圈圈轉不停、不知道是真的在讀還是壞掉了。這裡統一包一層逾時保護，
+// 超過時間就主動中斷並丟出清楚的錯誤訊息，讓畫面能顯示「連線逾時，請重試」而不是卡死。
+function fetchWithTimeout(url, ms){
+  var controller = new AbortController();
+  var timer = setTimeout(function(){ controller.abort(); }, ms || 8000);
+  return fetch(url, {signal: controller.signal}).finally(function(){ clearTimeout(timer); });
+}
+function _friendlyFetchErr(e){
+  if(e && e.name === 'AbortError') return '連線逾時，請重試';
+  return (e && e.message) || '未知錯誤';
+}
 var GAS_URL='https://script.google.com/macros/s/AKfycbwV9CWC1p0Kr-hPb7wqeab6_5z39Wl5i7Cf5P7QISE3hVyYxhjH2fNKyqZ7GfXzIgcB/exec';
 var gdFiles=[];
 
@@ -3268,7 +3288,7 @@ function openDrivePicker(){
   console.log('openDrivePicker called');
   document.getElementById('gd-modal').classList.add('on');
   document.getElementById('gd-list').innerHTML='<div class="gd-loading">🔄 連線雲端...</div>';
-  fetch(GAS_URL+'?action=list')
+  fetchWithTimeout(GAS_URL+'?action=list', 8000)
     .then(function(r){return r.json();})
     .then(function(d){
       if(d.ok){
@@ -3279,10 +3299,10 @@ function openDrivePicker(){
           loadGdFile(0, true);
         }
       } else {
-        showGdError(d.error);
+        showGdError(d.error, 'openDrivePicker');
       }
     })
-    .catch(function(e){showGdError(e.message);});
+    .catch(function(e){showGdError(_friendlyFetchErr(e), 'openDrivePicker');});
 }
 
 function _sortFilesByModified(files){
@@ -3324,10 +3344,10 @@ function autoLoadLatestStockFile(){
   // 效能優化：原本要打兩次API（action=list 找最新檔案 → action=file 讀內容），
   // 現在後端合併成 action=latest 一次執行、一次回傳，省掉一趟網路來回＋Apps Script啟動時間
   window._perfLoad = {fetchStart: performance.now()};
-  fetch(GAS_URL+'?action=latest')
+  fetchWithTimeout(GAS_URL+'?action=latest', 12000)
     .then(function(r){return r.json();})
     .then(function(fd){
-      if(!fd.ok) return;
+      if(!fd.ok){ _showAutoLoadRetry('讀取失敗：'+(fd.error||'未知錯誤')); return; }
       window._perfLoad.fetchDone = performance.now();
       gdActiveId=fd.id;
       // 解base64＋解析Excel＋渲染幾百張卡片都是很吃CPU的同步運算，用setTimeout讓瀏覽器先畫一次畫面（載入進度條才會動），不會整個卡住
@@ -3348,8 +3368,20 @@ function autoLoadLatestStockFile(){
         }, 0);
       });
     })
-    .catch(function(){}) // 靜默失敗，不打擾使用者；使用者仍可手動點☁️重試
+    // 原本是靜默失敗完全不理使用者，現在畫面上（卡片區空白處）直接顯示「重試/啟動」按鈕，
+    // 不用再自己想到要點右上角雲端icon
+    .catch(function(e){ _showAutoLoadRetry(_friendlyFetchErr(e)); })
     .finally(function(){ _reportLoadStep('stockfile'); });
+}
+// 開機自動載入股票資料失敗/逾時時，把卡片區的空白提示換成清楚的錯誤訊息＋重試按鈕，
+// 如果使用者這段時間已經手動從雲端載入成功過（D_RAW有資料了），就不要蓋掉已經載入好的畫面
+function _showAutoLoadRetry(msg){
+  if(D_RAW && D_RAW.length) return;
+  var el = document.getElementById('cards-empty-msg');
+  if(!el) return;
+  el.innerHTML =
+    '<div style="font-size:15px;color:#f85149;margin-bottom:6px">⚠️ 自動載入失敗：'+msg+'</div>'
+    +'<button onclick="autoLoadLatestStockFile()" style="background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-altlight);font-size:14px;padding:8px 20px;cursor:pointer;margin-top:6px;">🔄 重試</button>';
 }
 
 function renderGdFiles(files){
@@ -3368,10 +3400,11 @@ function renderGdFiles(files){
   }).join('');
 }
 
-function showGdError(msg){
+function showGdError(msg, retryFn){
+  var fn = retryFn || 'openDrivePicker';
   document.getElementById('gd-list').innerHTML=
     '<div style="padding:16px;text-align:center;color:#f85149;font-size:13px">❌ '+msg+'<br><br>'
-    +'<button onclick="openDrivePicker()" style="background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:6px;padding:8px 16px;color:var(--text-altlight);font-size:13px;cursor:pointer">重試</button></div>';
+    +'<button onclick="'+fn+'()" style="background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:6px;padding:8px 16px;color:var(--text-altlight);font-size:13px;cursor:pointer">重試</button></div>';
 }
 
 var gdActiveId=null;
@@ -3385,7 +3418,7 @@ function loadGdFile(i, keepOpen){
     renderGdFiles(gdFiles); // 重新畫清單，標示目前使用中的檔案
   }
   toast('⏳ 讀取中：'+f.name,'#1f6feb');
-  fetch(GAS_URL+'?action=file&id='+f.id)
+  fetchWithTimeout(GAS_URL+'?action=file&id='+f.id, 15000)
     .then(function(r){return r.json();})
     .then(function(d){
       if(!d.ok)throw new Error(d.error);
@@ -3398,7 +3431,7 @@ function loadGdFile(i, keepOpen){
       processRows(rows,d.name||f.name);
       if(keepOpen) renderGdFiles(gdFiles);
     })
-    .catch(function(e){toast('❌ 載入失敗：'+e.message,'#da3633');});
+    .catch(function(e){toast('❌ 載入失敗：'+_friendlyFetchErr(e),'#da3633');});
 }
 
 var STRATEGY_GAS_URL = 'https://script.google.com/macros/s/AKfycbzonSgY3uZ1Y7HU1Joh_ibrVqBgP5dDJ5k1KMiKu9TRee2Wtk0PT-2VnrnuaNjZ6cgjoA/exec';
@@ -3628,10 +3661,10 @@ function autoLoadConcepts(){
 function openNotePicker(){
   document.getElementById('gd-modal').classList.add('on');
   document.getElementById('gd-list').innerHTML='<div class="gd-loading">🔄 連線雲端...</div>';
-  fetch(GAS_URL+'?action=list')
+  fetchWithTimeout(GAS_URL+'?action=list', 8000)
     .then(function(r){return r.json();})
     .then(function(d){
-      if(!d.ok){showGdError(d.error);return;}
+      if(!d.ok){showGdError(d.error, 'openNotePicker');return;}
       // 在清單上標示這次是載入備註用
       gdFiles=d.files;
       document.getElementById('gd-list').innerHTML=
@@ -3646,14 +3679,14 @@ function openNotePicker(){
           +'</div>';
         }).join('');
     })
-    .catch(function(e){showGdError(e.message);});
+    .catch(function(e){showGdError(_friendlyFetchErr(e), 'openNotePicker');});
 }
 
 function loadNoteFile(i){
   var f=gdFiles[i];if(!f)return;
   document.getElementById('gd-modal').classList.remove('on');
   toast('⏳ 讀取備註中...','#1f6feb');
-  fetch(GAS_URL+'?action=file&id='+f.id)
+  fetchWithTimeout(GAS_URL+'?action=file&id='+f.id, 15000)
     .then(function(r){return r.json();})
     .then(function(d){
       if(!d.ok)throw new Error(d.error);
@@ -3674,7 +3707,7 @@ function loadNoteFile(i){
       applyNotes();
       toast('📝 已載入 '+Object.keys(noteMap).length+' 筆備註','#238636');
     })
-    .catch(function(e){toast('❌ 備註載入失敗：'+e.message,'#da3633');});
+    .catch(function(e){toast('❌ 備註載入失敗：'+_friendlyFetchErr(e),'#da3633');});
 }
 
 function isAdminUser(){
@@ -4510,6 +4543,7 @@ function _dahuQuadColorHex(label, _cs){
   if(label==='領先') return '#f85149';
   if(label==='改善') return '#58a6ff';
   if(label==='弱化') return '#d29922';
+  if(label==='落後') return '#3fb950';
   var fallback = (_cs && _cs.getPropertyValue) ? (_cs.getPropertyValue('--text-secondary')||'').trim() : '';
   return fallback || '#8b949e';
 }
@@ -4689,10 +4723,10 @@ function _computeDahuRotationAllStocks(){
 // 族群檢視上方的四象限統計卡片（參考Tide潮汐左側漲潮/輪動/觀望/退潮那組卡片的排法，
 // 換成我們自己這套領先/改善/弱化/落後的籌碼分區統計，一眼看出目前整體大戶籌碼氣氛）
 var DAHU_QUAD_STAT_DEFS = [
-  {key:'領先', sub:'強勢主流', desc:'買賣比≥70%<br>差比≥20%', color:'#f85149', bg:'#f8514915'},
-  {key:'改善', sub:'籌碼改善中', desc:'買賣比<70%<br>差比≥20%', color:'#58a6ff', bg:'#1f6feb15'},
-  {key:'弱化', sub:'資金退潮', desc:'買賣比≥70%<br>差比<20%', color:'#d29922', bg:'#d2992215'},
-  {key:'落後', sub:'弱勢觀望', desc:'買賣比<70%<br>差比<20%', color:'var(--text-secondary)', bg:'var(--bg-panel-alt)'}
+  {key:'領先', sub:'', desc:'強勢主流', color:'#f85149', bg:'#f8514915'},
+  {key:'改善', sub:'', desc:'籌碼改善中', color:'#58a6ff', bg:'#1f6feb15'},
+  {key:'弱化', sub:'', desc:'資金退潮', color:'#d29922', bg:'#d2992215'},
+  {key:'落後', sub:'', desc:'弱勢觀望', color:'#3fb950', bg:'#3fb95015'}
 ];
 function _renderDahuQuadStats(){
   var wrap = document.getElementById('dahu-quad-stats');
@@ -4706,10 +4740,10 @@ function _renderDahuQuadStats(){
   wrap.innerHTML = DAHU_QUAD_STAT_DEFS.map(function(d){
     var active = _dahuActiveQuad === d.key;
     return '<div onclick="_selectDahuQuadCard(\''+d.key+'\')" style="cursor:pointer;background:'+d.bg+';border:1.5px solid '+(active?d.color:'var(--border)')+';border-radius:9px;padding:8px 4px;transition:border-color .15s;text-align:center;">'
-      +'<div style="font-size:12px;color:'+d.color+';font-weight:700;">'+d.key+'</div>'
-      +'<div style="font-size:9px;color:'+d.color+';opacity:0.85;margin-top:1px;">'+d.sub+'</div>'
+      +'<div style="font-size:15px;color:'+d.color+';font-weight:700;">'+d.key+'</div>'
+      +(d.sub ? '<div style="font-size:9px;color:'+d.color+';opacity:0.85;margin-top:1px;">'+d.sub+'</div>' : '')
       +'<div style="font-size:20px;font-weight:800;color:'+d.color+';line-height:1.3;margin-top:2px;">'+counts[d.key]+'</div>'
-      +'<div style="font-size:9px;color:var(--text-secondary);margin-top:3px;line-height:1.4;padding-top:3px;border-top:1px solid '+d.color+'33;">'+d.desc+'</div>'
+      +'<div style="font-size:13px;color:'+d.color+';opacity:0.85;margin-top:3px;line-height:1.4;padding-top:3px;border-top:1px solid '+d.color+'33;">'+d.desc+'</div>'
     +'</div>';
   }).join('');
 }
@@ -4992,7 +5026,7 @@ function drawDahuRotationChart(ctx, W, H, groups){
   }
   quadLabel('領先區(強勢主流)', W-PAD.r-4, PAD.t+14, 'right', '#f8514933', '#f85149');
   quadLabel('改善區(籌碼改善中)', PAD.l+4, PAD.t+14, 'left', '#1f6feb33', '#58a6ff');
-  quadLabel('落後區(弱勢觀望)', PAD.l+4, H-PAD.b-8, 'left', colGrid, colTextDim);
+  quadLabel('落後區(弱勢觀望)', PAD.l+4, H-PAD.b-8, 'left', '#3fb95033', '#3fb950');
   quadLabel('弱化區(資金退潮)', W-PAD.r-4, H-PAD.b-8, 'right', '#d2992233', '#d29922');
 
   // 門檻數值標示：X軸70%、Y軸20%分界線各自標上數字，並用紅/綠小圓點標出「強/弱」方向，
@@ -5095,7 +5129,7 @@ function drawDahuRotationChart(ctx, W, H, groups){
 }
 
 // 個股檢視的繪圖：跟族群泡泡圖用同一套象限背景/軸線，但每個點是單一檔股票本身的
-// 大戶買賣比/大戶差比座標，顏色依它落在哪個象限直接上色（領先紅/改善藍/弱化橘/落後灰），
+// 大戶買賣比/大戶差比座標，顏色依它落在哪個象限直接上色（領先紅/改善藍/弱化橘/落後綠），
 // 呼應四個角落的象限標籤色，不用點進去就能看出哪些股票在哪一區
 function drawDahuRotationStockChart(ctx, W, H, stocks){
   ctx.clearRect(0,0,W,H);
@@ -5142,7 +5176,7 @@ function drawDahuRotationStockChart(ctx, W, H, stocks){
   }
   quadLabel('領先區(強勢主流)', W-PAD.r-4, PAD.t+14, 'right', '#f8514933', '#f85149');
   quadLabel('改善區(籌碼改善中)', PAD.l+4, PAD.t+14, 'left', '#1f6feb33', '#58a6ff');
-  quadLabel('落後區(弱勢觀望)', PAD.l+4, H-PAD.b-8, 'left', colGrid, colTextDim);
+  quadLabel('落後區(弱勢觀望)', PAD.l+4, H-PAD.b-8, 'left', '#3fb95033', '#3fb950');
   quadLabel('弱化區(資金退潮)', W-PAD.r-4, H-PAD.b-8, 'right', '#d2992233', '#d29922');
 
   ctx.font = 'bold 10px sans-serif'; ctx.fillStyle = colText;
@@ -5275,7 +5309,7 @@ function _dahuStockQuadrant(dahubuy, dahuchai){
   if(strong && hi) return { label:'領先', bg:'#f8514933', fg:'#f85149' };
   if(!strong && hi) return { label:'改善', bg:'#1f6feb33', fg:'#58a6ff' };
   if(strong && !hi) return { label:'弱化', bg:'#d2992233', fg:'#d29922' };
-  return { label:'落後', bg:'var(--bg-panel-alt)', fg:'var(--text-secondary)' };
+  return { label:'落後', bg:'#3fb95033', fg:'#3fb950' };
 }
 function openDahuRotationDetail(tag){
   var g = _dahuRotationGroups.filter(function(x){ return x.tag===tag; })[0];
