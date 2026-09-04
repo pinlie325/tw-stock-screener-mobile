@@ -105,6 +105,11 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:var(--bg-page)
 #dahu-rotation-body::-webkit-scrollbar-track{background:transparent}
 #dahu-rotation-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
 #dahu-rotation-body::-webkit-scrollbar-thumb:hover{background:var(--text-dim)}
+#rev-rotation-body{scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+#rev-rotation-body::-webkit-scrollbar{width:7px}
+#rev-rotation-body::-webkit-scrollbar-track{background:transparent}
+#rev-rotation-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+#rev-rotation-body::-webkit-scrollbar-thumb:hover{background:var(--text-dim)}
 .sbar .sbtn{flex-shrink:0}
 .sbtn{background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:16px;padding:5px 12px;font-size:12px;color:var(--text-secondary);cursor:pointer;white-space:nowrap}
 .sbtn.on{background:#1f6feb22;border-color:#58a6ff;color:#58a6ff}
@@ -943,36 +948,41 @@ function adminRemoveUser(email){
       <span style="font-size:17px;font-weight:700;color:var(--text-primary)">⚙️ 設定</span>
       <button onclick="document.getElementById('settings-modal').style.display='none'" style="background:none;border:none;color:var(--text-secondary);font-size:20px;cursor:pointer">✕</button>
     </div>
+    <input id="settings-search-input" type="text" placeholder="🔍 搜尋功能..." oninput="filterSettingsMenu(this.value)" style="width:100%;background:var(--bg-page);border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:15px;padding:9px 12px;box-sizing:border-box;margin-bottom:14px;">
+    <div id="settings-search-empty" style="display:none;padding:16px 4px;text-align:center;color:var(--text-secondary);font-size:13px;">🔍 找不到符合的功能</div>
     <div style="display:flex;gap:8px;margin-bottom:14px">
       <button id="theme-btn-dark" onclick="setTheme('dark')" style="flex:1;border-radius:8px;font-size:14px;padding:10px;cursor:pointer;text-align:center;box-sizing:border-box">🌙 深色模式</button>
       <button id="theme-btn-light" onclick="setTheme('light')" style="flex:1;border-radius:8px;font-size:14px;padding:10px;cursor:pointer;text-align:center;box-sizing:border-box">☀️ 淺色模式</button>
     </div>
-    <button onclick="location.reload()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
+    <button class="settings-menu-item" onclick="location.reload()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
       🔄 重新整理網頁
     </button>
-    <button onclick="document.getElementById('settings-modal').style.display='none';document.getElementById('fi').click()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
+    <button class="settings-menu-item" onclick="document.getElementById('settings-modal').style.display='none';document.getElementById('fi').click()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
       📄 從手機/電腦手動載入 Excel
     </button>
-    <button onclick="showAddToHome()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
+    <button class="settings-menu-item" onclick="showAddToHome()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
       📲 加入主畫面（iOS）
     </button>
-    <button onclick="openExcludeManager()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
+    <button class="settings-menu-item" onclick="openExcludeManager()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
       🚫 排除股票清單
     </button>
-    <button onclick="openMacroBoard()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
+    <button class="settings-menu-item" onclick="openMacroBoard()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
       🌍 市場參考看板（原油／美元／VIX／美債）
     </button>
-    <button onclick="openEconCalendar()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
+    <button class="settings-menu-item" onclick="openEconCalendar()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
       🗓 財經行事曆
     </button>
-    <button onclick="openMarginReport()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
+    <button class="settings-menu-item" onclick="openMarginReport()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
       🏭 各族群融資維持率報表
     </button>
-    <button onclick="openDisposalReport()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
+    <button class="settings-menu-item" onclick="openDisposalReport()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
       🚨 處置股名單
     </button>
-    <button onclick="openDahuRotationBoard()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;text-align:left">
+    <button class="settings-menu-item" onclick="openDahuRotationBoard()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
       🐋 大戶籌碼趨勢表
+    </button>
+    <button class="settings-menu-item" onclick="openRevRotationBoard()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;text-align:left">
+      📈 營收成長趨勢表
     </button>
   </div>
 </div>
@@ -1004,6 +1014,7 @@ function adminRemoveUser(email){
   <div id="dahu-rotation-body" style="flex:1;overflow-y:auto;padding:14px;">
     <div id="dahu-group-flex" style="display:flex;flex-direction:column;gap:10px;">
       <div id="dahu-quad-stats" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;"></div>
+      <input id="dahu-search-input" type="text" placeholder="🔍 搜尋代碼或名稱..." oninput="_dahuSearchFilterChanged(this.value)" style="width:100%;background:var(--bg-page);border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:15px;padding:9px 12px;box-sizing:border-box;">
       <div id="dahu-group-stock-list" style="background:var(--bg-panel);border:1px solid var(--border);border-radius:8px;padding:10px;min-height:420px;overflow-x:hidden;"></div>
     </div>
     <div id="dahu-rotation-canvas-wrap" style="display:none;position:relative;background:var(--bg-panel);border:1px solid var(--border);border-radius:8px;overflow:hidden;min-height:420px;">
@@ -1020,6 +1031,21 @@ function adminRemoveUser(email){
       <button onclick="closeDahuRotationDetail()" style="background:none;border:none;color:var(--text-secondary);font-size:22px;cursor:pointer">✕</button>
     </div>
     <div id="dahu-rotation-detail-body" style="flex:1;overflow-y:auto;padding:14px;"></div>
+  </div>
+</div>
+
+<!-- REVENUE GROWTH ROTATION MODAL -->
+<div id="rev-rotation-modal" style="display:none;position:fixed;inset:0;background:var(--bg-page);z-index:9999;flex-direction:column">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg-panel);flex-shrink:0">
+    <span style="font-size:16px;font-weight:700;color:var(--text-primary)">📈 營收成長趨勢表</span>
+    <button onclick="closeRevRotationBoard()" style="background:none;border:none;color:var(--text-secondary);font-size:22px;cursor:pointer">✕</button>
+  </div>
+  <div id="rev-rotation-body" style="flex:1;overflow-y:auto;padding:14px;">
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div id="rev-quad-stats" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;"></div>
+      <input id="rev-search-input" type="text" placeholder="🔍 搜尋代碼或名稱..." oninput="_revSearchFilterChanged(this.value)" style="width:100%;background:var(--bg-page);border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:15px;padding:9px 12px;box-sizing:border-box;">
+      <div id="rev-group-stock-list" style="background:var(--bg-panel);border:1px solid var(--border);border-radius:8px;padding:10px;min-height:420px;overflow-x:hidden;"></div>
+    </div>
   </div>
 </div>
 
@@ -3226,7 +3252,7 @@ function parseXL(file){
 function processRows(rows,filename){
   var keys=Object.keys(rows[0]);
   function fc(arr){for(var i=0;i<arr.length;i++)for(var j=0;j<keys.length;j++)if(keys[j].indexOf(arr[i])>=0)return keys[j];return null;}
-  var COL={code:fc(['代碼']),name:fc(['商品','名稱']),close:fc(['昨收']),pct:fc(['漲幅']),avg:fc(['均價']),volume:fc(['成交']),turnover:fc(['換手率']),turnval:fc(['成交值']),capital:fc(['股本']),bvps:fc(['每股淨值','淨值']),margin:fc(['融資維持']),ind:fc(['所有細產業','細產業','產業']),pos:fc(['產業地位']),rs:fc(['RS%']),grossmargin:fc(['毛利率']),eps:fc(['盈餘(單)','單季','EPS']),dahubuy:fc(['大戶買賣比']),dahuchai:fc(['大戶差比']),revgrowth:fc(['營收年增率','營收年增']),pe:fc(['本益比','PE(市盈率)','PE']),roe:fc(['ROE','股東權益報酬率']),news:fc(['公司動態'])};
+  var COL={code:fc(['代碼']),name:fc(['商品','名稱']),close:fc(['昨收']),pct:fc(['漲幅']),avg:fc(['均價']),volume:fc(['成交']),turnover:fc(['換手率']),turnval:fc(['成交值']),capital:fc(['股本']),bvps:fc(['每股淨值','淨值']),margin:fc(['融資維持']),ind:fc(['所有細產業','細產業','產業']),pos:fc(['產業地位']),rs:fc(['RS%']),grossmargin:fc(['毛利率']),eps:fc(['盈餘(單)','單季','EPS']),dahubuy:fc(['大戶買賣比']),dahuchai:fc(['大戶差比']),revgrowth:fc(['營收年增率','營收年增']),chg5d:fc(['近5日漲幅','5日漲幅','5日%']),chg20d:fc(['近20日漲幅','20日漲幅','20日%']),pe:fc(['本益比','PE(市盈率)','PE']),roe:fc(['ROE','股東權益報酬率']),news:fc(['公司動態'])};
   function sf(v){if(v===null||v===undefined||v===''||v==='--')return null;var n=parseFloat(v);return isNaN(n)?null:n;}
   var nd=[];
   rows.forEach(function(r){
@@ -3235,7 +3261,7 @@ function processRows(rows,filename){
     // 代碼欄可能是數字(2302)、帶空格(' 2302 ')或小數('2302.0')，統一正規化為4位字串
     var rawCode=String(r[COL.code]).trim().replace(/\.0+$/,'');
     var cleanCode=/^\d+$/.test(rawCode)?rawCode.padStart(4,'0'):rawCode;
-    nd.push({code:cleanCode,name:COL.name?String(r[COL.name]||'').trim():'',close:COL.close?sf(r[COL.close]):null,pct:COL.pct?sf(r[COL.pct]):null,avg:COL.avg?sf(r[COL.avg]):null,volume:COL.volume?sf(r[COL.volume]):null,turnover:COL.turnover?sf(r[COL.turnover]):null,turnval:COL.turnval?sf(r[COL.turnval]):null,capital:COL.capital?sf(r[COL.capital]):null,bvps:COL.bvps?sf(r[COL.bvps]):null,margin:COL.margin?sf(r[COL.margin]):null,position:COL.pos&&r[COL.pos]?String(r[COL.pos]).trim():'',tags:ts,rs:COL.rs?sf(r[COL.rs]):null,grossmargin:COL.grossmargin?sf(r[COL.grossmargin]):null,eps:COL.eps?sf(r[COL.eps]):null,dahubuy:COL.dahubuy?sf(r[COL.dahubuy]):null,dahuchai:COL.dahuchai?sf(r[COL.dahuchai]):null,revgrowth:COL.revgrowth?sf(r[COL.revgrowth]):null,pe:COL.pe?sf(r[COL.pe]):null,roe:COL.roe?sf(r[COL.roe]):null,news:COL.news&&r[COL.news]?String(r[COL.news]).trim():''});
+    nd.push({code:cleanCode,name:COL.name?String(r[COL.name]||'').trim():'',close:COL.close?sf(r[COL.close]):null,pct:COL.pct?sf(r[COL.pct]):null,avg:COL.avg?sf(r[COL.avg]):null,volume:COL.volume?sf(r[COL.volume]):null,turnover:COL.turnover?sf(r[COL.turnover]):null,turnval:COL.turnval?sf(r[COL.turnval]):null,capital:COL.capital?sf(r[COL.capital]):null,bvps:COL.bvps?sf(r[COL.bvps]):null,margin:COL.margin?sf(r[COL.margin]):null,position:COL.pos&&r[COL.pos]?String(r[COL.pos]).trim():'',tags:ts,rs:COL.rs?sf(r[COL.rs]):null,grossmargin:COL.grossmargin?sf(r[COL.grossmargin]):null,eps:COL.eps?sf(r[COL.eps]):null,dahubuy:COL.dahubuy?sf(r[COL.dahubuy]):null,dahuchai:COL.dahuchai?sf(r[COL.dahuchai]):null,revgrowth:COL.revgrowth?sf(r[COL.revgrowth]):null,chg5d:COL.chg5d?sf(r[COL.chg5d]):null,chg20d:COL.chg20d?sf(r[COL.chg20d]):null,pe:COL.pe?sf(r[COL.pe]):null,roe:COL.roe?sf(r[COL.roe]):null,news:COL.news&&r[COL.news]?String(r[COL.news]).trim():''});
   });
   if(!nd.length){alert('沒有讀到有效資料');return;}
   D_RAW=nd;
@@ -4468,6 +4494,22 @@ function showHelpModal(){
 function openSettings(){
   document.getElementById('settings-modal').style.display = 'flex';
   updateThemeButtons();
+  // 每次打開都重設搜尋框，不然上次搜尋過濾掉的項目下次打開會一直維持隱藏，使用者容易誤以為功能不見了
+  var si = document.getElementById('settings-search-input');
+  if(si){ si.value = ''; filterSettingsMenu(''); }
+}
+// 設定選單項目變多之後要滑很久才找得到，加搜尋框直接輸入關鍵字（例如「大戶」「營收」）就能快速篩出對應的功能按鈕
+function filterSettingsMenu(query){
+  var q = (query||'').trim().toLowerCase();
+  var items = document.querySelectorAll('#settings-modal .settings-menu-item');
+  var anyMatch = false;
+  items.forEach(function(el){
+    var match = !q || el.textContent.toLowerCase().indexOf(q) >= 0;
+    el.style.display = match ? '' : 'none';
+    if(match) anyMatch = true;
+  });
+  var emptyEl = document.getElementById('settings-search-empty');
+  if(emptyEl) emptyEl.style.display = (q && !anyMatch) ? 'block' : 'none';
 }
 
 // 融資維持率報表：用現有的細產業標籤分組，色階跟XQ的報表邏輯類似
@@ -4512,9 +4554,16 @@ var _dahuRotationGroups = [];
 var _dahuRotationLastNodes = null;
 var _dahuRotationMode = 'group'; // 'group'=族群檢視（泡泡） / 'stock'=個股檢視（每檔股票一個點）
 
+function _dahuSearchFilterChanged(v){
+  _dahuSearchQuery = (v||'').trim().toLowerCase();
+  _renderDahuGroupStockList(_dahuActiveQuad);
+}
 function openDahuRotationBoard(){
   _hideReportReturnFab();
   try{
+    _dahuSearchQuery = '';
+    var dsi = document.getElementById('dahu-search-input');
+    if(dsi) dsi.value = '';
     // 保險：把其他可能還開著的全螢幕視窗都關掉，避免疊在一起互相蓋住
     ['settings-modal','margin-report-modal','macro-board-modal','econ-calendar-modal','note-edit-modal'].forEach(function(id){
       var el = document.getElementById(id);
@@ -4630,7 +4679,7 @@ function _computeDahuRotationGroups(){
 // 個股列表的單列/表頭樣板，列表模式(四區都顯示)、族群檢視新版(點卡片顯示單一象限)共用，避免兩邊各刻一份樣式跑掉
 // 卡片式雙行列樣板：字級跟卡片本體看齊（代碼/商品/現價都比照卡片放大），
 // 一行塞不下這麼多欄位所以拆兩行，上排是代碼+商品+漲跌%，下排是股價/昨收+大戶買賣比/差比徽章
-function _dahuStockRowHtml(s){
+function _dahuStockRowHtml(s, showQuadBadge){
   var bc = _dahuValColor(s.dahubuy, 'buy');
   var cc = _dahuValColor(s.dahuchai, 'chai');
   var pctStr = s.pct!==null&&s.pct!==undefined ? ((s.pct>0?'+':'')+s.pct.toFixed(1)+'%') : '--';
@@ -4640,10 +4689,17 @@ function _dahuStockRowHtml(s){
   var prevCloseStr = s.close!==null&&s.close!==undefined ? s.close.toFixed(1) : '--';
   // 跟卡片本體同一套現價顏色邏輯：現價比昨收高顯示紅色、低顯示綠色
   var priceColor = (s.volume!==null&&s.volume!==undefined&&s.close!==null&&s.close!==undefined) ? (s.volume>s.close?'#f85149':s.volume<s.close?'#3fb950':'var(--text-primary)') : 'var(--text-primary)';
+  // 搜尋模式會跨四象限一起找，這時候要標出每一列各自屬於哪一區，不然使用者分不清楚
+  var qBadge = '';
+  if(showQuadBadge){
+    var qc = _dahuStockQuadrant(s.dahubuy, s.dahuchai);
+    qBadge = '<span style="font-size:11px;font-weight:700;flex-shrink:0;padding:2px 6px;border-radius:5px;background:'+qc.bg+';color:'+qc.fg+';">'+qc.label+'</span>';
+  }
   return '<div onclick="jumpFromDahuRotation(\''+s.code+'\')" style="padding:10px 8px;border-bottom:1px solid var(--border);cursor:pointer;">'
     +'<div style="display:flex;align-items:baseline;gap:8px;">'
       +'<span style="color:#79c0ff;font-family:monospace;font-size:19.5px;font-weight:700;flex-shrink:0;">'+s.code+'</span>'
       +'<span style="color:var(--text-primary);font-size:16px;font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+s.name+'</span>'
+      +qBadge
       +(s.position?'<span style="font-size:12px;color:var(--text-altlight);font-weight:500;flex-shrink:1;min-width:0;max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+s.position+'</span>':'')
     +'</div>'
     +'<div style="display:flex;align-items:center;gap:10px;margin-top:5px;">'
@@ -4661,6 +4717,7 @@ function _dahuStockListHeaderHtml(){
 }
 // ── 族群檢視新版：左邊(手機版上方)四張可點的統計卡片，右邊(手機版下方)是選中那個象限的個股列表 ──
 var _dahuActiveQuad = null;
+var _dahuSearchQuery = ''; // 大戶籌碼趨勢表清單搜尋框目前輸入的代碼/名稱關鍵字
 var DAHU_QUAD_CAP = {}; // 使用者要求全部顯示，不再限制筆數
 function _renderDahuGroupView(){
   _renderDahuQuadStats();
@@ -4684,15 +4741,25 @@ function _selectDahuQuadCard(label){
 function _renderDahuGroupStockList(label){
   var wrap = document.getElementById('dahu-group-stock-list');
   if(!wrap) return;
-  var stocks = _computeDahuRotationAllStocks().filter(function(s){
-    return _dahuStockQuadrant(s.dahubuy, s.dahuchai).label === label;
-  });
+  var q = _dahuSearchQuery;
+  var stocks, searching = !!q;
+  if(searching){
+    // 有輸入搜尋字時，不局限在目前選中的那個象限，四個象限一起找，這樣才不會因為選錯分類而找不到人
+    stocks = _computeDahuRotationAllStocks().filter(function(s){
+      return (s.code&&s.code.toLowerCase().indexOf(q)>=0) || (s.name&&s.name.toLowerCase().indexOf(q)>=0);
+    });
+  } else {
+    stocks = _computeDahuRotationAllStocks().filter(function(s){
+      return _dahuStockQuadrant(s.dahubuy, s.dahuchai).label === label;
+    });
+  }
   if(!stocks.length){
-    wrap.innerHTML = '<div style="padding:32px 12px;text-align:center;color:var(--text-secondary);font-size:13px;">這一區目前沒有股票，請先載入選股Excel或換一個分類看看</div>';
+    wrap.innerHTML = '<div style="padding:32px 12px;text-align:center;color:var(--text-secondary);font-size:13px;">'
+      +(searching?'🔍 找不到符合「'+q+'」的股票':'這一區目前沒有股票，請先載入選股Excel或換一個分類看看')+'</div>';
     return;
   }
   stocks.sort(function(a,b){ return (b.dahuchai||0)-(a.dahuchai||0); });
-  var capAt = DAHU_QUAD_CAP[label] || null;
+  var capAt = searching ? null : (DAHU_QUAD_CAP[label] || null);
   var shown = stocks, hiddenCount = 0;
   if(capAt && stocks.length > capAt){
     shown = stocks.slice().sort(function(a,b){ return (b.turnval||0)-(a.turnval||0); }).slice(0, capAt);
@@ -4700,7 +4767,7 @@ function _renderDahuGroupStockList(label){
     hiddenCount = stocks.length - shown.length;
   }
   wrap.innerHTML = _dahuStockListHeaderHtml()
-    + shown.map(_dahuStockRowHtml).join('')
+    + shown.map(function(s){ return _dahuStockRowHtml(s, searching); }).join('')
     + (hiddenCount>0 ? '<div style="padding:8px 6px;font-size:11px;color:var(--text-dim);text-align:center;">（僅顯示成交值前'+capAt+'檔，還有'+hiddenCount+'檔未列出）</div>' : '');
 }
 
@@ -5364,6 +5431,192 @@ function jumpFromDahuRotation(code){
   window.scrollTo({top:0, behavior:'smooth'});
   _showReportReturnFab('返回大戶籌碼', openDahuRotationBoard);
 }
+
+// ============================================================
+// 營收成長趨勢表：X軸=營收年增率(YoY，基本面成長性) Y軸=近20日漲幅(股價是否已反應)
+// 跟大戶籌碼族群輪動圖同一套四象限精神。門檻拉高避免象限太籠統（原本用0%正負分界，
+// 「強勢兌現」一次抓419檔太多沒篩選力），改用比較有意義的強弱門檻，並加上成交值下限
+// 排掉太冷門、隨便一根K棒就大漲大跌的雜訊股。第一版先做卡片+個股列表，之後有需要再加泡泡圖。
+// ============================================================
+var REV_THRESH_GROWTH = 20; // 營收年增率門檻%，達到才算「營收真的在成長」
+var REV_THRESH_CHG = 10;    // 近20日漲幅門檻%，達到才算「股價真的有反應」
+var REV_MIN_TURNVAL = 0.5;  // 成交值下限(億)＝5000萬，排除太冷門的股票
+var REV_QUAD_STAT_DEFS = [
+  {key:'強勢兌現', sub:'', desc:'營收漲、價也漲', color:'#f85149', bg:'#f8514915'},
+  {key:'甜蜜點', sub:'', desc:'營收漲、價未跟', color:'#58a6ff', bg:'#1f6feb15'},
+  {key:'投機過熱', sub:'', desc:'價漲、營收未跟', color:'#d29922', bg:'#d2992215'},
+  {key:'雙弱觀望', sub:'', desc:'營收價格皆弱', color:'#3fb950', bg:'#3fb95015'}
+];
+var _revActiveQuad = null;
+var _revSearchQuery = ''; // 營收成長趨勢表清單搜尋框目前輸入的代碼/名稱關鍵字
+
+function _revSearchFilterChanged(v){
+  _revSearchQuery = (v||'').trim().toLowerCase();
+  _renderRevGroupStockList(_revActiveQuad);
+}
+function openRevRotationBoard(){
+  _hideReportReturnFab();
+  try{
+    _revSearchQuery = '';
+    var rsi = document.getElementById('rev-search-input');
+    if(rsi) rsi.value = '';
+    ['settings-modal','margin-report-modal','macro-board-modal','econ-calendar-modal','note-edit-modal'].forEach(function(id){
+      var el = document.getElementById(id);
+      if(el) el.style.display = 'none';
+    });
+    var modal = document.getElementById('rev-rotation-modal');
+    if(!modal){ toast('❌ 找不到營收成長趨勢表的視窗元素','#da3633'); return; }
+    modal.style.display = 'flex';
+    modal.style.zIndex = '100000';
+    _renderRevGroupView();
+  }catch(e){
+    toast('❌ 營收成長趨勢表發生錯誤：'+e.message,'#da3633');
+    console.error('openRevRotationBoard error:', e);
+  }
+}
+function closeRevRotationBoard(){
+  document.getElementById('rev-rotation-modal').style.display = 'none';
+}
+
+function _computeRevRotationAllStocks(){
+  return (D||[]).filter(function(s){
+    return s.revgrowth!==null && s.revgrowth!==undefined && s.chg20d!==null && s.chg20d!==undefined
+      && s.turnval!==null && s.turnval!==undefined && s.turnval>=REV_MIN_TURNVAL;
+  });
+}
+
+// 依營收年增率×近20日漲幅分四象限，用REV_THRESH_GROWTH/REV_THRESH_CHG當強弱門檻（跟大戶籌碼的
+// 70%/20%門檻同樣精神），而不是單純看正負，避免象限太籠統、抓進一堆只是「剛好>0%」的普通股票
+function _revStockQuadrant(revgrowth, chg20d){
+  if(revgrowth===null||revgrowth===undefined||chg20d===null||chg20d===undefined){
+    return { label:'--', bg:'var(--bg-panel-alt)', fg:'var(--text-dim)' };
+  }
+  var revUp = revgrowth>=REV_THRESH_GROWTH, priceUp = chg20d>=REV_THRESH_CHG;
+  if(revUp && priceUp) return { label:'強勢兌現', bg:'#f8514933', fg:'#f85149' };
+  if(revUp && !priceUp) return { label:'甜蜜點', bg:'#1f6feb33', fg:'#58a6ff' };
+  if(!revUp && priceUp) return { label:'投機過熱', bg:'#d2992233', fg:'#d29922' };
+  return { label:'雙弱觀望', bg:'#3fb95033', fg:'#3fb950' };
+}
+
+function _renderRevGroupView(){
+  _renderRevQuadStats();
+  var stocks = _computeRevRotationAllStocks();
+  var order = ['強勢兌現','甜蜜點','投機過熱','雙弱觀望'];
+  var valid = _revActiveQuad && stocks.some(function(s){ return _revStockQuadrant(s.revgrowth, s.chg20d).label === _revActiveQuad; });
+  if(!valid){
+    _revActiveQuad = order.filter(function(k){
+      return stocks.some(function(s){ return _revStockQuadrant(s.revgrowth, s.chg20d).label === k; });
+    })[0] || '強勢兌現';
+  }
+  _renderRevQuadStats();
+  _renderRevGroupStockList(_revActiveQuad);
+}
+function _selectRevQuadCard(label){
+  _revActiveQuad = label;
+  _renderRevQuadStats();
+  _renderRevGroupStockList(label);
+}
+function _renderRevQuadStats(){
+  var wrap = document.getElementById('rev-quad-stats');
+  if(!wrap) return;
+  var stocks = _computeRevRotationAllStocks();
+  var counts = {'強勢兌現':0, '甜蜜點':0, '投機過熱':0, '雙弱觀望':0};
+  stocks.forEach(function(s){
+    var q = _revStockQuadrant(s.revgrowth, s.chg20d);
+    if(counts.hasOwnProperty(q.label)) counts[q.label]++;
+  });
+  wrap.innerHTML = REV_QUAD_STAT_DEFS.map(function(d){
+    var active = _revActiveQuad === d.key;
+    return '<div onclick="_selectRevQuadCard(\''+d.key+'\')" style="cursor:pointer;background:'+d.bg+';border:1.5px solid '+(active?d.color:'var(--border)')+';border-radius:9px;padding:8px 4px;transition:border-color .15s;text-align:center;">'
+      +'<div style="font-size:15px;color:'+d.color+';font-weight:700;">'+d.key+'</div>'
+      +'<div style="font-size:20px;font-weight:800;color:'+d.color+';line-height:1.3;margin-top:2px;">'+counts[d.key]+'</div>'
+      +'<div style="font-size:13px;color:'+d.color+';opacity:0.85;margin-top:3px;line-height:1.4;padding-top:3px;border-top:1px solid '+d.color+'33;">'+d.desc+'</div>'
+    +'</div>';
+  }).join('');
+}
+
+function _renderRevGroupStockList(label){
+  var wrap = document.getElementById('rev-group-stock-list');
+  if(!wrap) return;
+  var q = _revSearchQuery;
+  var stocks, searching = !!q;
+  if(searching){
+    // 有輸入搜尋字時，四個象限一起找，不局限在目前選中的分類
+    stocks = _computeRevRotationAllStocks().filter(function(s){
+      return (s.code&&s.code.toLowerCase().indexOf(q)>=0) || (s.name&&s.name.toLowerCase().indexOf(q)>=0);
+    });
+  } else {
+    stocks = _computeRevRotationAllStocks().filter(function(s){
+      return _revStockQuadrant(s.revgrowth, s.chg20d).label === label;
+    });
+  }
+  if(!stocks.length){
+    wrap.innerHTML = '<div style="padding:32px 12px;text-align:center;color:var(--text-secondary);font-size:13px;">'
+      +(searching?'🔍 找不到符合「'+q+'」的股票':'這一區目前沒有股票，可能是門檻篩得比較嚴（營收年增≥'+REV_THRESH_GROWTH+'%、近20日漲幅≥'+REV_THRESH_CHG+'%、成交值≥'+REV_MIN_TURNVAL+'億），或選股Excel裡缺營收年增率/近20日漲幅欄位')+'</div>';
+    return;
+  }
+  stocks.sort(function(a,b){ return (b.revgrowth||0)-(a.revgrowth||0); });
+  wrap.innerHTML = stocks.map(function(s){ return _revStockRowHtml(s, searching); }).join('');
+}
+
+function _revValColor(v){
+  if(v===null||v===undefined) return {bg:'var(--bg-panel-alt)', fg:'var(--text-secondary)'};
+  if(v>0) return {bg:'#f8514933', fg:'#f85149'};
+  if(v<0) return {bg:'#3fb95033', fg:'#3fb950'};
+  return {bg:'var(--bg-panel-alt)', fg:'var(--text-primary)'};
+}
+
+function _revStockRowHtml(s, showQuadBadge){
+  var rc = _revValColor(s.revgrowth);
+  var cc = _revValColor(s.chg20d);
+  var c5 = _revValColor(s.chg5d);
+  var pctStr = s.pct!==null&&s.pct!==undefined ? ((s.pct>0?'+':'')+s.pct.toFixed(1)+'%') : '--';
+  var pctColor = s.pct>0?'#f85149':s.pct<0?'#3fb950':'var(--text-secondary)';
+  var priceStr = s.volume!==null&&s.volume!==undefined ? s.volume.toFixed(1) : '--';
+  var prevCloseStr = s.close!==null&&s.close!==undefined ? s.close.toFixed(1) : '--';
+  var priceColor = (s.volume!==null&&s.volume!==undefined&&s.close!==null&&s.close!==undefined) ? (s.volume>s.close?'#f85149':s.volume<s.close?'#3fb950':'var(--text-primary)') : 'var(--text-primary)';
+  // 搜尋模式跨四象限一起找，這時候要標出每一列各自屬於哪一區
+  var qBadge = '';
+  if(showQuadBadge){
+    var qc = _revStockQuadrant(s.revgrowth, s.chg20d);
+    qBadge = '<span style="font-size:11px;font-weight:700;flex-shrink:0;padding:2px 6px;border-radius:5px;background:'+qc.bg+';color:'+qc.fg+';">'+qc.label+'</span>';
+  }
+  return '<div onclick="jumpFromRevRotation(\''+s.code+'\')" style="padding:10px 8px;border-bottom:1px solid var(--border);cursor:pointer;">'
+    +'<div style="display:flex;align-items:baseline;gap:8px;">'
+      +'<span style="color:#79c0ff;font-family:monospace;font-size:19.5px;font-weight:700;flex-shrink:0;">'+s.code+'</span>'
+      +'<span style="color:var(--text-primary);font-size:16px;font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+s.name+'</span>'
+      +qBadge
+      +(s.position?'<span style="font-size:12px;color:var(--text-altlight);font-weight:500;flex-shrink:1;min-width:0;max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+s.position+'</span>':'')
+    +'</div>'
+    +'<div style="display:flex;align-items:center;gap:10px;margin-top:5px;">'
+      +'<span style="font-size:13px;color:'+priceColor+';font-weight:700;flex-shrink:0;">'+priceStr+'</span>'
+      +'<span style="font-size:12px;color:var(--text-dim);flex-shrink:0;">昨收 '+prevCloseStr+'</span>'
+      +'<span style="font-size:12px;font-weight:700;flex-shrink:0;color:'+pctColor+';">'+pctStr+'</span>'
+    +'</div>'
+    +'<div style="display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap;">'
+      +'<span style="font-size:12px;font-weight:700;flex-shrink:0;padding:3px 7px;border-radius:5px;background:'+rc.bg+';color:'+rc.fg+';">營收年增 '+(s.revgrowth!==null&&s.revgrowth!==undefined?((s.revgrowth>0?'+':'')+s.revgrowth.toFixed(1)+'%'):'--')+'</span>'
+      +'<span style="font-size:12px;font-weight:700;flex-shrink:0;padding:3px 7px;border-radius:5px;background:'+cc.bg+';color:'+cc.fg+';">近20日 '+(s.chg20d!==null&&s.chg20d!==undefined?((s.chg20d>0?'+':'')+s.chg20d.toFixed(1)+'%'):'--')+'</span>'
+      +(s.chg5d!==null&&s.chg5d!==undefined?'<span style="font-size:12px;font-weight:700;flex-shrink:0;padding:3px 7px;border-radius:5px;background:'+c5.bg+';color:'+c5.fg+';">近5日 '+((s.chg5d>0?'+':'')+s.chg5d.toFixed(1)+'%')+'</span>':'')
+    +'</div>'
+  +'</div>';
+}
+
+function jumpFromRevRotation(code){
+  document.getElementById('rev-rotation-modal').style.display = 'none';
+  sel = [];
+  window._hcatCodes = null;
+  renderSelTags();
+  gnActiveJumpCode = code;
+  var searchInput = document.getElementById('fsearch');
+  if(searchInput){
+    searchInput.value = code;
+    doSearch(code, true);
+    toggleClear(code);
+  }
+  window.scrollTo({top:0, behavior:'smooth'});
+  _showReportReturnFab('返回營收成長', openRevRotationBoard);
+}
+
 function _showReportReturnFab(label, fn){
   _reportReturnPending = true;
   _reportReturnFn = fn;
