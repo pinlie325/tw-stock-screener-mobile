@@ -126,11 +126,11 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:var(--bg-page)
 /* 桌機兩欄檢視時，中間欄縫放一個可拖曳調整欄寬比例的把手（參考Tide潮汐：拖曳調整寬度，雙擊還原預設） */
 #col-resize-handle{display:none;position:fixed;top:95px;bottom:0;left:50%;transform:translateX(-50%);width:20px;z-index:50;align-items:center;justify-content:center;cursor:col-resize;user-select:none;-webkit-user-select:none}
 @media(min-width:640px){#col-resize-handle.on{display:flex}}
-#col-resize-line{position:absolute;top:0;bottom:0;left:50%;width:1.5px;background:var(--text-secondary);opacity:0.85;transform:translateX(-50%);pointer-events:none}
-#col-resize-grip{position:relative;width:10px;height:28px;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:5px;cursor:col-resize;z-index:1;user-select:none;-webkit-user-select:none}
-#col-resize-grip::before{content:'';position:absolute;left:3px;top:9px;width:1.5px;height:10px;background:var(--text-secondary);box-shadow:4px 0 0 var(--text-secondary)}
-#col-resize-grip:hover,#col-resize-grip.dragging{border-color:var(--text-secondary)}
-#col-resize-grip:hover::before,#col-resize-grip.dragging::before{background:var(--text-primary);box-shadow:4px 0 0 var(--text-primary)}
+#col-resize-line{position:absolute;top:0;bottom:0;left:50%;width:1px;background:var(--border);opacity:0.7;transform:translateX(-50%);pointer-events:none}
+#col-resize-grip{position:relative;width:16px;height:56px;background:var(--bg-panel);border:1px solid var(--border);border-radius:8px;cursor:col-resize;z-index:1;user-select:none;-webkit-user-select:none;transition:background-color .15s,border-color .15s}
+#col-resize-grip::before{content:'';position:absolute;left:50%;top:50%;width:3px;height:3px;border-radius:50%;background:var(--text-dim);box-shadow:0 -7px 0 var(--text-dim),0 7px 0 var(--text-dim);transform:translate(-50%,-50%);transition:background-color .15s,box-shadow .15s}
+#col-resize-grip:hover,#col-resize-grip.dragging{border-color:var(--text-secondary);background:var(--bg-panel-alt)}
+#col-resize-grip:hover::before,#col-resize-grip.dragging::before{background:var(--text-primary);box-shadow:0 -7px 0 var(--text-primary),0 7px 0 var(--text-primary)}
 #col-resize-tip{position:absolute;left:20px;top:50%;transform:translateY(-50%);background:#000;color:#fff;font-size:11px;padding:5px 9px;border-radius:5px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .15s}
 #col-resize-handle:hover #col-resize-tip{opacity:0.92}
 @media(min-width:640px){#dahu-rotation-detail{left:auto !important;width:420px !important;max-width:90vw;box-shadow:-8px 0 24px #0008;border-left:1px solid var(--border);}}
@@ -2343,14 +2343,17 @@ function render(){
         +'<div class="cg-item"><div class="cg-lbl">融資%</div><div class="cg-val '+mc+'">'+(s.margin!==null?s.margin.toFixed(1):'--')+'</div></div>'
                 +(function(){var roe=s.roe;var roec=roe!==null?(roe>=3.75?'up':roe<1.25?'dn':''):'';return '<div class="cg-item"><div class="cg-lbl">單季ROE%</div><div class="cg-val '+roec+'">'+(roe!==null?roe.toFixed(1):'--')+'</div></div>';})()
         +'<div class="cg-item"><div class="cg-lbl">RS%</div><div class="cg-val">'+(s.rs!==null?s.rs.toFixed(1):'--')+'</div></div>'
-        +(function(){var db=s.dahubuy;var dbc=db!==null&&db!==undefined?(db>=70?'up':db<30?'dn':''):'';return '<div class="cg-item"><div class="cg-lbl">大戶買賣比%</div><div class="cg-val '+dbc+'">'+(db!==null&&db!==undefined?db.toFixed(1):'--')+'</div></div>';})()
-        +(function(){var dc=s.dahuchai;var dcc=dc!==null&&dc!==undefined?(dc>0?'up':dc<0?'dn':''):'';return '<div class="cg-item"><div class="cg-lbl">大戶差比%</div><div class="cg-val '+dcc+'">'+(dc!==null&&dc!==undefined?((dc>0?'+':'')+dc.toFixed(1)):'--')+'</div></div>';})()
-        +(function(){var q=_dahuStockQuadrant(s.dahubuy,s.dahuchai); return '<div class="cg-item"><div class="cg-lbl">籌碼分區</div><div class="cg-val" style="color:'+q.fg+'">'+q.label+'</div></div>';})() // 跟大戶籌碼族群輪動圖同一套領先/改善/弱化/落後判讀，不用點進圖表也能直接看到這檔股票屬於哪一區
         +'<div class="cg-item"><div class="cg-lbl">毛利率%</div><div class="cg-val '+gmc+'">'+(s.grossmargin!==null?s.grossmargin.toFixed(1):'--')+'</div></div>'
-        +(function(){var rg=s.revgrowth;var rgc=rg!==null?(rg>0?'up':rg<0?'dn':''):'';return '<div class="cg-item"><div class="cg-lbl">營收增%</div><div class="cg-val '+rgc+'">'+(rg!==null?((rg>0?'+':'')+rg.toFixed(1)):'--')+'</div></div>';})()
+        // 大戶買賣比%跟營收增%調整順序放在一起，這樣扣掉右邊第5欄後(剩4欄一列)兩格才會排在同一列相鄰，不會被欄位換行拆散
+        +(function(){var db=s.dahubuy;var dbc=db!==null&&db!==undefined?(db>=70?'up':db<30?'dn':''):'';return '<div class="cg-item"><div class="cg-lbl">大戶買賣比%</div><div class="cg-val '+dbc+'">'+(db!==null&&db!==undefined?db.toFixed(1):'--')+'</div></div>';})()
+        +(function(){var rg2=s.revgrowth;var rgc2=rg2!==null?(rg2>0?'up':rg2<0?'dn':''):'';return '<div class="cg-item"><div class="cg-lbl">營收增%</div><div class="cg-val '+rgc2+'">'+(rg2!==null?((rg2>0?'+':'')+rg2.toFixed(1)):'--')+'</div></div>';})()
         +'<div class="cg-item"><div class="cg-lbl">單季EPS</div><div class="cg-val '+epsc+'">'+(s.eps!==null?s.eps.toFixed(2):'--')+'</div></div>'
         +(function(){var pe; if(s.pe!==null&&s.pe!==undefined){pe=s.pe.toFixed(1);}else{var annEps=s.eps!==null?s.eps*4/0.6:null;pe=(annEps&&annEps>0&&s.volume!==null)?(s.volume/(annEps)).toFixed(1):null;}return '<div class="cg-item"><div class="cg-lbl">本益比</div><div class="cg-val">'+(pe!==null?pe:'--')+'</div></div>';})()
-        +'<div class="cg-item" style="display:flex;align-items:center;justify-content:center;"><button class="card-cam" style="font-size:20px;opacity:0.7" onclick="event.stopPropagation();cardScreenshot(event,this.closest(\'.card\'))">📷</button></div>'
+        // 固定卡在整個5欄格線的最後一欄(第5欄)，籌碼分區在第1列、營收分區第2列、相機第3列，
+        // 垂直疊成一直排在卡片最右邊；其餘12格數字沒有指定位置，CSS Grid會自動照順序去補滿第1~4欄
+        +(function(){var q=_dahuStockQuadrant(s.dahubuy,s.dahuchai); return '<div class="cg-item" style="grid-column:5;grid-row:1"><div class="cg-lbl" style="font-size:9px">籌碼分區</div><div class="cg-val" style="font-size:12px;color:'+q.fg+'">'+q.label+'</div></div>';})()
+        +(function(){var qr=_revStockQuadrant(s.revgrowth,s.chg20d); return '<div class="cg-item" style="grid-column:5;grid-row:2"><div class="cg-lbl" style="font-size:9px">營收分區</div><div class="cg-val" style="font-size:12px;color:'+qr.fg+'">'+qr.label+'</div></div>';})()
+        +'<div class="cg-item" style="grid-column:5;grid-row:3;display:flex;align-items:center;justify-content:center;"><button class="card-cam" style="font-size:20px;opacity:0.7" onclick="event.stopPropagation();cardScreenshot(event,this.closest(\'.card\'))">📷</button></div>'
       +'</div>'
       // Yahoo K線圖區塊（延遲建立：展開時才產生內容，初始渲染只留空殼，大幅減少每張卡片的HTML量）
       +'<div class="yf-wrap" id="yf-'+s.code+'"></div>'
@@ -5592,8 +5595,7 @@ function _revStockRowHtml(s, showQuadBadge){
       +'<span style="font-size:13px;color:'+priceColor+';font-weight:700;flex-shrink:0;">'+priceStr+'</span>'
       +'<span style="font-size:12px;color:var(--text-dim);flex-shrink:0;">昨收 '+prevCloseStr+'</span>'
       +'<span style="font-size:12px;font-weight:700;flex-shrink:0;color:'+pctColor+';">'+pctStr+'</span>'
-    +'</div>'
-    +'<div style="display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap;">'
+      +'<span style="flex:1;"></span>'
       +'<span style="font-size:12px;font-weight:700;flex-shrink:0;padding:3px 7px;border-radius:5px;background:'+rc.bg+';color:'+rc.fg+';">營收年增 '+(s.revgrowth!==null&&s.revgrowth!==undefined?((s.revgrowth>0?'+':'')+s.revgrowth.toFixed(1)+'%'):'--')+'</span>'
       +'<span style="font-size:12px;font-weight:700;flex-shrink:0;padding:3px 7px;border-radius:5px;background:'+cc.bg+';color:'+cc.fg+';">近20日 '+(s.chg20d!==null&&s.chg20d!==undefined?((s.chg20d>0?'+':'')+s.chg20d.toFixed(1)+'%'):'--')+'</span>'
       +(s.chg5d!==null&&s.chg5d!==undefined?'<span style="font-size:12px;font-weight:700;flex-shrink:0;padding:3px 7px;border-radius:5px;background:'+c5.bg+';color:'+c5.fg+';">近5日 '+((s.chg5d>0?'+':'')+s.chg5d.toFixed(1)+'%')+'</span>':'')
@@ -6614,6 +6616,9 @@ function _positionColResizeHandle(){
   var contentW = rect.width - padL - padR;
   var col1W = (contentW - gap) * (_colSplit/100);
   var gapCenterX = rect.left + padL + col1W + gap/2;
+  // 保險：連續快速點擊(例如連點三下)時，版面可能剛好量到還沒穩定的寬度(0或NaN)，
+  // 這種情況先不要亂設left，維持上一次的正確位置，不要讓把手飛到畫面外變成「消失」
+  if(!isFinite(gapCenterX) || rect.width <= 0) return;
   handle.style.left = gapCenterX + 'px';
   // 垂直範圍跟著.cards實際可視區走（把下方懸浮的.bbar高度扣掉），這樣把手才會真正上下置中在卡片區域，
   // 而不是置中在含被bbar蓋住那段空白的整個視窗高度
@@ -6623,6 +6628,9 @@ function _positionColResizeHandle(){
   handle.style.bottom = bbarH + 'px';
 }
 function _crGripDown(e){
+  // 保險：已經在拖曳中就忽略重複觸發的mousedown（連續快速點擊/點兩下又立刻按下時瀏覽器可能補發事件），
+  // 避免同時有兩組drag狀態互相打架，導致放開滑鼠後狀態卡住、把手看起來消失或位置跑掉
+  if(_crDragging) return;
   e.preventDefault(); e.stopPropagation();
   _crDragging = true;
   var grip = document.getElementById('col-resize-grip');
@@ -6656,13 +6664,40 @@ function _crGripUp(){
   document.removeEventListener('touchend', _crGripUp);
 }
 function _crGripReset(){
+  // 保險：雙擊還原前先強制結束任何殘留的拖曳狀態（例如連點三下時，第三次mousedown跟雙擊reset時機重疊，
+  // 兩邊狀態沒對齊會讓把手之後對滑鼠移動沒反應、視覺上像消失了），確保reset永遠是從乾淨的狀態開始
+  _crDragging = false;
+  var grip = document.getElementById('col-resize-grip');
+  if(grip) grip.classList.remove('dragging');
+  document.removeEventListener('mousemove', _crGripMove);
+  document.removeEventListener('mouseup', _crGripUp);
+  document.removeEventListener('touchmove', _crGripMove);
+  document.removeEventListener('touchend', _crGripUp);
   _applyColSplit(50);
-  // 保險：雙擊還原後強制重新定位一次把手，避免極少數情況下量測到過期的版面資訊導致把手消失
+  // 雙重保險：立刻重新定位一次，再用rAF+短延遲各補一次，蓋掉快速連點時版面量測時機不穩的情況
+  _positionColResizeHandle();
   requestAnimationFrame(function(){ _positionColResizeHandle(); });
+  setTimeout(function(){ _positionColResizeHandle(); }, 150);
 }
 (function(){
   _syncColSplitToDOM();
   window.addEventListener('resize', _syncColSplitToDOM);
+  // 根本原因找到了：把手用position:fixed（跟著「視窗」定位），但先前只有resize時才重算位置；
+  // 這個頁面卡片一多是整個網頁在捲動（不是.cards自己內部捲軸），視窗往下捲動時.cards相對視窗的位置
+  // 會跟著往上移，但把手沒收到任何通知去重新量測，就停在捲動前的位置，跟卡片縫隙對不上、看起來跑掉了。
+  // 修法：直接監聽window的scroll事件（用rAF節流避免捲動時瘋狂重算拖慢效能），捲動當下就重新校正位置，
+  // 不用改動position:fixed，也不用猜.cards是否有自己的捲軸。
+  var _crScrollPending = false;
+  window.addEventListener('scroll', function(){
+    if(_crScrollPending) return;
+    _crScrollPending = true;
+    requestAnimationFrame(function(){ _crScrollPending = false; _positionColResizeHandle(); });
+  }, {passive:true});
+  var cardsElForSync = document.getElementById('cards');
+  if(cardsElForSync && window.ResizeObserver){
+    var _crResizeObserver = new ResizeObserver(function(){ _positionColResizeHandle(); });
+    _crResizeObserver.observe(cardsElForSync);
+  }
 })();
 </script>
 </body>
