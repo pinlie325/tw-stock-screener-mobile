@@ -60,7 +60,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:var(--bg-page)
 
 /* ── HEADER ── */
 .hdr{background:var(--bg-panel);border-bottom:1px solid var(--border);padding:9px 14px;display:flex;align-items:center;gap:8px;position:fixed;top:0;left:0;right:0;z-index:100;}
-.bbar{background:var(--bg-panel);border-top:1px solid var(--border);padding:8px 14px;display:flex;align-items:center;justify-content:center;gap:16px;position:fixed;left:0;right:0;bottom:0;z-index:900;}
+.bbar{background:var(--bg-panel);border-top:1px solid var(--border);padding:6px 14px;display:flex;align-items:center;justify-content:center;gap:14px;position:fixed;left:0;right:0;bottom:0;z-index:900;}.bbar button{-webkit-tap-highlight-color:transparent;transition:background .12s;}.bbar button:active{background:var(--border) !important;}
 .hdr-t{font-size:14px;font-weight:700;color:#58a6ff;white-space:nowrap}
 .hdr-sub{font-size:12px;color:var(--text-secondary);margin-left:4px}
 .hdr-r{margin-left:auto;display:flex;gap:6px}
@@ -881,12 +881,30 @@ function adminRemoveUser(email){
 <button id="report-return-fab" onclick="_reportReturnClick()" style="display:none;position:fixed;right:14px;bottom:70px;z-index:850;background:#1f6feb;border:none;border-radius:20px;color:#fff;width:180px;height:36px;padding:0 12px;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-size:13px;font-weight:700;box-shadow:0 2px 10px #0006;white-space:nowrap;box-sizing:border-box;overflow:hidden;text-overflow:ellipsis;"></button>
 
 <div class="bbar" id="bbar">
-  <button id="logout-btn" onclick="doLogout()" style="display:none;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:10px;color:#f85149;width:44px;height:44px;align-items:center;justify-content:center;cursor:pointer;font-size:17px;box-sizing:border-box;" title="登出">🚪</button>
-  <button id="admin-btn" onclick="openAdminPanel()" style="display:none;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:10px;color:#58a6ff;width:44px;height:44px;align-items:center;justify-content:center;cursor:pointer;font-size:18px;box-sizing:border-box;">👤</button>
-  <button id="float-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" style="background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:10px;color:var(--text-secondary);width:44px;height:44px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;cursor:pointer;font-size:15px;">▲</button>
-  <button id="dahu-quick-btn" onclick="openDahuRotationBoard()" title="大戶籌碼趨勢表" style="background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:10px;color:var(--text-secondary);width:44px;height:44px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;cursor:pointer;font-size:18px;">🐋</button>
-  <button id="general-note-btn" onclick="generalNoteBtnClick()" style="position:relative;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:10px;color:var(--text-secondary);width:44px;height:44px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;cursor:pointer;font-size:18px;">📣<span id="general-note-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:#f85149;color:#fff;font-size:10px;font-weight:700;line-height:1;min-width:16px;height:16px;border-radius:8px;align-items:center;justify-content:center;padding:0 3px;box-sizing:border-box;"></span></button>
-  <button onclick="openSettings()" title="設定" style="background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:10px;color:var(--text-secondary);width:44px;height:44px;align-items:center;justify-content:center;cursor:pointer;font-size:18px;box-sizing:border-box;">⚙️</button>
+  <button id="logout-btn" onclick="doLogout()" style="display:none;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:10px;color:#f85149;width:50px;height:50px;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;box-sizing:border-box;" title="登出">
+    <span style="font-size:16px;line-height:1;">🚪</span>
+    <span style="font-size:9px;line-height:1;font-weight:600;">登出</span>
+  </button>
+  <button id="admin-btn" onclick="openAdminPanel()" style="display:none;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:10px;color:#58a6ff;width:50px;height:50px;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;box-sizing:border-box;">
+    <span style="font-size:17px;line-height:1;">👤</span>
+    <span style="font-size:9px;line-height:1;font-weight:600;">審核</span>
+  </button>
+  <button id="float-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" style="background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:10px;color:var(--text-secondary);width:50px;height:50px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;box-sizing:border-box;cursor:pointer;">
+    <span style="font-size:14px;line-height:1;">▲</span>
+    <span style="font-size:9px;line-height:1;font-weight:600;">回頂</span>
+  </button>
+  <button id="dahu-quick-btn" onclick="openDahuRotationBoard()" title="大戶籌碼趨勢表" style="background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:10px;color:var(--text-secondary);width:50px;height:50px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;box-sizing:border-box;cursor:pointer;">
+    <span style="font-size:17px;line-height:1;">🐋</span>
+    <span style="font-size:9px;line-height:1;font-weight:600;">大戶</span>
+  </button>
+  <button id="rev-quick-btn" onclick="openRevRotationBoard()" title="營收成長趨勢表" style="background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:10px;color:var(--text-secondary);width:50px;height:50px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;box-sizing:border-box;cursor:pointer;">
+    <span style="font-size:17px;line-height:1;">📈</span>
+    <span style="font-size:9px;line-height:1;font-weight:600;">營收</span>
+  </button>
+  <button onclick="openSettings()" title="設定" style="background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:10px;color:var(--text-secondary);width:50px;height:50px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;box-sizing:border-box;cursor:pointer;">
+    <span style="font-size:17px;line-height:1;">⚙️</span>
+    <span style="font-size:9px;line-height:1;font-weight:600;">設定</span>
+  </button>
 </div>
 
 <!-- ADMIN MODAL -->
@@ -950,10 +968,12 @@ function adminRemoveUser(email){
     </div>
     <input id="settings-search-input" type="text" placeholder="🔍 搜尋功能..." oninput="filterSettingsMenu(this.value)" style="width:100%;background:var(--bg-page);border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:15px;padding:9px 12px;box-sizing:border-box;margin-bottom:14px;">
     <div id="settings-search-empty" style="display:none;padding:16px 4px;text-align:center;color:var(--text-secondary);font-size:13px;">🔍 找不到符合的功能</div>
-    <div style="display:flex;gap:8px;margin-bottom:14px">
-      <button id="theme-btn-dark" onclick="setTheme('dark')" style="flex:1;border-radius:8px;font-size:14px;padding:10px;cursor:pointer;text-align:center;box-sizing:border-box">🌙 深色模式</button>
-      <button id="theme-btn-light" onclick="setTheme('light')" style="flex:1;border-radius:8px;font-size:14px;padding:10px;cursor:pointer;text-align:center;box-sizing:border-box">☀️ 淺色模式</button>
-    </div>
+    <button class="settings-menu-item" onclick="openTodayHighlight()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:14px;text-align:left">
+      📊 今日盤勢重點
+    </button>
+    <button id="theme-toggle-btn" class="settings-menu-item" onclick="toggleTheme()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:14px;text-align:left">
+      <span id="theme-toggle-label">🌙 深色模式</span>
+    </button>
     <button class="settings-menu-item" onclick="location.reload()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
       🔄 重新整理網頁
     </button>
@@ -966,8 +986,11 @@ function adminRemoveUser(email){
     <button class="settings-menu-item" onclick="openExcludeManager()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
       🚫 排除股票清單
     </button>
-    <button class="settings-menu-item" onclick="openMacroBoard()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
-      🌍 市場參考看板（原油／美元／VIX／美債）
+    <button class="settings-menu-item" onclick="document.getElementById('settings-modal').style.display='none';openCompareModal()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
+      ⇄ 個股對照
+    </button>
+    <button class="settings-menu-item" onclick="openMacroBoard()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+      🌍 市場參考看板<span style="font-size:11px;color:var(--text-secondary);">（原油／美元／VIX／美債）</span>
     </button>
     <button class="settings-menu-item" onclick="openEconCalendar()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
       🗓 財經行事曆
@@ -1047,6 +1070,15 @@ function adminRemoveUser(email){
       <div id="rev-group-stock-list" style="background:var(--bg-panel);border:1px solid var(--border);border-radius:8px;padding:10px;min-height:420px;overflow-x:hidden;"></div>
     </div>
   </div>
+</div>
+
+<!-- TODAY MARKET HIGHLIGHT MODAL -->
+<div id="today-highlight-modal" style="display:none;position:fixed;inset:0;background:var(--bg-page);z-index:9999;flex-direction:column">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg-panel);flex-shrink:0">
+    <span style="font-size:16px;font-weight:700;color:var(--text-primary)">📊 今日盤勢重點</span>
+    <button onclick="closeTodayHighlight()" style="background:none;border:none;color:var(--text-secondary);font-size:22px;cursor:pointer">✕</button>
+  </div>
+  <div id="today-highlight-body" style="flex:1;overflow-y:auto;padding:14px;"></div>
 </div>
 
 <!-- ECONOMIC CALENDAR MODAL -->
@@ -1276,14 +1308,12 @@ function adminRemoveUser(email){
 </div>
 
 <!-- COMPACT LIST MODAL -->
-<div id="compact-modal" style="display:none;position:fixed;inset:0;background:#000a;z-index:9998;align-items:flex-start;justify-content:center;padding:16px;box-sizing:border-box;overflow-y:auto">
-  <div style="background:var(--bg-panel);border:1px solid var(--border);border-radius:12px;width:100%;max-width:520px;margin-top:16px">
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg-panel);z-index:1;border-radius:12px 12px 0 0">
-      <span id="compact-title" style="font-size:15px;font-weight:700;color:var(--text-primary)">📋 個股簡列</span>
-      <button onclick="document.getElementById('compact-modal').style.display='none'" style="background:none;border:none;color:var(--text-secondary);font-size:20px;cursor:pointer">✕</button>
-    </div>
-    <div id="compact-list" style="padding:8px 0"></div>
+<div id="compact-modal" style="display:none;position:fixed;inset:0;background:var(--bg-page);z-index:9998;flex-direction:column">
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg-panel);flex-shrink:0">
+    <span id="compact-title" style="font-size:16px;font-weight:700;color:var(--text-primary)">📋 個股簡列</span>
+    <button onclick="document.getElementById('compact-modal').style.display='none'" style="background:none;border:none;color:var(--text-secondary);font-size:22px;cursor:pointer">✕</button>
   </div>
+  <div id="compact-list" style="flex:1;overflow-y:auto;padding:8px 0"></div>
 </div>
 
 <!-- STOCK COMPARE MODAL -->
@@ -1351,8 +1381,8 @@ function adminRemoveUser(email){
   </div>
   <button class="btn-filter" id="fbtn" onclick="openDrawer()">🔍 產業</button>
   <button class="btn-filter" onclick="showCompactList()" title="簡列">🏷️</button>
-  <button class="btn-filter" onclick="openStrategyFilter()" title="策略篩選">📌</button>
-  <button class="btn-filter" id="fbtn-compare" onclick="openCompareModal()" title="個股對照" style="font-weight:900;font-size:16px;">⇄</button>
+  <button class="btn-filter" id="fbtn-strategy" onclick="openStrategyFilter()" title="策略篩選">📌</button>
+  <button class="btn-filter" id="general-note-btn" onclick="generalNoteBtnClick()" title="大聲公" style="position:relative;">📣<span id="general-note-badge" style="display:none;position:absolute;top:-4px;right:2px;background:#f85149;color:#fff;font-size:10px;font-weight:700;line-height:1;min-width:16px;height:16px;border-radius:8px;align-items:center;justify-content:center;padding:0 3px;box-sizing:border-box;"></span></button>
 </div>
 <div id="fbar-tags-wrap" style="display:none;align-items:center;gap:5px;padding:0 12px 6px;flex-wrap:wrap">
   <button class="fbar-clear-all" id="fbar-clear-all" onclick="selAll()">✕ 清除全部</button>
@@ -1587,15 +1617,9 @@ function previewExcludeName(raw){
 // ── 新增留言（不限清單內個股）：就算這支股票目前沒出現在選股清單裡，也可以先留言 ──
 // ── 大聲公：不綁特定股票代碼的獨立留言區，每則都記錄留言人 ──
 function updateGeneralNoteBtn(){
-  var btn = document.getElementById('general-note-btn');
-  if(!btn) return;
-  var n = generalNoteHistory.length;
-  // 底部按鈕統一大小後，留言數改用右上角小紅點徽章顯示，不再讓按鈕本身撐寬跟其他icon不一樣大
+  // 大聲公按鈕不顯示留言數量徽章，維持跟其他icon一樣乾淨
   var badge = document.getElementById('general-note-badge');
-  if(badge){
-    if(n){ badge.textContent = n > 99 ? '99+' : String(n); badge.style.display = 'flex'; }
-    else { badge.style.display = 'none'; badge.textContent = ''; }
-  }
+  if(badge){ badge.style.display = 'none'; badge.textContent = ''; }
 }
 function openGeneralNoteModal(){
   renderGeneralNoteList();
@@ -1853,10 +1877,10 @@ function toggleClear(v){var b=document.getElementById('fclear');if(b)b.style.dis
 function showNumKeypad(){
   var el = document.getElementById('num-keypad');
   if(!el) return;
-  // 鍵盤外緣(右邊)對齊「個股對照」按鈕的外緣(右邊)。用CSS本來就固定的寬度(跟#num-keypad的
+  // 鍵盤外緣(右邊)對齊篩選列最右邊按鈕(現在是「大聲公」)的外緣(右邊)。用CSS本來就固定的寬度(跟#num-keypad的
   // width:180px一致)換算right值，不用去量display:none元素的寬度(那個量不準，之前害鍵盤跑出畫面外)。
   var KEYPAD_W = 180;
-  var fbtn = document.getElementById('fbtn-compare');
+  var fbtn = document.getElementById('general-note-btn'); // 大聲公移到篩選列最右邊了，改用它當定位基準
   if(fbtn){
     var r = fbtn.getBoundingClientRect();
     var right = window.innerWidth - r.right;
@@ -2163,21 +2187,17 @@ function setTheme(mode){
   try{ localStorage.setItem('twstock_theme', m); }catch(e){}
   updateThemeButtons();
 }
+function toggleTheme(){
+  var mode = 'dark';
+  try{ mode = localStorage.getItem('twstock_theme') || 'dark'; }catch(e){}
+  setTheme(mode === 'dark' ? 'light' : 'dark');
+}
 function updateThemeButtons(){
   var mode = 'dark';
   try{ mode = localStorage.getItem('twstock_theme') || 'dark'; }catch(e){}
-  var onStyle = { border:'1px solid #58a6ff', color:'#58a6ff', background:'#1f6feb22' };
-  var offStyle = { border:'1px solid var(--border)', color:'var(--text-primary)', background:'var(--bg-panel-alt)' };
-  var darkBtn = document.getElementById('theme-btn-dark');
-  var lightBtn = document.getElementById('theme-btn-light');
-  if(darkBtn){
-    var s1 = (mode === 'dark') ? onStyle : offStyle;
-    darkBtn.style.border = s1.border; darkBtn.style.color = s1.color; darkBtn.style.background = s1.background;
-  }
-  if(lightBtn){
-    var s2 = (mode === 'light') ? onStyle : offStyle;
-    lightBtn.style.border = s2.border; lightBtn.style.color = s2.color; lightBtn.style.background = s2.background;
-  }
+  var isDark = (mode === 'dark');
+  var label = document.getElementById('theme-toggle-label');
+  if(label) label.textContent = isDark ? '🌙 深色模式' : '☀️ 淺色模式';
 }
 
 function toggleNoteFilter(){
@@ -4061,141 +4081,133 @@ function jumpToCardWithFilter(code, codes, catLabel){
   }, 100);
 }
 
-function showCompactList(){
-  var data = getFilt().slice();
-  data.sort(function(a,b){
-    var av=a[sk], bv=b[sk];
-    if(av===null&&bv===null)return 0;
-    if(av===null)return 1; if(bv===null)return -1;
-    return sd==='d'?bv-av:av-bv;
-  });
-  var ups = data.filter(function(s){return s.pct>0;}).length;
-  var dns = data.filter(function(s){return s.pct<0;}).length;
-  var selLabel = sel.length ? sel.join(' / ') : '全部';
-  document.getElementById('compact-title').textContent = '📋 '+selLabel;
-  document.getElementById('compact-title').innerHTML +=
-    ' <span style="font-size:12px;font-weight:400;color:var(--text-secondary)">'+data.length+'支　'
-    +'<span style="color:#f85149">▲'+ups+'</span>　'
-    +'<span style="color:#3fb950">▼'+dns+'</span></span>';
-  // 產業熱力圖（大分類）
-  var catStats = {};
-  Object.keys(C).forEach(function(cat){
-    var catTags = C[cat];
-    var matched = data.filter(function(s){
-      return s.tags && s.tags.some(function(t){ return catTags.indexOf(t)>=0; });
-    });
-    if(!matched.length) return;
-    var ups2 = matched.filter(function(s){return s.pct>0;}).length;
-    var dns2 = matched.filter(function(s){return s.pct<0;}).length;
-    var pctSum2 = matched.reduce(function(acc,s){return acc+(s.pct||0);},0);
-    var turnvalSum2 = matched.reduce(function(acc,s){return acc+(s.turnval||0);},0);
-    catStats[cat] = {total:matched.length, ups:ups2, dns:dns2, pctSum:pctSum2, turnval:turnvalSum2};
-  });
-  var catKeys = Object.keys(catStats).sort(function(a,b){
-    return catStats[b].turnval - catStats[a].turnval;
-  });
-  // 用成交值決定方塊大小（面積跟成交值成正比，用開根號換算成邊長，避免最大最小差太多）
-  var maxTurnval = catKeys.reduce(function(m,t){ return Math.max(m, catStats[t].turnval); }, 0) || 1;
-  var MIN_TILE = 58, MAX_TILE = 168;
-  var heatHtml = '<div style="padding:10px 16px;border-bottom:1px solid var(--border)">'
-    +'<div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px">產業熱力圖（方塊大小＝成交值）</div>'
-    +'<div style="display:flex;flex-wrap:wrap;gap:4px">';
-  catKeys.forEach(function(t){
+function _squarifyTreemap(items, x0, y0, w0, h0){
+  // 標準squarified treemap演算法：依數值面積排版，方塊彼此貼齊填滿整個矩形，不留空白，
+  // 大方塊比較方正、小方塊自動分配到剩餘空間，跟股市熱力圖網站的排法一樣。
+  var result = [];
+  var remaining = items.slice();
+  var x = x0, y = y0, w = w0, h = h0;
+  function sum(arr){ var s=0; for(var i=0;i<arr.length;i++) s+=arr[i].value; return s; }
+  function worst(row, length){
+    if(!row.length) return Infinity;
+    var s = sum(row);
+    var maxV=-Infinity, minV=Infinity;
+    for(var i=0;i<row.length;i++){ var v=row[i].value; if(v>maxV)maxV=v; if(v<minV)minV=v; }
+    var s2=s*s, l2=length*length;
+    return Math.max((l2*maxV)/s2, s2/(l2*minV));
+  }
+  while(remaining.length){
+    var shortSide = Math.min(w,h);
+    var row = [remaining[0]];
+    var i=1;
+    while(i<remaining.length){
+      var testRow = row.concat([remaining[i]]);
+      if(worst(testRow, shortSide) <= worst(row, shortSide)){
+        row = testRow; i++;
+      } else break;
+    }
+    var rowSum = sum(row);
+    if(w >= h){
+      var rowW = h>0 ? rowSum/h : 0;
+      var yy=y;
+      row.forEach(function(item){
+        var itemH = rowW>0 ? item.value/rowW : 0;
+        item.x=x; item.y=yy; item.w=rowW; item.h=itemH;
+        result.push(item);
+        yy+=itemH;
+      });
+      x += rowW; w -= rowW;
+    } else {
+      var rowH = w>0 ? rowSum/w : 0;
+      var xx=x;
+      row.forEach(function(item){
+        var itemW = rowH>0 ? item.value/rowH : 0;
+        item.x=xx; item.y=y; item.w=itemW; item.h=rowH;
+        result.push(item);
+        xx+=itemW;
+      });
+      y += rowH; h -= rowH;
+    }
+    remaining = remaining.slice(row.length);
+  }
+  return result;
+}
+
+var _heatTreemapCatStats = null; // {catKeys, catStats} 快取，resize重畫熱力圖時不用重新篩資料
+var _heatTreemapData = null; // 目前熱力圖對應的個股資料，drill-down點擊要用
+var _heatResizeTimer = null;
+window.addEventListener('resize', function(){
+  clearTimeout(_heatResizeTimer);
+  _heatResizeTimer = setTimeout(function(){
+    var modal = document.getElementById('compact-modal');
+    if(modal && modal.style.display === 'flex' && _heatTreemapCatStats){ _renderHeatTreemap(); }
+  }, 150);
+});
+function _renderHeatTreemap(){
+  // 依容器「實際渲染寬度」（不是window.innerWidth）現場排版，手機/桌機/縮放視窗大小都不會被切到，
+  // resize時外面會重新呼叫這個函式，方塊會跟著視窗大小重新排版。
+  if(!_heatTreemapCatStats) return;
+  var box = document.getElementById('heat-treemap-box');
+  if(!box) return;
+  var w = box.clientWidth;
+  if(!w) return; // 容器還沒有寬度（例如視窗還沒顯示出來），先跳過
+  var h = Math.round(Math.min(Math.max(w*0.55, 220), 520));
+  box.style.height = h+'px';
+  var catStats = _heatTreemapCatStats.catStats;
+  var catKeys = _heatTreemapCatStats.catKeys;
+  var tmItems = catKeys.map(function(t){ return {tag:t, value:Math.sqrt(catStats[t].turnval)}; }); // 開根號壓縮數值差距，避免單一超大成交值的產業把畫面吃掉大半，同時保留大小排序
+  var tmTotal = tmItems.reduce(function(a,b){return a+b.value;},0) || 1;
+  var tmScale = (w*h) / tmTotal;
+  tmItems.forEach(function(it){ it.value = it.value*tmScale; });
+  var tmRects = _squarifyTreemap(tmItems, 0, 0, w, h);
+  var tilesHtml = '';
+  tmRects.forEach(function(r){
+    var t = r.tag;
     var st = catStats[t];
     var avg = st.pctSum / st.total;
     var intensity = Math.min(Math.abs(avg)/5, 1);
     var bg, tc;
     if(avg > 0){
-      var r = Math.round(80 + intensity*168);
-      bg = 'rgba('+r+',50,50,0.9)';
+      var rr = Math.round(80 + intensity*168);
+      bg = 'rgba('+rr+',50,50,0.9)';
       tc = '#ffaaaa';
     } else if(avg < 0){
-      var g = Math.round(80 + intensity*150);
-      bg = 'rgba(30,'+g+',60,0.9)';
+      var gg = Math.round(80 + intensity*150);
+      bg = 'rgba(30,'+gg+',60,0.9)';
       tc = '#aaffaa';
     } else {
       bg = 'var(--bg-panel-alt)'; tc = 'var(--text-secondary)';
     }
-    var sizeRatio = Math.sqrt(st.turnval / maxTurnval);
-    var tileSize = Math.round(MIN_TILE + (MAX_TILE - MIN_TILE) * sizeRatio);
-    var nameFont = Math.round(10 + 4 * sizeRatio);
-    var subFont = Math.round(9 + 2 * sizeRatio);
-    heatHtml += '<div style="background:'+bg+';border-radius:4px;padding:4px 7px;cursor:pointer;width:'+tileSize+'px;min-width:'+MIN_TILE+'px;box-sizing:border-box;text-align:center;display:flex;flex-direction:column;justify-content:center;" class="hcat" data-tag="'+t+'">'
-      +'<div style="color:'+tc+';font-size:'+nameFont+'px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+t+'</div>'
-      +'<div style="color:'+tc+';font-size:'+subFont+'px;opacity:0.8">'+st.total+'支 '+(avg>0?'+':'')+avg.toFixed(1)+'%</div>'
-      +(st.turnval>0?'<div style="color:'+tc+';font-size:'+Math.max(subFont-1,8)+'px;opacity:0.65">'+st.turnval.toFixed(0)+'億</div>':'')
+    var GAP = 1;
+    var rx = Math.round(r.x)+GAP, ry = Math.round(r.y)+GAP;
+    var rw = Math.max(2, Math.round(r.w)-GAP*2), rh = Math.max(2, Math.round(r.h)-GAP*2);
+    var nameFont = Math.max(10, Math.min(26, Math.round(Math.sqrt(rw*rh)/6)));
+    var subFont = Math.max(9, Math.round(nameFont*0.55));
+    var showSub = rh >= 38 && rw >= 36;
+    var showTurn = rh >= 68 && rw >= 56;
+    var showBar = rh >= 46 && rw >= 36 && st.dahubuyAvg !== null;
+    var nameWrap = rw < 68;
+    var dahuBarHtml = '';
+    if(showBar){
+      var dbFillPct = Math.max(0, Math.min(100, st.dahubuyAvg));
+      var dbColor = st.dahuchaiAvg > 0 ? '#f85149' : (st.dahuchaiAvg < 0 ? '#3fb950' : 'rgba(255,255,255,0.4)');
+      var dbTitle = '大戶買賣比 '+st.dahubuyAvg.toFixed(1)+'% ／ 大戶差比 '+(st.dahuchaiAvg>0?'+':'')+st.dahuchaiAvg.toFixed(1)+'%';
+      dahuBarHtml = '<div title="'+dbTitle+'" style="width:80%;margin-top:4px;height:4px;border-radius:2px;background:rgba(255,255,255,0.15);overflow:hidden;flex-shrink:0;">'
+        +'<div style="width:'+dbFillPct+'%;height:100%;background:'+dbColor+';"></div>'
+        +'</div>';
+    }
+    tilesHtml += '<div class="hcat" data-tag="'+t+'" style="position:absolute;left:'+rx+'px;top:'+ry+'px;width:'+rw+'px;height:'+rh+'px;background:'+bg+';border-radius:3px;box-sizing:border-box;padding:3px 4px;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">'
+      +'<div style="color:'+tc+';font-size:'+nameFont+'px;font-weight:700;line-height:1.15;max-width:100%;'+(nameWrap?'word-break:break-all;':'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;')+'">'+t+'</div>'
+      +(showSub?'<div style="color:'+tc+';font-size:'+subFont+'px;opacity:0.85;margin-top:2px;">'+(avg>0?'+':'')+avg.toFixed(2)+'%</div>':'')
+      +(showTurn?'<div style="color:'+tc+';font-size:'+Math.max(subFont-1,8)+'px;opacity:0.65;">'+st.turnval.toFixed(0)+'億</div>':'')
+      +dahuBarHtml
       +'</div>';
   });
-  heatHtml += '</div></div>';
-
-  var html = heatHtml;
-  data.forEach(function(s){
-    var pct = s.pct!==null?(s.pct>0?'+':'')+s.pct.toFixed(2)+'%':'--';
-    var pc = s.pct>0?'#f85149':s.pct<0?'#3fb950':'var(--text-secondary)';
-    var stags = strategyMap[s.code] || strategyMap[String(parseInt(s.code))] || [];
-    var itags = stags.length ? stags.slice(0,2).map(function(t){
-      return '<span style="background:var(--bg-panel-alt);color:var(--text-secondary);border-radius:3px;font-size:10px;padding:1px 5px">'+t+'</span>';
-    }).join('') : '';
-    var price = s.volume!==null?s.volume:'--';
-    html += '<div class="citem" data-code="'+s.code+'" style="display:flex;align-items:center;gap:8px;padding:7px 16px;border-bottom:1px solid var(--bg-panel-alt);cursor:pointer">'
-      +'<span style="color:#58a6ff;font-weight:700;font-size:13px;min-width:42px">'+s.code+'</span>'
-      +'<span style="color:var(--text-primary);font-size:13px;min-width:55px">'+s.name+'</span>'
-      +'<span style="color:'+pc+';font-size:13px;min-width:48px;text-align:right">'+price+'</span>'
-      +'<span style="color:'+pc+';font-size:13px;min-width:55px;text-align:right">'+pct+'</span>'
-      +'<span style="display:flex;flex-wrap:wrap;gap:3px;flex:1">'+itags+'</span>'
-      +'</div>';
-  });
-  // 畫圓餅圖
-  var flat = data.length - ups - dns;
-  var total = data.length || 1;
-  var pieHtml = '<div style="display:flex;align-items:center;gap:16px;padding:12px 16px;border-bottom:1px solid var(--border)">'
-    +'<canvas id="pie-chart" width="80" height="80"></canvas>'
-    +'<div style="font-size:12px;line-height:2">'
-    +'<div><span style="color:#f85149">▲ 上漲</span>　'+ups+'支 ('+Math.round(ups/total*100)+'%)</div>'
-    +'<div><span style="color:#3fb950">▼ 下跌</span>　'+dns+'支 ('+Math.round(dns/total*100)+'%)</div>'
-    +'<div><span style="color:var(--text-secondary)">─ 平盤</span>　'+flat+'支 ('+Math.round(flat/total*100)+'%)</div>'
-    +'</div>'
-    +'</div>';
-  html = pieHtml + html;
-  document.getElementById('compact-list').innerHTML = html;
-  // 繪製圓餅
-  var canvas = document.getElementById('pie-chart');
-  if(canvas){
-    var ctx2 = canvas.getContext('2d');
-    var cx=40,cy=40,r=36;
-    // canvas無法直接吃CSS變數，這裡先讀出實際色碼
-    var _cs2 = getComputedStyle(document.documentElement);
-    var colBorder2 = (_cs2.getPropertyValue('--border')||'').trim() || '#30363d';
-    var colPanel2 = (_cs2.getPropertyValue('--bg-panel')||'').trim() || '#161b22';
-    var colTextP2 = (_cs2.getPropertyValue('--text-primary')||'').trim() || '#e6edf3';
-    var slices=[
-      {v:ups,c:'#f85149'},
-      {v:dns,c:'#3fb950'},
-      {v:flat,c:colBorder2}
-    ];
-    var angle = -Math.PI/2;
-    slices.forEach(function(sl){
-      if(!sl.v) return;
-      var sweep = (sl.v/total)*Math.PI*2;
-      ctx2.beginPath();
-      ctx2.moveTo(cx,cy);
-      ctx2.arc(cx,cy,r,angle,angle+sweep);
-      ctx2.closePath();
-      ctx2.fillStyle=sl.c;
-      ctx2.fill();
-      angle+=sweep;
-    });
-    // 中心白圈
-    ctx2.beginPath();
-    ctx2.arc(cx,cy,18,0,Math.PI*2);
-    ctx2.fillStyle=colPanel2;
-    ctx2.fill();
-    ctx2.fillStyle=colTextP2;
-    ctx2.font='bold 11px sans-serif';
-    ctx2.textAlign='center';
-    ctx2.textBaseline='middle';
-    ctx2.fillText(data.length+'支',cx,cy);
-  }
+  box.innerHTML = tilesHtml;
+  _bindHeatTileClicks(_heatTreemapData);
+}
+function _bindHeatTileClicks(data){
+  if(!data) return;
   document.querySelectorAll('.hcat').forEach(function(el){
     el.addEventListener('click', function(){
       var cat = el.getAttribute('data-tag');
@@ -4231,8 +4243,6 @@ function showCompactList(){
       });
       // 替換清單（保留圓餅和熱力圖）
       var listDiv = document.getElementById('compact-list');
-      var pieRow = listDiv.querySelector('div[style*="canvas"]') ? listDiv.children[0] : null;
-      var heatRow = listDiv.querySelector('[style*="產業熱力"]') ? listDiv.children[1] : null;
       // 移除舊的個股列表，保留前兩個區塊
       while(listDiv.children.length > 2) listDiv.removeChild(listDiv.lastChild);
       var tmp = document.createElement('div');
@@ -4294,7 +4304,122 @@ function showCompactList(){
       });
     });
   });
+}
+function showCompactList(){
+  var data = getFilt().slice();
+  data.sort(function(a,b){
+    var av=a[sk], bv=b[sk];
+    if(av===null&&bv===null)return 0;
+    if(av===null)return 1; if(bv===null)return -1;
+    return sd==='d'?bv-av:av-bv;
+  });
+  var ups = data.filter(function(s){return s.pct>0;}).length;
+  var dns = data.filter(function(s){return s.pct<0;}).length;
+  var selLabel = sel.length ? sel.join(' / ') : '全部';
+  document.getElementById('compact-title').textContent = '📋 '+selLabel;
+  document.getElementById('compact-title').innerHTML +=
+    ' <span style="font-size:12px;font-weight:400;color:var(--text-secondary)">'+data.length+'支　'
+    +'<span style="color:#f85149">▲'+ups+'</span>　'
+    +'<span style="color:#3fb950">▼'+dns+'</span></span>';
+  // 產業熱力圖（大分類）：這裡只算統計資料，實際方塊排版留給 _renderHeatTreemap
+  // 依容器「實際渲染寬度」現場計算，這樣不管手機、桌機或視窗縮放都不會被切到、也能跟著resize重排
+  var catStats = {};
+  Object.keys(C).forEach(function(cat){
+    var catTags = C[cat];
+    var matched = data.filter(function(s){
+      return s.tags && s.tags.some(function(t){ return catTags.indexOf(t)>=0; });
+    });
+    if(!matched.length) return;
+    var ups2 = matched.filter(function(s){return s.pct>0;}).length;
+    var dns2 = matched.filter(function(s){return s.pct<0;}).length;
+    var pctSum2 = matched.reduce(function(acc,s){return acc+(s.pct||0);},0);
+    var turnvalSum2 = matched.reduce(function(acc,s){return acc+(s.turnval||0);},0);
+    var dahubuyVals = matched.filter(function(s){return s.dahubuy!==null && s.dahubuy!==undefined && !isNaN(s.dahubuy);}).map(function(s){return s.dahubuy;});
+    var dahuchaiVals = matched.filter(function(s){return s.dahuchai!==null && s.dahuchai!==undefined && !isNaN(s.dahuchai);}).map(function(s){return s.dahuchai;});
+    var dahubuyAvg = dahubuyVals.length ? dahubuyVals.reduce(function(a,b){return a+b;},0)/dahubuyVals.length : null;
+    var dahuchaiAvg = dahuchaiVals.length ? dahuchaiVals.reduce(function(a,b){return a+b;},0)/dahuchaiVals.length : null;
+    catStats[cat] = {total:matched.length, ups:ups2, dns:dns2, pctSum:pctSum2, turnval:turnvalSum2, dahubuyAvg:dahubuyAvg, dahuchaiAvg:dahuchaiAvg};
+  });
+  var catKeys = Object.keys(catStats).filter(function(t){ return catStats[t].turnval > 0; }).sort(function(a,b){
+    return catStats[b].turnval - catStats[a].turnval;
+  });
+  _heatTreemapCatStats = {catKeys:catKeys, catStats:catStats};
+  var heatHtml = '<div style="padding:10px 16px;border-bottom:1px solid var(--border)">'
+    +'<div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px">產業熱力圖（區塊大小＝成交值，底部色條＝大戶買賣比強度，紅買超／綠賣超）</div>'
+    +'<div id="heat-treemap-box" style="position:relative;width:100%;height:260px;"></div>'
+    +'</div>';
 
+  var html = heatHtml;
+  data.forEach(function(s){
+    var pct = s.pct!==null?(s.pct>0?'+':'')+s.pct.toFixed(2)+'%':'--';
+    var pc = s.pct>0?'#f85149':s.pct<0?'#3fb950':'var(--text-secondary)';
+    var stags = strategyMap[s.code] || strategyMap[String(parseInt(s.code))] || [];
+    var itags = stags.length ? stags.slice(0,2).map(function(t){
+      return '<span style="background:var(--bg-panel-alt);color:var(--text-secondary);border-radius:3px;font-size:10px;padding:1px 5px">'+t+'</span>';
+    }).join('') : '';
+    var price = s.volume!==null?s.volume:'--';
+    html += '<div class="citem" data-code="'+s.code+'" style="display:flex;align-items:center;gap:8px;padding:7px 16px;border-bottom:1px solid var(--bg-panel-alt);cursor:pointer">'
+      +'<span style="color:#58a6ff;font-weight:700;font-size:13px;min-width:42px">'+s.code+'</span>'
+      +'<span style="color:var(--text-primary);font-size:13px;min-width:55px">'+s.name+'</span>'
+      +'<span style="color:'+pc+';font-size:13px;min-width:48px;text-align:right">'+price+'</span>'
+      +'<span style="color:'+pc+';font-size:13px;min-width:55px;text-align:right">'+pct+'</span>'
+      +'<span style="display:flex;flex-wrap:wrap;gap:3px;flex:1">'+itags+'</span>'
+      +'</div>';
+  });
+  // 畫圓餅圖
+  var flat = data.length - ups - dns;
+  var total = data.length || 1;
+  var pieHtml = '<div style="display:flex;align-items:center;gap:16px;padding:12px 16px;border-bottom:1px solid var(--border)">'
+    +'<canvas id="pie-chart" width="80" height="80"></canvas>'
+    +'<div style="font-size:12px;line-height:2">'
+    +'<div><span style="color:#f85149">▲ 上漲</span>　'+ups+'支 ('+Math.round(ups/total*100)+'%)</div>'
+    +'<div><span style="color:#3fb950">▼ 下跌</span>　'+dns+'支 ('+Math.round(dns/total*100)+'%)</div>'
+    +'<div><span style="color:var(--text-secondary)">─ 平盤</span>　'+flat+'支 ('+Math.round(flat/total*100)+'%)</div>'
+    +'</div>'
+    +'</div>';
+  html = pieHtml + html;
+  document.getElementById('compact-list').innerHTML = html;
+  document.getElementById('compact-modal').style.display = 'flex';
+  _heatTreemapData = data;
+  _renderHeatTreemap();
+  // 繪製圓餅
+  var canvas = document.getElementById('pie-chart');
+  if(canvas){
+    var ctx2 = canvas.getContext('2d');
+    var cx=40,cy=40,r=36;
+    // canvas無法直接吃CSS變數，這裡先讀出實際色碼
+    var _cs2 = getComputedStyle(document.documentElement);
+    var colBorder2 = (_cs2.getPropertyValue('--border')||'').trim() || '#30363d';
+    var colPanel2 = (_cs2.getPropertyValue('--bg-panel')||'').trim() || '#161b22';
+    var colTextP2 = (_cs2.getPropertyValue('--text-primary')||'').trim() || '#e6edf3';
+    var slices=[
+      {v:ups,c:'#f85149'},
+      {v:dns,c:'#3fb950'},
+      {v:flat,c:colBorder2}
+    ];
+    var angle = -Math.PI/2;
+    slices.forEach(function(sl){
+      if(!sl.v) return;
+      var sweep = (sl.v/total)*Math.PI*2;
+      ctx2.beginPath();
+      ctx2.moveTo(cx,cy);
+      ctx2.arc(cx,cy,r,angle,angle+sweep);
+      ctx2.closePath();
+      ctx2.fillStyle=sl.c;
+      ctx2.fill();
+      angle+=sweep;
+    });
+    // 中心白圈
+    ctx2.beginPath();
+    ctx2.arc(cx,cy,18,0,Math.PI*2);
+    ctx2.fillStyle=colPanel2;
+    ctx2.fill();
+    ctx2.fillStyle=colTextP2;
+    ctx2.font='bold 11px sans-serif';
+    ctx2.textAlign='center';
+    ctx2.textBaseline='middle';
+    ctx2.fillText(data.length+'支',cx,cy);
+  }
   document.querySelectorAll('.citem').forEach(function(el){
     el.addEventListener('click', function(){
       document.getElementById('compact-modal').style.display='none';
@@ -4302,7 +4427,6 @@ function showCompactList(){
       jumpToCardWithFilter(code, null, null);
     });
   });
-  document.getElementById('compact-modal').style.display = 'flex';
 }
 
 // ── 個股對照 ──
@@ -5479,6 +5603,227 @@ function openRevRotationBoard(){
 }
 function closeRevRotationBoard(){
   document.getElementById('rev-rotation-modal').style.display = 'none';
+}
+
+// ── 今日盤勢重點（自動彙整現有資料組成文字重點，不呼叫外部AI） ──
+function _computeTodayHighlight(){
+  var data = (D||[]).filter(function(s){ return s.pct!==null && s.pct!==undefined && !isNaN(s.pct); });
+  var total = data.length;
+  if(!total) return null;
+  var ups = data.filter(function(s){return s.pct>0;}).length;
+  var dns = data.filter(function(s){return s.pct<0;}).length;
+  var flat = total-ups-dns;
+  var pctSum = data.reduce(function(a,s){return a+s.pct;},0);
+  var avgPct = pctSum/total;
+  var upRatio = ups/total*100;
+
+  // 產業族群統計：跟熱力圖同一套 C 分類，但用全市場 D，不受目前篩選/搜尋影響
+  var catStats = {};
+  Object.keys(C).forEach(function(cat){
+    var catTags = C[cat];
+    var matched = data.filter(function(s){
+      return s.tags && s.tags.some(function(t){ return catTags.indexOf(t)>=0; });
+    });
+    if(!matched.length) return;
+    var pctSum2 = matched.reduce(function(a,s){return a+(s.pct||0);},0);
+    var turnvalSum2 = matched.reduce(function(a,s){return a+(s.turnval||0);},0);
+    var dahuchaiVals = matched.filter(function(s){return s.dahuchai!==null && s.dahuchai!==undefined && !isNaN(s.dahuchai);}).map(function(s){return s.dahuchai;});
+    var dahuchaiAvg = dahuchaiVals.length ? dahuchaiVals.reduce(function(a,b){return a+b;},0)/dahuchaiVals.length : null;
+    catStats[cat] = {total:matched.length, pctAvg:pctSum2/matched.length, turnval:turnvalSum2, dahuchaiAvg:dahuchaiAvg};
+  });
+  var catKeys = Object.keys(catStats).filter(function(t){ return catStats[t].turnval > 0; });
+  var byTurnval = catKeys.slice().sort(function(a,b){ return catStats[b].turnval - catStats[a].turnval; });
+  var hottestCat = byTurnval[0] || null;
+
+  // 表現最強/最弱、大戶買賣超最積極的族群：只看樣本數>=5檔的族群，避免小族群失真
+  var meaningfulCats = catKeys.filter(function(t){ return catStats[t].total >= 5; });
+  var strongestCat = meaningfulCats.slice().sort(function(a,b){ return catStats[b].pctAvg - catStats[a].pctAvg; })[0] || null;
+  var weakestCat = meaningfulCats.slice().sort(function(a,b){ return catStats[a].pctAvg - catStats[b].pctAvg; })[0] || null;
+  var dahuCats = meaningfulCats.filter(function(t){ return catStats[t].dahuchaiAvg!==null; });
+  var buyCat = dahuCats.slice().sort(function(a,b){ return catStats[b].dahuchaiAvg - catStats[a].dahuchaiAvg; })[0] || null;
+  var sellCat = dahuCats.slice().sort(function(a,b){ return catStats[a].dahuchaiAvg - catStats[b].dahuchaiAvg; })[0] || null;
+
+  // 個股大戶異常：只在成交值排前面（較活躍）的股票裡挑，避免冷門股雜訊
+  var liquidPool = data.filter(function(s){ return s.turnval!==null && s.turnval!==undefined && s.turnval>0; })
+    .sort(function(a,b){ return b.turnval-a.turnval; });
+  liquidPool = liquidPool.slice(0, Math.max(30, Math.floor(liquidPool.length*0.4)));
+  var dahuCandidates = liquidPool.filter(function(s){ return s.dahuchai!==null && s.dahuchai!==undefined && !isNaN(s.dahuchai); });
+  var topBuyStocks = dahuCandidates.slice().sort(function(a,b){ return b.dahuchai-a.dahuchai; }).slice(0,3);
+  var topSellStocks = dahuCandidates.slice().sort(function(a,b){ return a.dahuchai-b.dahuchai; }).slice(0,3);
+
+  return {
+    total:total, ups:ups, dns:dns, flat:flat, avgPct:avgPct, upRatio:upRatio,
+    catStats:catStats, hottestCat:hottestCat, strongestCat:strongestCat, weakestCat:weakestCat,
+    buyCat:buyCat, sellCat:sellCat, topBuyStocks:topBuyStocks, topSellStocks:topSellStocks
+  };
+}
+
+function _sentimentLabel(upRatio){
+  if(upRatio>=65) return '大盤明顯偏多';
+  if(upRatio>=52) return '大盤小幅偏多';
+  if(upRatio>=45) return '多空交錯';
+  if(upRatio>=32) return '大盤小幅偏空';
+  return '大盤明顯偏空';
+}
+
+function _todayHighlightSummaryText(h){
+  var p = function(v,dec){ return (v>=0?'+':'')+v.toFixed(dec===undefined?2:dec); };
+  var parts = [];
+  parts.push('今日全市場共'+h.total+'檔，上漲'+h.ups+'檔（'+(h.ups/h.total*100).toFixed(0)+'%）、下跌'+h.dns+'檔（'+(h.dns/h.total*100).toFixed(0)+'%）、平盤'+h.flat+'檔，平均漲跌'+p(h.avgPct)+'%，'+_sentimentLabel(h.upRatio)+'。');
+  if(h.hottestCat){
+    var hc = h.catStats[h.hottestCat];
+    var s = '「'+h.hottestCat+'」成交最活躍（成交值約'+hc.turnval.toFixed(0)+'億元）';
+    if(h.strongestCat){
+      var sc = h.catStats[h.strongestCat];
+      if(h.strongestCat===h.hottestCat){
+        s += '，同時也是今日表現最強的族群，平均'+(sc.pctAvg>=0?'上漲':'下跌')+Math.abs(sc.pctAvg).toFixed(2)+'%';
+      } else {
+        s += '，「'+h.strongestCat+'」表現最強，平均'+(sc.pctAvg>=0?'上漲':'下跌')+Math.abs(sc.pctAvg).toFixed(2)+'%';
+      }
+    }
+    if(h.weakestCat && h.weakestCat!==h.strongestCat){
+      var wc = h.catStats[h.weakestCat];
+      s += '；「'+h.weakestCat+'」表現最弱，平均'+(wc.pctAvg>=0?'上漲':'下跌')+Math.abs(wc.pctAvg).toFixed(2)+'%';
+    }
+    parts.push(s+'。');
+  }
+  if(h.buyCat || h.sellCat){
+    var s2 = '籌碼面上，';
+    if(h.buyCat){ s2 += '「'+h.buyCat+'」大戶買超力道最強（大戶差比 '+p(h.catStats[h.buyCat].dahuchaiAvg,1)+'%）'; }
+    if(h.sellCat && h.sellCat!==h.buyCat){ s2 += (h.buyCat?'，':'')+'「'+h.sellCat+'」大戶賣超力道最強（大戶差比 '+p(h.catStats[h.sellCat].dahuchaiAvg,1)+'%）'; }
+    parts.push(s2+'。');
+  }
+  if(h.topBuyStocks.length || h.topSellStocks.length){
+    var s3 = '個股中，';
+    if(h.topBuyStocks.length){
+      s3 += h.topBuyStocks.map(function(st){ return st.name+'('+st.code+') '+p(st.dahuchai,1)+'%'; }).join('、')+' 大戶買超最積極';
+    }
+    if(h.topSellStocks.length){
+      s3 += (h.topBuyStocks.length?'；':'')+h.topSellStocks.map(function(st){ return st.name+'('+st.code+') '+p(st.dahuchai,1)+'%'; }).join('、')+' 大戶賣超最積極';
+    }
+    parts.push(s3+'，請留意籌碼變化。');
+  }
+  parts.push('（以上依現有資料自動彙整，僅供參考，非投資建議）');
+  return parts.join('');
+}
+
+function _thStatBox(label, val, color){
+  return '<div style="background:var(--bg-panel);border:1px solid var(--border);border-radius:8px;padding:8px 4px;text-align:center;">'
+    +'<div style="font-size:16px;font-weight:700;color:'+color+';">'+val+'</div>'
+    +'<div style="font-size:10px;color:var(--text-secondary);margin-top:2px;">'+label+'</div>'
+  +'</div>';
+}
+function _thHighlightRow(label, cat, val, color){
+  return '<div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:5px 0;border-bottom:1px solid var(--border);">'
+    +'<span style="color:var(--text-secondary);">'+label+'</span>'
+    +'<span style="color:var(--text-primary);">'+cat+' <b style="color:'+color+';">'+val+'</b></span>'
+  +'</div>';
+}
+
+function _renderTodayHighlightHtml(h){
+  var upPct = (h.ups/h.total*100);
+  var dnPct = (h.dns/h.total*100);
+  var flatPct = Math.max(0, 100-upPct-dnPct);
+  var summary = _todayHighlightSummaryText(h);
+  var html = '';
+  html += '<div style="margin-bottom:14px;">'
+    +'<div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;">今日多空氣氛</div>'
+    +'<div style="display:flex;height:20px;border-radius:6px;overflow:hidden;">'
+      +'<div style="width:'+upPct.toFixed(1)+'%;background:#f85149;"></div>'
+      +(flatPct>0?'<div style="width:'+flatPct.toFixed(1)+'%;background:var(--border);"></div>':'')
+      +'<div style="width:'+dnPct.toFixed(1)+'%;background:#3fb950;"></div>'
+    +'</div>'
+    +'<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-secondary);margin-top:4px;">'
+      +'<span style="color:#f85149;">▲上漲 '+upPct.toFixed(0)+'%</span>'
+      +'<span>平盤 '+flatPct.toFixed(0)+'%</span>'
+      +'<span style="color:#3fb950;">▼下跌 '+dnPct.toFixed(0)+'%</span>'
+    +'</div>'
+  +'</div>';
+
+  html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px;">'
+    +_thStatBox('總檔數', h.total, 'var(--text-primary)')
+    +_thStatBox('上漲', h.ups, '#f85149')
+    +_thStatBox('下跌', h.dns, '#3fb950')
+    +_thStatBox('平均漲跌', (h.avgPct>=0?'+':'')+h.avgPct.toFixed(2)+'%', h.avgPct>=0?'#f85149':'#3fb950')
+  +'</div>';
+
+  html += '<div style="background:var(--bg-panel);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px;">'
+    +'<div style="font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:8px;">🏭 產業焦點</div>'
+    +(h.hottestCat?_thHighlightRow('成交最活躍', h.hottestCat, h.catStats[h.hottestCat].turnval.toFixed(0)+'億', 'var(--text-secondary)'):'')
+    +(h.strongestCat?_thHighlightRow('表現最強', h.strongestCat, (h.catStats[h.strongestCat].pctAvg>=0?'+':'')+h.catStats[h.strongestCat].pctAvg.toFixed(2)+'%', h.catStats[h.strongestCat].pctAvg>=0?'#f85149':'#3fb950'):'')
+    +(h.weakestCat?_thHighlightRow('表現最弱', h.weakestCat, (h.catStats[h.weakestCat].pctAvg>=0?'+':'')+h.catStats[h.weakestCat].pctAvg.toFixed(2)+'%', h.catStats[h.weakestCat].pctAvg>=0?'#f85149':'#3fb950'):'')
+  +'</div>';
+
+  if(h.buyCat || h.sellCat || h.topBuyStocks.length || h.topSellStocks.length){
+    html += '<div style="background:var(--bg-panel);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px;">'
+      +'<div style="font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:8px;">🐋 大戶動向</div>';
+    if(h.buyCat) html += _thHighlightRow('買超最積極族群', h.buyCat, (h.catStats[h.buyCat].dahuchaiAvg>=0?'+':'')+h.catStats[h.buyCat].dahuchaiAvg.toFixed(1)+'%', '#f85149');
+    if(h.sellCat) html += _thHighlightRow('賣超最積極族群', h.sellCat, (h.catStats[h.sellCat].dahuchaiAvg>=0?'+':'')+h.catStats[h.sellCat].dahuchaiAvg.toFixed(1)+'%', '#3fb950');
+    if(h.topBuyStocks.length || h.topSellStocks.length){
+      html += '<div style="display:flex;gap:8px;margin-top:8px;">';
+      html += '<div style="flex:1;">'
+        +'<div style="font-size:11px;color:#f85149;margin-bottom:4px;">大戶買超個股</div>'
+        +h.topBuyStocks.map(function(st){
+          return '<div class="citem2" data-code="'+st.code+'" style="font-size:12px;padding:4px 0;cursor:pointer;color:var(--text-primary);">'+st.name+'('+st.code+') <span style="color:#f85149;">'+(st.dahuchai>=0?'+':'')+st.dahuchai.toFixed(1)+'%</span></div>';
+        }).join('')
+      +'</div>';
+      html += '<div style="flex:1;">'
+        +'<div style="font-size:11px;color:#3fb950;margin-bottom:4px;">大戶賣超個股</div>'
+        +h.topSellStocks.map(function(st){
+          return '<div class="citem2" data-code="'+st.code+'" style="font-size:12px;padding:4px 0;cursor:pointer;color:var(--text-primary);">'+st.name+'('+st.code+') <span style="color:#3fb950;">'+(st.dahuchai>=0?'+':'')+st.dahuchai.toFixed(1)+'%</span></div>';
+        }).join('')
+      +'</div>';
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+
+  html += '<div style="background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px;">'
+    +'<div style="font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:6px;">📝 今日摘要</div>'
+    +'<div id="today-highlight-summary-text" style="font-size:13px;line-height:1.7;color:var(--text-primary);">'+summary+'</div>'
+  +'</div>';
+  html += '<button onclick="_copyTodayHighlightSummary()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:14px;padding:10px;cursor:pointer;">📋 複製摘要文字</button>';
+  return html;
+}
+
+function _copyTodayHighlightSummary(){
+  var el = document.getElementById('today-highlight-summary-text');
+  if(!el) return;
+  var text = el.textContent;
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){ toast('✅ 已複製摘要文字'); }).catch(function(){ toast('❌ 複製失敗','#da3633'); });
+  } else {
+    toast('❌ 此裝置不支援複製','#da3633');
+  }
+}
+
+function openTodayHighlight(){
+  try{
+    ['settings-modal','margin-report-modal','macro-board-modal','econ-calendar-modal','note-edit-modal'].forEach(function(id){
+      var el = document.getElementById(id);
+      if(el) el.style.display = 'none';
+    });
+    var modal = document.getElementById('today-highlight-modal');
+    if(!modal){ toast('❌ 找不到今日盤勢重點的視窗元素','#da3633'); return; }
+    var h = _computeTodayHighlight();
+    var body = document.getElementById('today-highlight-body');
+    if(!h){ body.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:40px 0;">尚無資料，請先載入股票資料</div>'; }
+    else { body.innerHTML = _renderTodayHighlightHtml(h); }
+    modal.style.display = 'flex';
+    modal.style.zIndex = '100000';
+    document.querySelectorAll('#today-highlight-body .citem2').forEach(function(el){
+      el.addEventListener('click', function(){
+        modal.style.display = 'none';
+        jumpToCardWithFilter(el.getAttribute('data-code'), null, null);
+      });
+    });
+  }catch(e){
+    toast('❌ 今日盤勢重點發生錯誤：'+e.message,'#da3633');
+    console.error('openTodayHighlight error:', e);
+  }
+}
+function closeTodayHighlight(){
+  document.getElementById('today-highlight-modal').style.display = 'none';
 }
 
 function _computeRevRotationAllStocks(){
