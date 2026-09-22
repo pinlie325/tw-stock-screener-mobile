@@ -297,6 +297,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:var(--bg-page)
 .xq-name{font-size:14px;flex:1}
 .xq-hint{font-size:12px;color:#ffffffaa;white-space:nowrap}
 .xq-x{font-size:20px;cursor:pointer;padding:0 4px;color:#ffffffcc}
+#settings-modal .settings-menu-item{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:2px;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:13.5px;line-height:1.35;padding:10px 6px;min-height:54px;cursor:pointer;box-sizing:border-box;}
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -968,45 +969,21 @@ function adminRemoveUser(email){
     </div>
     <input id="settings-search-input" type="text" placeholder="🔍 搜尋功能..." oninput="filterSettingsMenu(this.value)" style="width:100%;background:var(--bg-page);border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:15px;padding:9px 12px;box-sizing:border-box;margin-bottom:14px;">
     <div id="settings-search-empty" style="display:none;padding:16px 4px;text-align:center;color:var(--text-secondary);font-size:13px;">🔍 找不到符合的功能</div>
-    <button class="settings-menu-item" onclick="openTodayHighlight()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:14px;text-align:left">
-      📊 今日盤勢重點
-    </button>
-    <button id="theme-toggle-btn" class="settings-menu-item" onclick="toggleTheme()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:14px;text-align:left">
-      <span id="theme-toggle-label">🌙 深色模式</span>
-    </button>
-    <button class="settings-menu-item" onclick="location.reload()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
-      🔄 重新整理網頁
-    </button>
-    <button class="settings-menu-item" onclick="document.getElementById('settings-modal').style.display='none';document.getElementById('fi').click()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
-      📄 從手機/電腦手動載入 Excel
-    </button>
-    <button class="settings-menu-item" onclick="showAddToHome()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
-      📲 加入主畫面（iOS）
-    </button>
-    <button class="settings-menu-item" onclick="openExcludeManager()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
-      🚫 排除股票清單
-    </button>
-    <button class="settings-menu-item" onclick="document.getElementById('settings-modal').style.display='none';openCompareModal()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
-      ⇄ 個股對照
-    </button>
-    <button class="settings-menu-item" onclick="openMacroBoard()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-      🌍 市場參考看板<span style="font-size:11px;color:var(--text-secondary);">（原油／美元／VIX／美債）</span>
-    </button>
-    <button class="settings-menu-item" onclick="openEconCalendar()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
-      🗓 財經行事曆
-    </button>
-    <button class="settings-menu-item" onclick="openMarginReport()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
-      🏭 各族群融資維持率報表
-    </button>
-    <button class="settings-menu-item" onclick="openDisposalReport()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
-      🚨 處置股名單
-    </button>
-    <button class="settings-menu-item" onclick="openDahuRotationBoard()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;margin-bottom:10px;text-align:left">
-      🐋 大戶籌碼趨勢表
-    </button>
-    <button class="settings-menu-item" onclick="openRevRotationBoard()" style="width:100%;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:15px;padding:12px;cursor:pointer;text-align:left">
-      📈 營收成長趨勢表
-    </button>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;">
+      <button class="settings-menu-item" onclick="openTodayHighlight()">📊 今日盤勢重點</button>
+      <button id="theme-toggle-btn" class="settings-menu-item" onclick="toggleTheme()"><span id="theme-toggle-label">🌙 深色模式</span></button>
+      <button class="settings-menu-item" onclick="location.reload()">🔄 重新整理網頁</button>
+      <button class="settings-menu-item" onclick="document.getElementById('settings-modal').style.display='none';document.getElementById('fi').click()">📄 從手機/電腦手動載入 Excel</button>
+      <button class="settings-menu-item" onclick="showAddToHome()">📲 加入主畫面（iOS）</button>
+      <button class="settings-menu-item" onclick="openExcludeManager()">🚫 排除股票清單</button>
+      <button class="settings-menu-item" onclick="document.getElementById('settings-modal').style.display='none';openCompareModal()">⇄ 個股對照</button>
+      <button class="settings-menu-item" onclick="openMacroBoard()">🌍 市場參考看板<span style="display:block;font-size:10.5px;color:var(--text-secondary);margin-top:2px;">（原油／美元／VIX／美債）</span></button>
+      <button class="settings-menu-item" onclick="openEconCalendar()">🗓 財經行事曆</button>
+      <button class="settings-menu-item" onclick="openMarginReport()">🏭 各族群融資維持率報表</button>
+      <button class="settings-menu-item" onclick="openDisposalReport()">🚨 處置股名單</button>
+      <button class="settings-menu-item" onclick="openDahuRotationBoard()">🐋 大戶籌碼趨勢表</button>
+      <button class="settings-menu-item" onclick="openRevRotationBoard()">📈 營收成長趨勢表</button>
+    </div>
   </div>
 </div>
 
