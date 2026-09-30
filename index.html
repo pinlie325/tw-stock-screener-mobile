@@ -300,6 +300,13 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:var(--bg-page)
 #settings-modal .settings-menu-item{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:2px;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:13.5px;line-height:1.35;padding:10px 6px;min-height:54px;cursor:pointer;box-sizing:border-box;}
 /* 資料權限：admin-only 的元素只有管理者看得到（後端也會再擋一次） */
 body:not(.is-admin) .admin-only{display:none!important}
+/* 自動載入失敗的重試按鈕：按下去會縮一下、載入中會轉圈圈 */
+.retry-btn{background:#1f6feb22;border:1px solid #58a6ff88;border-radius:8px;color:#58a6ff;font-size:14px;font-weight:600;padding:8px 22px;cursor:pointer;margin-top:6px;display:inline-flex;align-items:center;gap:6px;transition:transform .08s ease,background .15s ease,box-shadow .15s ease;-webkit-tap-highlight-color:transparent}
+.retry-btn:hover{background:#1f6feb44}
+.retry-btn:active{transform:scale(0.92);background:#1f6feb66;box-shadow:0 0 0 4px #58a6ff33}
+.retry-btn.loading{cursor:wait;opacity:.85;transform:none}
+.retry-spin{width:14px;height:14px;border:2px solid #58a6ff55;border-top-color:#58a6ff;border-radius:50%;display:inline-block;animation:retrySpin .7s linear infinite}
+@keyframes retrySpin{to{transform:rotate(360deg)}}
 /* 會員版卡片少了8格，右側分區/相機不再固定在第5欄，改成跟著其他格子自動排，卡片才不會留一大塊空白 */
 body:not(.is-admin) .card-grid .cg-side{grid-column:auto!important;grid-row:auto!important}
 </style>
@@ -3412,7 +3419,7 @@ function autoLoadLatestStockFile(){
   // 效能優化：原本要打兩次API（action=list 找最新檔案 → action=file 讀內容），
   // 現在後端合併成 action=latest 一次執行、一次回傳，省掉一趟網路來回＋Apps Script啟動時間
   window._perfLoad = {fetchStart: performance.now()};
-  _gasTokenUrl(GAS_URL+'?action=latest').then(function(u){ return fetchWithTimeout(u, 12000); })
+  _gasTokenUrl(GAS_URL+'?action=latest').then(function(u){ return fetchWithTimeout(u, 30000); })
     .then(function(r){return r.json();})
     .then(function(fd){
       if(!fd.ok){ _showAutoLoadRetry('讀取失敗：'+(fd.error||'未知錯誤')); return; }
@@ -3457,7 +3464,20 @@ function _showAutoLoadRetry(msg){
   if(!el) return;
   el.innerHTML =
     '<div style="font-size:15px;color:#f85149;margin-bottom:6px">⚠️ 自動載入失敗：'+msg+'</div>'
-    +'<button onclick="autoLoadLatestStockFile()" style="background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-altlight);font-size:14px;padding:8px 20px;cursor:pointer;margin-top:6px;">🔄 重試</button>';
+    +'<button class="retry-btn" onclick="_retryAutoLoad(this)">🔄 重試</button>';
+}
+// 按下重試：按鈕立刻變成「轉圈圈＋載入中」並鎖住，讓使用者知道真的有在執行，也避免連按好幾次
+// 成功就會直接換成卡片；失敗的話 _showAutoLoadRetry 會重新畫出錯誤訊息＋重試按鈕
+function _retryAutoLoad(btn){
+  if(btn){
+    if(btn.disabled) return;
+    btn.disabled = true;
+    btn.classList.add('loading');
+    btn.innerHTML = '<span class="retry-spin"></span>載入中…';
+    var msgEl = btn.previousElementSibling;
+    if(msgEl){ msgEl.style.color = 'var(--text-secondary)'; msgEl.textContent = '⏳ 重新連線中，請稍候（約 10～20 秒）'; }
+  }
+  autoLoadLatestStockFile();
 }
 
 function renderGdFiles(files){
