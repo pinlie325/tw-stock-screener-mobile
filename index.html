@@ -298,6 +298,10 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:var(--bg-page)
 .xq-hint{font-size:12px;color:#ffffffaa;white-space:nowrap}
 .xq-x{font-size:20px;cursor:pointer;padding:0 4px;color:#ffffffcc}
 #settings-modal .settings-menu-item{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:2px;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:13.5px;line-height:1.35;padding:10px 6px;min-height:54px;cursor:pointer;box-sizing:border-box;}
+/* 資料權限：admin-only 的元素只有管理者看得到（後端也會再擋一次） */
+body:not(.is-admin) .admin-only{display:none!important}
+/* 會員版卡片少了8格，右側分區/相機不再固定在第5欄，改成跟著其他格子自動排，卡片才不會留一大塊空白 */
+body:not(.is-admin) .card-grid .cg-side{grid-column:auto!important;grid-row:auto!important}
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -458,10 +462,12 @@ function checkApprovedAndEnter(user){
   var isAdmin = user.email && user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
   if(isAdmin){
     localStorage.setItem('twstock_is_admin', '1');
+    document.body.classList.add('is-admin');
     document.getElementById('login-screen').style.display = 'none';
     var ab = document.getElementById('admin-btn');
     if(ab) ab.style.display = 'flex';
     showLogoutButton();
+    if(typeof D_RAW==='undefined' || !D_RAW.length) autoLoadLatestStockFile();
     return Promise.resolve();
   }
   return fetch(NOTE_GAS_URL + '?action=checkApproved&email=' + encodeURIComponent(user.email) + '&verified=' + (user.emailVerified ? '1' : '0'))
@@ -469,8 +475,10 @@ function checkApprovedAndEnter(user){
     .then(function(res){
       if(res && res.ok){
         localStorage.removeItem('twstock_is_admin');
+        document.body.classList.remove('is-admin');
         document.getElementById('login-screen').style.display = 'none';
         showLogoutButton();
+        if(typeof D_RAW==='undefined' || !D_RAW.length) autoLoadLatestStockFile();
       } else {
         fbAuth.signOut();
         errEl.textContent = (res && res.pending) ? '帳號審核中，請等待管理員核准' : '此Email尚未獲得授權，請聯繫管理員';
@@ -979,7 +987,7 @@ function adminRemoveUser(email){
       <button class="settings-menu-item" onclick="document.getElementById('settings-modal').style.display='none';openCompareModal()">⇄ 個股對照</button>
       <button class="settings-menu-item" onclick="openMacroBoard()">🌍 市場參考看板<span style="display:block;font-size:10.5px;color:var(--text-secondary);margin-top:2px;">（原油／美元／VIX／美債）</span></button>
       <button class="settings-menu-item" onclick="openEconCalendar()">🗓 財經行事曆</button>
-      <button class="settings-menu-item" onclick="openMarginReport()">🏭 各族群融資維持率報表</button>
+      <button class="settings-menu-item admin-only" onclick="openMarginReport()">🏭 各族群融資維持率報表</button>
       <button class="settings-menu-item" onclick="openDisposalReport()">🚨 處置股名單</button>
       <button class="settings-menu-item" onclick="openDahuRotationBoard()">🐋 大戶籌碼趨勢表</button>
       <button class="settings-menu-item" onclick="openRevRotationBoard()">📈 營收成長趨勢表</button>
@@ -1170,7 +1178,7 @@ function adminRemoveUser(email){
     <div style="background:var(--bg-panel);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
         <div style="font-size:15px;font-weight:700;color:#58a6ff;">③ 動能（技術面）</div>
-        <button id="val-fetch-btn" onclick="fetchValuationTechnical()" style="background:#1f6feb22;border:1px solid #58a6ff;color:#58a6ff;font-size:13px;padding:5px 10px;border-radius:14px;cursor:pointer;white-space:nowrap;">🔄 自動抓取 SMA/KD/年高低</button>
+        <button id="val-fetch-btn" class="admin-only" onclick="fetchValuationTechnical()" style="background:#1f6feb22;border:1px solid #58a6ff;color:#58a6ff;font-size:13px;padding:5px 10px;border-radius:14px;cursor:pointer;white-space:nowrap;">🔄 自動抓取 SMA/KD/年高低</button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
         <div><label style="display:block;font-size:13px;color:var(--text-secondary);margin-bottom:4px;">SMA20</label><input type="number" id="val-sma20" style="width:100%;background:var(--bg-page);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:18px;padding:10px;box-sizing:border-box;"></div>
@@ -1336,7 +1344,7 @@ function adminRemoveUser(email){
 
 <div class="hdr">
   <div style="display:flex;align-items:center;gap:8px;">
-    <button class="btn-cloud" onclick="openDrivePicker()" title="雲端載入" style="font-size:16px;padding:4px 8px;background:#1f6feb22;border-color:#58a6ff;color:#58a6ff;">☁️</button>
+    <button class="btn-cloud admin-only" onclick="openDrivePicker()" title="雲端載入" style="font-size:16px;padding:4px 8px;background:#1f6feb22;border-color:#58a6ff;color:#58a6ff;">☁️</button>
     <div>
       <span class="hdr-t" onclick="showHelpModal()" style="cursor:pointer">選股平台</span>
       <span class="hdr-sub" id="hdr-sub">請載入資料</span>
@@ -1387,13 +1395,13 @@ function adminRemoveUser(email){
 <div class="sbar" id="sbar">
   <button class="sbtn on" data-k="pct" onclick="setSrtToggle(this,'pct','漲跌幅 ↑','漲跌幅 ↓')">漲跌幅 ↑</button>
   <button class="sbtn" data-k="close" onclick="setSrtToggle(this,'close','股價高→低','股價低→高')">股價高→低</button>
-  <button class="sbtn" data-k="rs" onclick="setSrtToggle(this,'rs','RS% ↑','RS% ↓')">RS% ↑</button>
-  <button class="sbtn" data-k="eps" onclick="setSrtToggle(this,'eps','EPS ↑','EPS ↓')">EPS ↑</button>
-  <button class="sbtn" data-k="grossmargin" onclick="setSrtToggle(this,'grossmargin','毛利率 ↑','毛利率 ↓')">毛利率 ↑</button>
+  <button class="sbtn admin-only" data-k="rs" onclick="setSrtToggle(this,'rs','RS% ↑','RS% ↓')">RS% ↑</button>
+  <button class="sbtn admin-only" data-k="eps" onclick="setSrtToggle(this,'eps','EPS ↑','EPS ↓')">EPS ↑</button>
+  <button class="sbtn admin-only" data-k="grossmargin" onclick="setSrtToggle(this,'grossmargin','毛利率 ↑','毛利率 ↓')">毛利率 ↑</button>
   <button class="sbtn" data-k="turnval" onclick="setSrtToggle(this,'turnval','成交值 ↑','成交值 ↓')">成交值 ↑</button>
-  <button class="sbtn" data-k="roe" onclick="setSrtToggle(this,'roe','ROE ↑','ROE ↓')">ROE ↑</button>
-  <button class="sbtn" data-k="margin" onclick="setSrtToggle(this,'margin','融資維持 ↑','融資維持 ↓','a')">融資維持 ↑</button>
-  <button class="sbtn" data-k="capital" onclick="setSrtToggle(this,'capital','股本小→大','股本大→小','a')">股本小→大</button>
+  <button class="sbtn admin-only" data-k="roe" onclick="setSrtToggle(this,'roe','ROE ↑','ROE ↓')">ROE ↑</button>
+  <button class="sbtn admin-only" data-k="margin" onclick="setSrtToggle(this,'margin','融資維持 ↑','融資維持 ↓','a')">融資維持 ↑</button>
+  <button class="sbtn admin-only" data-k="capital" onclick="setSrtToggle(this,'capital','股本小→大','股本大→小','a')">股本小→大</button>
 </div>
 
 <!-- COUNT BAR -->
@@ -2152,6 +2160,8 @@ function doTagSearch(v){
 
 // ── FILTER & SORT ──
 var noteFilterOn = false;
+// 管理者挑選個股清單（只有代碼，不含私人備註內容），所有會員都會收到，給⭐篩選用
+var pickMap = {};
 
 // 深色／淺色模式切換，預設深色，選擇會記住在localStorage
 function setTheme(mode){
@@ -2245,7 +2255,7 @@ function getFilt(){
   if(noteFilterOn || allNoteFilterOn || favFilterOn){
     d=d.filter(function(s){
       var c=String(s.code);
-      return (noteFilterOn && noteMap[c]) || (allNoteFilterOn && sharedNoteMap[c]) || (favFilterOn && favMap[c]);
+      return (noteFilterOn && (noteMap[c] || pickMap[c])) || (allNoteFilterOn && sharedNoteMap[c]) || (favFilterOn && favMap[c]);
     });
   }
   if(groupFilter) d=d.filter(function(s){return (groupMap[String(s.code)]||[]).indexOf(groupFilter)>=0;});
@@ -2335,22 +2345,22 @@ function render(){
 
         +(function(){var bias=s.pct!==null?s.pct:null;var biasc=bias!==null?(bias>0?'up':bias<0?'dn':''):'';return '<div class="cg-item"><div class="cg-lbl">漲跌幅%</div><div class="cg-val '+biasc+'">'+(bias!==null?((bias>0?'+':'')+bias.toFixed(1)):'--')+'</div></div>';})()
         +'<div class="cg-item"><div class="cg-lbl">成交值(億)</div><div class="cg-val">'+(s.turnval!==null?s.turnval.toFixed(1):'--')+'</div></div>'
-        +'<div class="cg-item"><div class="cg-lbl">股本(億)</div><div class="cg-val">'+(s.capital!==null?s.capital.toFixed(1):'--')+'</div></div>'
-        +'<div class="cg-item"><div class="cg-lbl">每股淨值</div><div class="cg-val">'+(s.bvps!==null?s.bvps.toFixed(1):'--')+'</div></div>'
-        +'<div class="cg-item"><div class="cg-lbl">融資%</div><div class="cg-val '+mc+'">'+(s.margin!==null?s.margin.toFixed(1):'--')+'</div></div>'
-                +(function(){var roe=s.roe;var roec=roe!==null?(roe>=3.75?'up':roe<1.25?'dn':''):'';return '<div class="cg-item"><div class="cg-lbl">單季ROE%</div><div class="cg-val '+roec+'">'+(roe!==null?roe.toFixed(1):'--')+'</div></div>';})()
-        +'<div class="cg-item"><div class="cg-lbl">RS%</div><div class="cg-val">'+(s.rs!==null?s.rs.toFixed(1):'--')+'</div></div>'
-        +'<div class="cg-item"><div class="cg-lbl">毛利率%</div><div class="cg-val '+gmc+'">'+(s.grossmargin!==null?s.grossmargin.toFixed(1):'--')+'</div></div>'
+        +'<div class="cg-item admin-only"><div class="cg-lbl">股本(億)</div><div class="cg-val">'+(s.capital!==null?s.capital.toFixed(1):'--')+'</div></div>'
+        +'<div class="cg-item admin-only"><div class="cg-lbl">每股淨值</div><div class="cg-val">'+(s.bvps!==null?s.bvps.toFixed(1):'--')+'</div></div>'
+        +'<div class="cg-item admin-only"><div class="cg-lbl">融資%</div><div class="cg-val '+mc+'">'+(s.margin!==null?s.margin.toFixed(1):'--')+'</div></div>'
+                +(function(){var roe=s.roe;var roec=roe!==null?(roe>=3.75?'up':roe<1.25?'dn':''):'';return '<div class="cg-item admin-only"><div class="cg-lbl">單季ROE%</div><div class="cg-val '+roec+'">'+(roe!==null?roe.toFixed(1):'--')+'</div></div>';})()
+        +'<div class="cg-item admin-only"><div class="cg-lbl">RS%</div><div class="cg-val">'+(s.rs!==null?s.rs.toFixed(1):'--')+'</div></div>'
+        +'<div class="cg-item admin-only"><div class="cg-lbl">毛利率%</div><div class="cg-val '+gmc+'">'+(s.grossmargin!==null?s.grossmargin.toFixed(1):'--')+'</div></div>'
         // 大戶買賣比%跟營收增%調整順序放在一起，這樣扣掉右邊第5欄後(剩4欄一列)兩格才會排在同一列相鄰，不會被欄位換行拆散
-        +(function(){var db=s.dahubuy;var dbc=db!==null&&db!==undefined?(db>=70?'up':db<30?'dn':''):'';return '<div class="cg-item"><div class="cg-lbl">大戶買賣比%</div><div class="cg-val '+dbc+'">'+(db!==null&&db!==undefined?db.toFixed(1):'--')+'</div></div>';})()
+        +(function(){var db=s.dahubuy;if((db===null||db===undefined)&&s.dahuLv){return '<div class="cg-item"><div class="cg-lbl">大戶強度</div><div class="cg-val" style="color:#d29922;font-size:11px;letter-spacing:-1px">'+_dahuLvStars(s.dahuLv)+'</div></div>';}var dbc=db!==null&&db!==undefined?(db>=70?'up':db<30?'dn':''):'';return '<div class="cg-item"><div class="cg-lbl">大戶買賣比%</div><div class="cg-val '+dbc+'">'+(db!==null&&db!==undefined?db.toFixed(1):'--')+'</div></div>';})()
         +(function(){var rg2=s.revgrowth;var rgc2=rg2!==null?(rg2>0?'up':rg2<0?'dn':''):'';return '<div class="cg-item"><div class="cg-lbl">營收增%</div><div class="cg-val '+rgc2+'">'+(rg2!==null?((rg2>0?'+':'')+rg2.toFixed(1)):'--')+'</div></div>';})()
-        +'<div class="cg-item"><div class="cg-lbl">單季EPS</div><div class="cg-val '+epsc+'">'+(s.eps!==null?s.eps.toFixed(2):'--')+'</div></div>'
-        +(function(){var pe; if(s.pe!==null&&s.pe!==undefined){pe=s.pe.toFixed(1);}else{var annEps=s.eps!==null?s.eps*4/0.6:null;pe=(annEps&&annEps>0&&s.volume!==null)?(s.volume/(annEps)).toFixed(1):null;}return '<div class="cg-item"><div class="cg-lbl">本益比</div><div class="cg-val">'+(pe!==null?pe:'--')+'</div></div>';})()
+        +'<div class="cg-item admin-only"><div class="cg-lbl">單季EPS</div><div class="cg-val '+epsc+'">'+(s.eps!==null?s.eps.toFixed(2):'--')+'</div></div>'
+        +(function(){var pe; if(s.pe!==null&&s.pe!==undefined){pe=s.pe.toFixed(1);}else{var annEps=s.eps!==null?s.eps*4/0.6:null;pe=(annEps&&annEps>0&&s.volume!==null)?(s.volume/(annEps)).toFixed(1):null;}return '<div class="cg-item admin-only"><div class="cg-lbl">本益比</div><div class="cg-val">'+(pe!==null?pe:'--')+'</div></div>';})()
         // 固定卡在整個5欄格線的最後一欄(第5欄)，籌碼分區在第1列、營收分區第2列、相機第3列，
         // 垂直疊成一直排在卡片最右邊；其餘12格數字沒有指定位置，CSS Grid會自動照順序去補滿第1~4欄
-        +(function(){var q=_dahuStockQuadrant(s.dahubuy,s.dahuchai); return '<div class="cg-item" style="grid-column:5;grid-row:1"><div class="cg-lbl" style="font-size:9px">籌碼分區</div><div class="cg-val" style="font-size:12px;color:'+q.fg+'">'+q.label+'</div></div>';})()
-        +(function(){var qr=_revStockQuadrant(s.revgrowth,s.chg20d); return '<div class="cg-item" style="grid-column:5;grid-row:2"><div class="cg-lbl" style="font-size:9px">營收分區</div><div class="cg-val" style="font-size:12px;color:'+qr.fg+'">'+qr.label+'</div></div>';})()
-        +'<div class="cg-item" style="grid-column:5;grid-row:3;display:flex;align-items:center;justify-content:center;"><button class="card-cam" style="font-size:20px;opacity:0.7" onclick="event.stopPropagation();cardScreenshot(event,this.closest(\'.card\'))">📷</button></div>'
+        +(function(){var q=_dahuStockQuadrant(s.dahubuy, s.dahuchai, s.dahuQ); return '<div class="cg-item cg-side" style="grid-column:5;grid-row:1"><div class="cg-lbl" style="font-size:9px">籌碼分區</div><div class="cg-val" style="font-size:12px;color:'+q.fg+'">'+q.label+'</div></div>';})()
+        +(function(){var qr=_revStockQuadrant(s.revgrowth,s.chg20d); return '<div class="cg-item cg-side" style="grid-column:5;grid-row:2"><div class="cg-lbl" style="font-size:9px">營收分區</div><div class="cg-val" style="font-size:12px;color:'+qr.fg+'">'+qr.label+'</div></div>';})()
+        +'<div class="cg-item cg-side" style="grid-column:5;grid-row:3;display:flex;align-items:center;justify-content:center;"><button class="card-cam" style="font-size:20px;opacity:0.7" onclick="event.stopPropagation();cardScreenshot(event,this.closest(\'.card\'))">📷</button></div>'
       +'</div>'
       // Yahoo K線圖區塊（延遲建立：展開時才產生內容，初始渲染只留空殼，大幅減少每張卡片的HTML量）
       +'<div class="yf-wrap" id="yf-'+s.code+'"></div>'
@@ -2915,9 +2925,9 @@ function drawKChart(canvas, data){
 }
 
 function fetchRealTimePrice(code, cardEl){
-  var url = NOTE_GAS_URL + '?action=price&code='+code;
-  fetch(url)
-    .then(function(r){ return r.json(); })
+  // Fugle即時報價只給管理者（Fugle條款禁止轉傳），一般會員直接不抓
+  if(!isAdminUser()) return;
+  adminFetch('price', {code: code})
     .then(function(d){
       if(!d.ok || !d.price) return;
       var price = parseFloat(d.price);
@@ -3250,9 +3260,10 @@ function parseXL(file){
 }
 
 function processRows(rows,filename){
+  if(!rows || !rows.length){ alert('沒有讀到有效資料'); return; }
   var keys=Object.keys(rows[0]);
   function fc(arr){for(var i=0;i<arr.length;i++)for(var j=0;j<keys.length;j++)if(keys[j].indexOf(arr[i])>=0)return keys[j];return null;}
-  var COL={code:fc(['代碼']),name:fc(['商品','名稱']),close:fc(['昨收']),pct:fc(['漲幅']),avg:fc(['均價']),volume:fc(['成交']),turnover:fc(['換手率']),turnval:fc(['成交值']),capital:fc(['股本']),bvps:fc(['每股淨值','淨值']),margin:fc(['融資維持']),ind:fc(['所有細產業','細產業','產業']),pos:fc(['產業地位']),rs:fc(['RS%']),grossmargin:fc(['毛利率']),eps:fc(['盈餘(單)','單季','EPS']),dahubuy:fc(['大戶買賣比']),dahuchai:fc(['大戶差比']),revgrowth:fc(['營收年增率','營收年增']),chg5d:fc(['近5日漲幅','5日漲幅','5日%']),chg20d:fc(['近20日漲幅','20日漲幅','20日%']),pe:fc(['本益比','PE(市盈率)','PE']),roe:fc(['ROE','股東權益報酬率']),news:fc(['公司動態'])};
+  var COL={code:fc(['代碼']),name:fc(['商品','名稱']),close:fc(['昨收']),pct:fc(['漲幅']),avg:fc(['均價']),volume:fc(['成交']),turnover:fc(['換手率']),turnval:fc(['成交值']),capital:fc(['股本']),bvps:fc(['每股淨值','淨值']),margin:fc(['融資維持']),ind:fc(['所有細產業','細產業','產業']),pos:fc(['產業地位']),rs:fc(['RS%']),grossmargin:fc(['毛利率']),eps:fc(['盈餘(單)','單季','EPS']),dahubuy:fc(['大戶買賣比']),dahuchai:fc(['大戶差比']),revgrowth:fc(['營收年增率','營收年增']),chg5d:fc(['近5日漲幅','5日漲幅','5日%']),chg20d:fc(['近20日漲幅','20日漲幅','20日%']),pe:fc(['本益比','PE(市盈率)','PE']),roe:fc(['ROE','股東權益報酬率']),news:fc(['公司動態']),dahuq:fc(['大戶分區']),dahulv:fc(['大戶強度'])};
   function sf(v){if(v===null||v===undefined||v===''||v==='--')return null;var n=parseFloat(v);return isNaN(n)?null:n;}
   var nd=[];
   rows.forEach(function(r){
@@ -3261,7 +3272,7 @@ function processRows(rows,filename){
     // 代碼欄可能是數字(2302)、帶空格(' 2302 ')或小數('2302.0')，統一正規化為4位字串
     var rawCode=String(r[COL.code]).trim().replace(/\.0+$/,'');
     var cleanCode=/^\d+$/.test(rawCode)?rawCode.padStart(4,'0'):rawCode;
-    nd.push({code:cleanCode,name:COL.name?String(r[COL.name]||'').trim():'',close:COL.close?sf(r[COL.close]):null,pct:COL.pct?sf(r[COL.pct]):null,avg:COL.avg?sf(r[COL.avg]):null,volume:COL.volume?sf(r[COL.volume]):null,turnover:COL.turnover?sf(r[COL.turnover]):null,turnval:COL.turnval?sf(r[COL.turnval]):null,capital:COL.capital?sf(r[COL.capital]):null,bvps:COL.bvps?sf(r[COL.bvps]):null,margin:COL.margin?sf(r[COL.margin]):null,position:COL.pos&&r[COL.pos]?String(r[COL.pos]).trim():'',tags:ts,rs:COL.rs?sf(r[COL.rs]):null,grossmargin:COL.grossmargin?sf(r[COL.grossmargin]):null,eps:COL.eps?sf(r[COL.eps]):null,dahubuy:COL.dahubuy?sf(r[COL.dahubuy]):null,dahuchai:COL.dahuchai?sf(r[COL.dahuchai]):null,revgrowth:COL.revgrowth?sf(r[COL.revgrowth]):null,chg5d:COL.chg5d?sf(r[COL.chg5d]):null,chg20d:COL.chg20d?sf(r[COL.chg20d]):null,pe:COL.pe?sf(r[COL.pe]):null,roe:COL.roe?sf(r[COL.roe]):null,news:COL.news&&r[COL.news]?String(r[COL.news]).trim():''});
+    nd.push({code:cleanCode,name:COL.name?String(r[COL.name]||'').trim():'',close:COL.close?sf(r[COL.close]):null,pct:COL.pct?sf(r[COL.pct]):null,avg:COL.avg?sf(r[COL.avg]):null,volume:COL.volume?sf(r[COL.volume]):null,turnover:COL.turnover?sf(r[COL.turnover]):null,turnval:COL.turnval?sf(r[COL.turnval]):null,capital:COL.capital?sf(r[COL.capital]):null,bvps:COL.bvps?sf(r[COL.bvps]):null,margin:COL.margin?sf(r[COL.margin]):null,position:COL.pos&&r[COL.pos]?String(r[COL.pos]).trim():'',tags:ts,rs:COL.rs?sf(r[COL.rs]):null,grossmargin:COL.grossmargin?sf(r[COL.grossmargin]):null,eps:COL.eps?sf(r[COL.eps]):null,dahubuy:COL.dahubuy?sf(r[COL.dahubuy]):null,dahuchai:COL.dahuchai?sf(r[COL.dahuchai]):null,dahuQ:COL.dahuq&&r[COL.dahuq]?String(r[COL.dahuq]).trim():null,dahuLv:COL.dahulv?sf(r[COL.dahulv]):null,revgrowth:COL.revgrowth?sf(r[COL.revgrowth]):null,chg5d:COL.chg5d?sf(r[COL.chg5d]):null,chg20d:COL.chg20d?sf(r[COL.chg20d]):null,pe:COL.pe?sf(r[COL.pe]):null,roe:COL.roe?sf(r[COL.roe]):null,news:COL.news&&r[COL.news]?String(r[COL.news]).trim():''});
   });
   if(!nd.length){alert('沒有讀到有效資料');return;}
   D_RAW=nd;
@@ -3308,13 +3319,28 @@ function _friendlyFetchErr(e){
   return (e && e.message) || '未知錯誤';
 }
 var GAS_URL='https://script.google.com/macros/s/AKfycbwV9CWC1p0Kr-hPb7wqeab6_5z39Wl5i7Cf5P7QISE3hVyYxhjH2fNKyqZ7GfXzIgcB/exec';
+// 選股檔GAS需要身分驗證：等Firebase確認登入狀態後，把登入者的idToken附在網址上
+// （管理者拿到完整Excel；會員只拿到代碼名稱＋證交所公開盤後資料；沒登入的拿不到任何東西）
+function _authReady(){
+  return new Promise(function(resolve){
+    var unsub = fbAuth.onAuthStateChanged(function(u){ unsub(); resolve(u); });
+  });
+}
+function _gasTokenUrl(url){
+  return _authReady()
+    .then(function(u){ return u ? u.getIdToken() : null; })
+    .catch(function(){ return null; })
+    .then(function(t){ return t ? url + (url.indexOf('?')>=0 ? '&' : '?') + 'idToken=' + encodeURIComponent(t) : url; });
+}
 var gdFiles=[];
 
 function openDrivePicker(){
+  // 雲端空間（XQ原始檔清單）只有管理者能進入
+  if(!isAdminUser()){ toast('此功能僅限管理者','#da3633'); return; }
   console.log('openDrivePicker called');
   document.getElementById('gd-modal').classList.add('on');
   document.getElementById('gd-list').innerHTML='<div class="gd-loading">🔄 連線雲端...</div>';
-  fetchWithTimeout(GAS_URL+'?action=list', 8000)
+  _gasTokenUrl(GAS_URL+'?action=list').then(function(u){ return fetchWithTimeout(u, 8000); })
     .then(function(r){return r.json();})
     .then(function(d){
       if(d.ok){
@@ -3370,12 +3396,20 @@ function autoLoadLatestStockFile(){
   // 效能優化：原本要打兩次API（action=list 找最新檔案 → action=file 讀內容），
   // 現在後端合併成 action=latest 一次執行、一次回傳，省掉一趟網路來回＋Apps Script啟動時間
   window._perfLoad = {fetchStart: performance.now()};
-  fetchWithTimeout(GAS_URL+'?action=latest', 12000)
+  _gasTokenUrl(GAS_URL+'?action=latest').then(function(u){ return fetchWithTimeout(u, 12000); })
     .then(function(r){return r.json();})
     .then(function(fd){
       if(!fd.ok){ _showAutoLoadRetry('讀取失敗：'+(fd.error||'未知錯誤')); return; }
       window._perfLoad.fetchDone = performance.now();
       gdActiveId=fd.id;
+      // 會員版：後端已經整理好JSON（代碼、名稱＋公開盤後價格），不用解Excel
+      if(fd.member){
+        window._perfLoad.parseStart = window._perfLoad.parseDone = performance.now();
+        window._perfLoad.rowCount = (fd.rows||[]).length;
+        processRows(fd.rows||[], fd.name);
+        showToast('☁️ 已載入最新選股資料（價格來源：證交所／櫃買中心公開資訊）');
+        return;
+      }
       // 解base64＋解析Excel＋渲染幾百張卡片都是很吃CPU的同步運算，用setTimeout讓瀏覽器先畫一次畫面（載入進度條才會動），不會整個卡住
       return new Promise(function(resolve){
         setTimeout(function(){
@@ -3436,6 +3470,7 @@ function showGdError(msg, retryFn){
 var gdActiveId=null;
 
 function loadGdFile(i, keepOpen){
+  if(!isAdminUser()) return;
   var f=gdFiles[i];if(!f)return;
   gdActiveId=f.id;
   if(!keepOpen){
@@ -3444,7 +3479,7 @@ function loadGdFile(i, keepOpen){
     renderGdFiles(gdFiles); // 重新畫清單，標示目前使用中的檔案
   }
   toast('⏳ 讀取中：'+f.name,'#1f6feb');
-  fetchWithTimeout(GAS_URL+'?action=file&id='+f.id, 15000)
+  _gasTokenUrl(GAS_URL+'?action=file&id='+f.id).then(function(u){ return fetchWithTimeout(u, 15000); })
     .then(function(r){return r.json();})
     .then(function(d){
       if(!d.ok)throw new Error(d.error);
@@ -3630,6 +3665,8 @@ function autoLoadNotes(){
         if(!d.ok) return;
         noteMap = d.notes || {};
         sharedNoteMap = d.sharedNotes || {};
+        pickMap = {};
+        (d.picks || []).forEach(function(c){ pickMap[c] = 1; });
         sharedNoteHistory = d.sharedHistory || {};
         var blData = d.blacklist || [];
         EXCLUDE_CODES = blData.map(function(x){ return typeof x === 'string' ? x : x.code; });
@@ -3687,7 +3724,7 @@ function autoLoadConcepts(){
 function openNotePicker(){
   document.getElementById('gd-modal').classList.add('on');
   document.getElementById('gd-list').innerHTML='<div class="gd-loading">🔄 連線雲端...</div>';
-  fetchWithTimeout(GAS_URL+'?action=list', 8000)
+  _gasTokenUrl(GAS_URL+'?action=list').then(function(u){ return fetchWithTimeout(u, 8000); })
     .then(function(r){return r.json();})
     .then(function(d){
       if(!d.ok){showGdError(d.error, 'openNotePicker');return;}
@@ -3712,7 +3749,7 @@ function loadNoteFile(i){
   var f=gdFiles[i];if(!f)return;
   document.getElementById('gd-modal').classList.remove('on');
   toast('⏳ 讀取備註中...','#1f6feb');
-  fetchWithTimeout(GAS_URL+'?action=file&id='+f.id, 15000)
+  _gasTokenUrl(GAS_URL+'?action=file&id='+f.id).then(function(u){ return fetchWithTimeout(u, 15000); })
     .then(function(r){return r.json();})
     .then(function(d){
       if(!d.ok)throw new Error(d.error);
@@ -3868,7 +3905,7 @@ function _postNote(code, name, note, field){
     .then(function(d){
       if(!d.ok) throw new Error(d.error||'儲存失敗');
       if(field === 'private'){
-        if(note){ noteMap[code] = note; } else { delete noteMap[code]; }
+        if(note){ noteMap[code] = note; pickMap[code] = 1; } else { delete noteMap[code]; delete pickMap[code]; }
       } else if(note){
         // 共同筆記是新增一筆，不是覆蓋：把新的一則插到歷史紀錄最前面
         sharedNoteMap[code] = note;
@@ -4486,7 +4523,7 @@ function renderCompareTable(){
     return;
   }
   function quadBadge(s){
-    var q = _dahuStockQuadrant(s.dahubuy, s.dahuchai);
+    var q = _dahuStockQuadrant(s.dahubuy, s.dahuchai, s.dahuQ);
     return '<div style="display:inline-block;margin-top:5px;padding:3px 12px;border-radius:20px;font-size:12px;font-weight:700;background:'+q.bg+';color:'+q.fg+';">籌碼：'+q.label+'</div>';
   }
   function headCell(s, side){
@@ -4711,7 +4748,7 @@ function _computeDahuRotationSubClusters(groups){
   groups.forEach(function(g){
     var buckets = {'領先':[], '改善':[], '弱化':[], '落後':[]};
     g.stocks.forEach(function(s){
-      var q = _dahuStockQuadrant(s.dahubuy, s.dahuchai);
+      var q = _dahuStockQuadrant(s.dahubuy, s.dahuchai, s.dahuQ);
       if(buckets[q.label]) buckets[q.label].push(s);
     });
     Object.keys(buckets).forEach(function(qk){
@@ -4767,7 +4804,7 @@ function _computeDahuRotationGroups(){
     // 這個分布資訊讓使用者不用點進明細也能看出組內是不是很分散
     var qCount = {lead:0, improve:0, weaken:0, lagging:0};
     g.stocks.forEach(function(s){
-      var q = _dahuStockQuadrant(s.dahubuy, s.dahuchai);
+      var q = _dahuStockQuadrant(s.dahubuy, s.dahuchai, s.dahuQ);
       if(q.label==='領先') qCount.lead++;
       else if(q.label==='改善') qCount.improve++;
       else if(q.label==='弱化') qCount.weaken++;
@@ -4796,7 +4833,7 @@ function _dahuStockRowHtml(s, showQuadBadge){
   // 搜尋模式會跨四象限一起找，這時候要標出每一列各自屬於哪一區，不然使用者分不清楚
   var qBadge = '';
   if(showQuadBadge){
-    var qc = _dahuStockQuadrant(s.dahubuy, s.dahuchai);
+    var qc = _dahuStockQuadrant(s.dahubuy, s.dahuchai, s.dahuQ);
     qBadge = '<span style="font-size:11px;font-weight:700;flex-shrink:0;padding:2px 6px;border-radius:5px;background:'+qc.bg+';color:'+qc.fg+';">'+qc.label+'</span>';
   }
   return '<div onclick="jumpFromDahuRotation(\''+s.code+'\')" style="padding:10px 8px;border-bottom:1px solid var(--border);cursor:pointer;">'
@@ -4812,8 +4849,9 @@ function _dahuStockRowHtml(s, showQuadBadge){
       +'<span style="font-size:12px;color:var(--text-dim);flex-shrink:0;">昨收 '+prevCloseStr+'</span>'
       +'<span style="font-size:12px;font-weight:700;flex-shrink:0;color:'+pctColor+';">'+pctStr+'</span>'
       +'<span style="flex:1;"></span>'
-      +'<span style="font-size:12px;font-weight:700;flex-shrink:0;padding:3px 7px;border-radius:5px;background:'+bc.bg+';color:'+bc.fg+';">買賣比 '+(s.dahubuy!==null&&s.dahubuy!==undefined?s.dahubuy.toFixed(0):'--')+'</span>'
-      +'<span style="font-size:12px;font-weight:700;flex-shrink:0;padding:3px 7px;border-radius:5px;background:'+cc.bg+';color:'+cc.fg+';">差比 '+(s.dahuchai!==null&&s.dahuchai!==undefined?((s.dahuchai>0?'+':'')+s.dahuchai.toFixed(0)):'--')+'</span>'
+      +((s.dahubuy===null||s.dahubuy===undefined) && s.dahuLv ? '<span style="font-size:12px;font-weight:700;flex-shrink:0;padding:3px 7px;border-radius:5px;background:#d2992222;color:#d29922;">大戶強度 '+_dahuLvStars(s.dahuLv)+'</span>' : '')
+      +((s.dahubuy===null||s.dahubuy===undefined) ? '' : '<span style="font-size:12px;font-weight:700;flex-shrink:0;padding:3px 7px;border-radius:5px;background:'+bc.bg+';color:'+bc.fg+';">買賣比 '+(s.dahubuy!==null&&s.dahubuy!==undefined?s.dahubuy.toFixed(0):'--')+'</span>'
+      +'<span style="font-size:12px;font-weight:700;flex-shrink:0;padding:3px 7px;border-radius:5px;background:'+cc.bg+';color:'+cc.fg+';">差比 '+(s.dahuchai!==null&&s.dahuchai!==undefined?((s.dahuchai>0?'+':'')+s.dahuchai.toFixed(0)):'--')+'</span>')
     +'</div>'
   +'</div>';
 }
@@ -4828,11 +4866,11 @@ function _renderDahuGroupView(){
   _renderDahuQuadStats();
   var stocks = _computeDahuRotationAllStocks();
   var order = ['領先','改善','弱化','落後'];
-  var valid = _dahuActiveQuad && stocks.some(function(s){ return _dahuStockQuadrant(s.dahubuy, s.dahuchai).label === _dahuActiveQuad; });
+  var valid = _dahuActiveQuad && stocks.some(function(s){ return _dahuStockQuadrant(s.dahubuy, s.dahuchai, s.dahuQ).label === _dahuActiveQuad; });
   if(!valid){
     // 預設選第一個有資料的象限，都沒有資料就選領先（會顯示空狀態文字）
     _dahuActiveQuad = order.filter(function(k){
-      return stocks.some(function(s){ return _dahuStockQuadrant(s.dahubuy, s.dahuchai).label === k; });
+      return stocks.some(function(s){ return _dahuStockQuadrant(s.dahubuy, s.dahuchai, s.dahuQ).label === k; });
     })[0] || '領先';
   }
   _renderDahuQuadStats(); // 套用選中樣式
@@ -4855,7 +4893,7 @@ function _renderDahuGroupStockList(label){
     });
   } else {
     stocks = _computeDahuRotationAllStocks().filter(function(s){
-      return _dahuStockQuadrant(s.dahubuy, s.dahuchai).label === label;
+      return _dahuStockQuadrant(s.dahubuy, s.dahuchai, s.dahuQ).label === label;
     });
   }
   if(!stocks.length){
@@ -4863,12 +4901,12 @@ function _renderDahuGroupStockList(label){
       +(searching?'🔍 找不到符合「'+q+'」的股票':'這一區目前沒有股票，請先載入選股Excel或換一個分類看看')+'</div>';
     return;
   }
-  stocks.sort(function(a,b){ return (b.dahuchai||0)-(a.dahuchai||0); });
+  stocks.sort(function(a,b){ return _dahuSortVal(b)-_dahuSortVal(a); });
   var capAt = searching ? null : (DAHU_QUAD_CAP[label] || null);
   var shown = stocks, hiddenCount = 0;
   if(capAt && stocks.length > capAt){
     shown = stocks.slice().sort(function(a,b){ return (b.turnval||0)-(a.turnval||0); }).slice(0, capAt);
-    shown.sort(function(a,b){ return (b.dahuchai||0)-(a.dahuchai||0); });
+    shown.sort(function(a,b){ return _dahuSortVal(b)-_dahuSortVal(a); });
     hiddenCount = stocks.length - shown.length;
   }
   wrap.innerHTML = _dahuStockListHeaderHtml()
@@ -4888,8 +4926,18 @@ function _computeDahuRotationStocks(){
 // TOP_N篩選會把很多真正該被看到的領先股濾掉，導致列表的領先區看起來是空的
 function _computeDahuRotationAllStocks(){
   return (D||[]).filter(function(s){
-    return s.dahubuy!==null && s.dahubuy!==undefined && s.dahuchai!==null && s.dahuchai!==undefined;
+    return (s.dahubuy!==null && s.dahubuy!==undefined && s.dahuchai!==null && s.dahuchai!==undefined) || !!s.dahuQ;
   });
+}
+// 排序用：管理者用大戶差比原始數值，會員用後端給的強度等級(1~5)
+function _dahuSortVal(s){
+  if(s.dahuchai!==null && s.dahuchai!==undefined) return s.dahuchai;
+  return s.dahuLv || 0;
+}
+// 會員版的強度徽章：★越多代表大戶差比在全部選股裡排名越前面（五等分）
+function _dahuLvStars(lv){
+  lv = Math.max(0, Math.min(5, Math.round(lv||0)));
+  return '★★★★★'.slice(0, lv) + '☆☆☆☆☆'.slice(0, 5-lv);
 }
 
 // 族群檢視上方的四象限統計卡片（參考Tide潮汐左側漲潮/輪動/觀望/退潮那組卡片的排法，
@@ -4906,7 +4954,7 @@ function _renderDahuQuadStats(){
   var stocks = _computeDahuRotationAllStocks();
   var counts = {'領先':0, '改善':0, '弱化':0, '落後':0};
   stocks.forEach(function(s){
-    var q = _dahuStockQuadrant(s.dahubuy, s.dahuchai);
+    var q = _dahuStockQuadrant(s.dahubuy, s.dahuchai, s.dahuQ);
     if(counts.hasOwnProperty(q.label)) counts[q.label]++;
   });
   wrap.innerHTML = DAHU_QUAD_STAT_DEFS.map(function(d){
@@ -5365,7 +5413,7 @@ function drawDahuRotationStockChart(ctx, W, H, stocks){
     return 3 + 4*Math.sqrt(Math.max(0,t)); // 縮小點的尺寸差異，讓點跟點之間留更多空間放文字
   }
   var nodes = stocks.map(function(s){
-    var q = _dahuStockQuadrant(s.dahubuy, s.dahuchai);
+    var q = _dahuStockQuadrant(s.dahubuy, s.dahuchai, s.dahuQ);
     return { code:s.code, name:s.name, x:px(s.dahubuy), y:py(s.dahuchai), r:pr(s.turnval||0), dahubuy:s.dahubuy, dahuchai:s.dahuchai, qLabel:q.label, qFg:_dahuQuadColorHex(q.label, _cs) };
   });
   // 數值相近的股票會被畫在幾乎同一個座標，點會疊在一起、名字也會蓋住彼此，
@@ -5473,8 +5521,13 @@ function _dahuValColor(v, kind){
 }
 
 // 依個股自己的大戶買賣比/大戶差比，判斷它落在哪個象限（跟主圖泡泡用同一套70%/20%門檻）
-function _dahuStockQuadrant(dahubuy, dahuchai){
+function _dahuStockQuadrant(dahubuy, dahuchai, qLabel){
   if(dahubuy===null||dahubuy===undefined||dahuchai===null||dahuchai===undefined){
+    // 會員版：後端只給算好的分區名稱（不給XQ原始數值），直接依名稱回傳同一套顏色
+    if(qLabel==='領先') return { label:'領先', bg:'#f8514933', fg:'#f85149' };
+    if(qLabel==='改善') return { label:'改善', bg:'#1f6feb33', fg:'#58a6ff' };
+    if(qLabel==='弱化') return { label:'弱化', bg:'#d2992233', fg:'#d29922' };
+    if(qLabel==='落後') return { label:'落後', bg:'#3fb95033', fg:'#3fb950' };
     return { label:'--', bg:'var(--bg-panel-alt)', fg:'var(--text-dim)' };
   }
   var strong = dahubuy>=70, hi = dahuchai>=20;
@@ -5487,11 +5540,11 @@ function openDahuRotationDetail(tag){
   var g = _dahuRotationGroups.filter(function(x){ return x.tag===tag; })[0];
   if(!g) return;
   document.getElementById('dahu-rotation-detail-title').textContent = tag+'（'+g.count+'）';
-  var rows = g.stocks.slice().sort(function(a,b){ return (b.dahuchai||0)-(a.dahuchai||0); });
+  var rows = g.stocks.slice().sort(function(a,b){ return _dahuSortVal(b)-_dahuSortVal(a); });
   var body = rows.map(function(s){
     var bc = _dahuValColor(s.dahubuy, 'buy');
     var cc = _dahuValColor(s.dahuchai, 'chai');
-    var qc = _dahuStockQuadrant(s.dahubuy, s.dahuchai);
+    var qc = _dahuStockQuadrant(s.dahubuy, s.dahuchai, s.dahuQ);
     var pctStr = s.pct!==null&&s.pct!==undefined ? ((s.pct>0?'+':'')+s.pct.toFixed(1)+'%') : '--';
     var pctColor = s.pct>0?'#f85149':s.pct<0?'#3fb950':'var(--text-secondary)';
     return '<div onclick="jumpFromDahuRotation(\''+s.code+'\')" style="display:flex;align-items:center;gap:6px;padding:8px 6px;border-bottom:1px solid var(--border);cursor:pointer;">'
@@ -6052,6 +6105,8 @@ function fetchMacroBoard(){
     });
 }
 function openMarginReport(){
+  // 融資維持率是XQ原始資料，只給管理者
+  if(!isAdminUser()){ toast('此功能僅限管理者','#da3633'); return; }
   _hideReportReturnFab();
   document.getElementById('settings-modal').style.display = 'none';
   var groups = {};
@@ -6462,8 +6517,7 @@ function fetchValuationTechnical(){
   if(!code) return;
   var btn = document.getElementById('val-fetch-btn');
   if(btn){ btn.disabled = true; btn.textContent = '抓取中...'; }
-  fetch(NOTE_GAS_URL + '?action=technical&code=' + code)
-    .then(function(r){ return r.json(); })
+  adminFetch('technical', {code: code})
     .then(function(d){
       if(!d.ok){ throw new Error(d.error||'抓取失敗'); }
       if(d.sma20!==null && d.sma20!==undefined) document.getElementById('val-sma20').value = Number(d.sma20).toFixed(2);
@@ -6898,7 +6952,7 @@ window.addEventListener('load', function(){
   autoLoadStrategies();
   autoLoadGroups();
   autoLoadConcepts();
-  autoLoadLatestStockFile();
+  // 選股資料改成登入確認後才載入（見 checkApprovedAndEnter），沒登入不抓
 });
 window.addEventListener('resize', adjustPadding);
 
