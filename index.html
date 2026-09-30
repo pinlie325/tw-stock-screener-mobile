@@ -60,7 +60,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:var(--bg-page)
 
 /* ── HEADER ── */
 .hdr{background:var(--bg-panel);border-bottom:1px solid var(--border);padding:9px 14px;display:flex;align-items:center;gap:8px;position:fixed;top:0;left:0;right:0;z-index:100;}
-.bbar{background:var(--bg-panel);border-top:1px solid var(--border);padding:6px 14px;display:flex;align-items:center;justify-content:center;gap:14px;position:fixed;left:0;right:0;bottom:0;z-index:900;}.bbar button{-webkit-tap-highlight-color:transparent;transition:background .12s;}.bbar button:active{background:var(--border) !important;}
+.bbar{background:var(--bg-panel);border-top:1px solid var(--border);padding:6px 14px calc(6px + env(safe-area-inset-bottom)) 14px;display:flex;align-items:center;justify-content:center;gap:14px;position:fixed;left:0;right:0;bottom:0;z-index:900;transform:translateZ(0);}.bbar button{-webkit-tap-highlight-color:transparent;transition:background .12s;}.bbar button:active{background:var(--border) !important;}
 .hdr-t{font-size:14px;font-weight:700;color:#58a6ff;white-space:nowrap}
 .hdr-sub{font-size:12px;color:var(--text-secondary);margin-left:4px}
 .hdr-r{margin-left:auto;display:flex;gap:6px}
@@ -121,7 +121,7 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:var(--bg-page)
 .su{color:#f85149}.sd2{color:#3fb950}
 
 /* ── CARDS ── */
-.cards{flex:1;min-height:0;padding:8px 5px 64px;display:grid;grid-template-columns:1fr;gap:8px;overflow-y:auto;align-content:start}
+.cards{flex:1;min-height:0;padding:8px 5px calc(64px + env(safe-area-inset-bottom));display:grid;grid-template-columns:1fr;gap:8px;overflow-y:auto;align-content:start}
 @media(min-width:640px){.cards{grid-template-columns:1fr 1fr;padding:10px 12px 64px}}
 /* 桌機兩欄檢視時，中間欄縫放一個可拖曳調整欄寬比例的把手（參考Tide潮汐：拖曳調整寬度，雙擊還原預設） */
 #col-resize-handle{display:none;position:fixed;top:95px;bottom:0;left:50%;transform:translateX(-50%);width:20px;z-index:50;align-items:center;justify-content:center;cursor:col-resize;user-select:none;-webkit-user-select:none}
