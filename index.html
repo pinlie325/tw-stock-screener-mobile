@@ -458,7 +458,10 @@ function fbErrorMessage(err){
     'auth/invalid-credential': '帳號或密碼錯誤',
     'auth/too-many-requests': '嘗試次數過多，請稍後再試',
     'custom/username-not-found': '找不到這個帳號名稱',
-    'custom/username-taken': '這個帳號名稱已經有人使用了，換一個試試'
+    'custom/username-taken': '這個帳號名稱已經有人使用了，換一個試試',
+    'custom/timeout': '伺服器回應逾時，請稍後再試一次',
+    'custom/network': '網路連線失敗，請檢查網路後再試',
+    'custom/server-error': '伺服器發生錯誤，請稍後再試或通知管理員'
   };
   return map[code] || ('發生錯誤：' + ((err && err.message) || '未知錯誤'));
 }
@@ -477,7 +480,7 @@ function checkApprovedAndEnter(user){
     if(typeof D_RAW==='undefined' || !D_RAW.length) autoLoadLatestStockFile();
     return Promise.resolve();
   }
-  return fetch(NOTE_GAS_URL + '?action=checkApproved&email=' + encodeURIComponent(user.email) + '&verified=' + (user.emailVerified ? '1' : '0'))
+  return fetchWithTimeout(NOTE_GAS_URL + '?action=checkApproved&email=' + encodeURIComponent(user.email) + '&verified=' + (user.emailVerified ? '1' : '0'), 15000)
     .then(function(r){ return r.json(); })
     .then(function(res){
       if(res && res.ok){
@@ -564,10 +567,13 @@ function resolveAccountToEmail(account){
   if(account.indexOf('@') !== -1){
     return Promise.resolve(account);
   }
-  return fetch(NOTE_GAS_URL + '?action=lookupEmail&username=' + encodeURIComponent(account))
-    .then(function(r){ return r.json(); })
-    .then(function(res){ return (res && res.ok) ? res.email : null; })
-    .catch(function(){ return null; });
+  // 加上15秒逾時：後端沒回應時不要讓登入按鈕一直轉，直接告訴使用者連線有問題
+  return fetchWithTimeout(NOTE_GAS_URL + '?action=lookupEmail&username=' + encodeURIComponent(account), 15000)
+    .then(function(r){ return r.text(); })
+    .then(function(t){
+      var res; try { res = JSON.parse(t); } catch(pe){ return Promise.reject({code:'custom/server-error'}); }
+      return (res && res.ok) ? res.email : null;
+    }, function(e){ return Promise.reject({code: (e && e.name==='AbortError') ? 'custom/timeout' : 'custom/network'}); });
 }
 
 var pendingRegUsername = '';
@@ -1370,7 +1376,7 @@ function adminRemoveUser(email){
     <button class="btn-cloud admin-only" onclick="openDrivePicker()" title="雲端載入" style="font-size:16px;padding:4px 8px;background:#1f6feb22;border-color:#58a6ff;color:#58a6ff;">☁️</button>
     <div>
       <span class="hdr-t" onclick="showHelpModal()" style="cursor:pointer">選股平台</span>
-      <span class="hdr-sub" id="hdr-sub">請載入資料</span>
+      <span class="hdr-sub" id="hdr-sub">載入中…</span>
     </div>
   </div>
   <div class="hdr-r">
@@ -1475,8 +1481,8 @@ function adminRemoveUser(email){
       <rect x="60" y="56" width="8" height="6" rx="3" fill="#1f6feb44" stroke="#58a6ff66" stroke-width="1"/>
     </svg>
     <div id="cards-empty-msg">
-      <div style="font-size:15px;color:var(--text-secondary);margin-bottom:6px">尚未載入股票資料</div>
-      <div style="font-size:13px;color:var(--text-dim)">點擊右上角 ☁ 雲端按鈕載入資料</div>
+      <div style="font-size:15px;color:var(--text-secondary);margin-bottom:6px;display:inline-flex;align-items:center;gap:8px"><span class="retry-spin"></span>正在載入最新選股資料…</div>
+      <div style="font-size:13px;color:var(--text-dim)">約需 10～20 秒，請稍候</div>
     </div>
   </div>
 </div>
@@ -2948,11 +2954,24 @@ function drawKChart(canvas, data){
 }
 
 function fetchRealTimePrice(code, cardEl){
-  // Fugle即時報價只給管理者（Fugle條款禁止轉傳），一般會員直接不抓
-  if(!isAdminUser()) return;
+  // 先放一條「抓取中」的即時列，讓人知道有在抓；成功換成價格，失敗直接顯示原因（不再默默失敗）
+  function _rtStatus(txt, color){
+    var ob = cardEl.querySelector('.realtime-bar');
+    if(ob) ob.remove();
+    var pr = cardEl.querySelector('.card-price');
+    if(!pr) return;
+    var b = document.createElement('div');
+    b.className = 'realtime-bar';
+    b.style.cssText = 'display:flex;align-items:center;gap:8px;padding:4px 0 6px;border-bottom:1px dashed var(--border);margin-bottom:4px;font-size:12px;color:'+(color||'var(--text-secondary)');
+    b.innerHTML = '<span style="background:#1f6feb33;border:1px solid #58a6ff55;border-radius:4px;padding:1px 6px;font-size:11px;color:#58a6ff;white-space:nowrap">📡 即時</span>' + txt;
+    pr.parentNode.insertBefore(b, pr);
+  }
+  // 管理者與已核准會員都顯示Fugle即時價（後端會驗證登入身分，未登入/未核准拿不到）
+  _rtStatus('抓取中…');
   adminFetch('price', {code: code})
     .then(function(d){
-      if(!d.ok || !d.price) return;
+      if(!d || !d.ok){ _rtStatus('即時報價取得失敗：'+((d&&d.error)||'未知錯誤'), '#f85149'); return; }
+      if(!d.price){ _rtStatus('目前沒有即時成交價', 'var(--text-secondary)'); return; }
       var price = parseFloat(d.price);
       var change = parseFloat(d.change||0);
       var pct = parseFloat(d.changePercent||0);
@@ -2983,7 +3002,7 @@ function fetchRealTimePrice(code, cardEl){
         priceRow.parentNode.insertBefore(bar, priceRow);
       }
     })
-    .catch(function(){});
+    .catch(function(e){ _rtStatus('即時報價取得失敗：'+((e&&e.message)||'連線錯誤'), '#f85149'); });
 }
 
 function tvLoad(code, interval, opts){
@@ -3419,9 +3438,29 @@ function autoLoadLatestStockFile(){
   // 效能優化：原本要打兩次API（action=list 找最新檔案 → action=file 讀內容），
   // 現在後端合併成 action=latest 一次執行、一次回傳，省掉一趟網路來回＋Apps Script啟動時間
   window._perfLoad = {fetchStart: performance.now()};
+  // 載入超過8秒還沒好：不中斷，但先把重試按鈕秀出來，讓使用者不用一直乾等
+  var _myLoadId = (window._stockLoadId = (window._stockLoadId||0) + 1);
+  clearTimeout(window._slowLoadTimer);
+  window._slowLoadTimer = setTimeout(function(){
+    if(_myLoadId !== window._stockLoadId) return;
+    if(typeof D_RAW!=='undefined' && D_RAW.length) return;
+    var el = document.getElementById('cards-empty-msg');
+    if(!el) return;
+    el.innerHTML =
+      '<div style="font-size:15px;color:var(--text-secondary);margin-bottom:6px;display:inline-flex;align-items:center;gap:8px"><span class="retry-spin"></span>載入時間比平常久，仍在努力載入中…</div>'
+      +'<div style="font-size:13px;color:var(--text-dim);margin-bottom:4px">可以再等一下，或按重試重新連線</div>'
+      +'<button class="retry-btn" onclick="_retryAutoLoad(this)">🔄 重試</button>';
+  }, 8000);
   _gasTokenUrl(GAS_URL+'?action=latest').then(function(u){ return fetchWithTimeout(u, 30000); })
-    .then(function(r){return r.json();})
+    .then(function(r){
+      // GAS出錯時回傳的是HTML錯誤頁（不是JSON），直接r.json()會跳出看不懂的「Unexpected token '<'」
+      return r.text().then(function(t){
+        try { return JSON.parse(t); }
+        catch(pe){ throw new Error('伺服器回應異常，請稍後再試'); }
+      });
+    })
     .then(function(fd){
+      if(_myLoadId !== window._stockLoadId) return; // 已經有更新的一次載入（例如按了重試），舊的結果就不管了
       if(!fd.ok){ _showAutoLoadRetry('讀取失敗：'+(fd.error||'未知錯誤')); return; }
       window._perfLoad.fetchDone = performance.now();
       gdActiveId=fd.id;
@@ -3434,8 +3473,11 @@ function autoLoadLatestStockFile(){
         return;
       }
       // 解base64＋解析Excel＋渲染幾百張卡片都是很吃CPU的同步運算，用setTimeout讓瀏覽器先畫一次畫面（載入進度條才會動），不會整個卡住
-      return new Promise(function(resolve){
+      // 回傳內容不是選股Excel（例如GAS網址貼錯專案、回傳了別的資料）→ 直接報錯，不要卡在轉圈圈
+      if(!fd.base64){ throw new Error('伺服器回傳的不是選股資料，請確認選股檔案GAS的部署'); }
+      return new Promise(function(resolve, reject){
         setTimeout(function(){
+         try{
           window._perfLoad.parseStart = performance.now();
           var binary=atob(fd.base64);
           var bytes=new Uint8Array(binary.length);
@@ -3448,13 +3490,14 @@ function autoLoadLatestStockFile(){
           processRows(rows,fd.name);
           showToast('☁️ 已自動載入最新選股檔：'+fd.name);
           resolve();
+         }catch(pe){ reject(new Error('選股檔解析失敗：'+pe.message)); }
         }, 0);
       });
     })
     // 原本是靜默失敗完全不理使用者，現在畫面上（卡片區空白處）直接顯示「重試/啟動」按鈕，
     // 不用再自己想到要點右上角雲端icon
-    .catch(function(e){ _showAutoLoadRetry(_friendlyFetchErr(e)); })
-    .finally(function(){ _reportLoadStep('stockfile'); });
+    .catch(function(e){ if(_myLoadId === window._stockLoadId) _showAutoLoadRetry(_friendlyFetchErr(e)); })
+    .finally(function(){ if(_myLoadId === window._stockLoadId) clearTimeout(window._slowLoadTimer); _reportLoadStep('stockfile'); });
 }
 // 開機自動載入股票資料失敗/逾時時，把卡片區的空白提示換成清楚的錯誤訊息＋重試按鈕，
 // 如果使用者這段時間已經手動從雲端載入成功過（D_RAW有資料了），就不要蓋掉已經載入好的畫面
@@ -3463,7 +3506,7 @@ function _showAutoLoadRetry(msg){
   var el = document.getElementById('cards-empty-msg');
   if(!el) return;
   el.innerHTML =
-    '<div style="font-size:15px;color:#f85149;margin-bottom:6px">⚠️ 自動載入失敗：'+msg+'</div>'
+    '<div style="font-size:15px;color:#f85149;margin-bottom:6px;display:block">⚠️ 自動載入失敗：'+msg+'</div>'
     +'<button class="retry-btn" onclick="_retryAutoLoad(this)">🔄 重試</button>';
 }
 // 按下重試：按鈕立刻變成「轉圈圈＋載入中」並鎖住，讓使用者知道真的有在執行，也避免連按好幾次
