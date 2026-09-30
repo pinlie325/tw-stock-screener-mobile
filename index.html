@@ -948,11 +948,25 @@ function adminRemoveUser(email){
     </div>
     <div style="font-size:13px;color:var(--text-altlight);line-height:1.8">
       <p style="color:#f0c040;font-weight:700;margin:0 0 6px">📥 載入資料</p>
-      <p style="margin:0 0 12px">☁️ 雲端（左上角）：從 Google Drive 載入最新選股 Excel<br>本機手動載入 Excel 檔案：在「設定」裡</p>
-      <p style="color:#f0c040;font-weight:700;margin:0 0 6px">🔍 搜尋與篩選</p>
-      <p style="margin:0 0 12px">搜尋框輸入股票代碼或名稱<br>產業按鈕：依產業篩選個股<br>⭐ 只顯示管理者挑選個股<br>💬 只顯示有共同筆記（敲敲話）的個股<br>❤️ 只顯示我的最愛（點卡片上的🤍/❤️加入或移除，每個使用者自己的清單，別人看不到）<br>三個按鈕可以同時開，同時開會聯集顯示（符合任一種就出現）</p>
+      <p style="margin:0 0 12px">登入後自動載入最新的選股資料，不用手動操作<br>資料有更新時，重新整理頁面即可<span class="admin-only"><br>☁️ 雲端（左上角，管理者）：從 Google Drive 切換其他日期的選股 Excel<br>本機手動載入 Excel 檔案：在「設定」裡</span></p>
+      <p style="color:#f0c040;font-weight:700;margin:0 0 6px">🔍 搜尋、篩選與排序</p>
+      <p style="margin:0 0 12px">搜尋框輸入股票代碼或名稱<br>產業按鈕：依細產業篩選個股<br>⭐ 只顯示管理者挑選個股<br>💬 只顯示有共同筆記（敲敲話）的個股<br>❤️ 只顯示我的最愛（點卡片上的🤍/❤️加入或移除，每個人各自的清單，別人看不到）<br>⭐💬❤️ 可以同時開，會聯集顯示（符合任一種就出現）<br>排序列：漲跌幅、股價、成交值，再點一次可切換遞增／遞減</p>
       <p style="color:#f0c040;font-weight:700;margin:0 0 6px">📊 卡片功能</p>
-      <p style="margin:0 0 12px">點擊卡片：展開 K 線圖<br>K 線圖左右滑動：查看歷史走勢<br>📷 圖示（昨收前面）：截圖模式<br>CM / LINE：跳轉外部連結<br>卡片上的橘/紅色標籤：處置股、注意股警示</p>
+      <p style="margin:0 0 12px">點擊卡片：展開 K 線圖，左右滑動可看歷史走勢<br>📷：截圖模式<br>CM / LINE：跳轉外部連結<br>橘／紅色標籤：處置股、注意股警示<br>大戶強度 ★：大戶買超力道在全部選股裡的排名，分五級，★越多排名越前面<br>籌碼分區、營收分區：說明見下方兩個趨勢表</p>
+      <p style="color:#f0c040;font-weight:700;margin:0 0 6px">🐋 大戶籌碼趨勢表（底部「大戶」）</p>
+      <p style="margin:0 0 12px">依大戶買賣力道，把個股分成四區，點上方卡片切換：<br>
+        <span style="color:#f85149">領先</span>：大戶持續買進、買超力道強，強勢主流<br>
+        <span style="color:#58a6ff">改善</span>：買超力道轉強中，籌碼正在改善<br>
+        <span style="color:#d29922">弱化</span>：大戶仍偏買，但買超力道減弱，留意資金退潮<br>
+        <span style="color:#3fb950">落後</span>：大戶買盤弱，弱勢觀望<br>
+        清單依大戶強度排序，也可以用搜尋框跨四區找股票</p>
+      <p style="color:#f0c040;font-weight:700;margin:0 0 6px">📈 營收成長趨勢表（底部「營收」）</p>
+      <p style="margin:0 0 12px">依「營收年增率」和「近 20 日漲幅」分成四區（只納入成交值 0.5 億以上的個股）：<br>
+        <span style="color:#f85149">強勢兌現</span>：營收成長、股價也有反應<br>
+        <span style="color:#58a6ff">甜蜜點</span>：營收成長，但股價還沒跟上<br>
+        <span style="color:#d29922">投機過熱</span>：股價先漲，營收沒跟上<br>
+        <span style="color:#3fb950">雙弱觀望</span>：營收、股價都偏弱<br>
+        門檻：營收年增率 ≥ 20%、近 20 日漲幅 ≥ 10%</p>
       <p style="color:#f0c040;font-weight:700;margin:0 0 6px">📈 技術型態（點開K線後顯示）</p>
       <p style="margin:0 0 12px">
         <span style="color:#f85149">趨勢偏多 / 突破MA60 / 三連紅 / 長紅K / 價量齊揚</span><br>
@@ -960,10 +974,12 @@ function adminRemoveUser(email){
         <span style="color:var(--text-secondary)">均線糾結 / 量縮回測</span><br>
         <span style="color:#ffd700">進場訊號：站上MA60+MA13，RSI>50向上，MA60向上，量能放大</span>
       </p>
-      <p style="color:#f0c040;font-weight:700;margin:0 0 6px">📝 備註系統</p>
-      <p style="margin:0 0 12px">私人備註：只有管理者能新增/編輯，其他使用者完全看不到；卡片左上角的三角形圖示（藍色代表已有備註）也只有管理者看得到，點圖示才能編輯，點卡片上的備註文字列不會觸發編輯<br><br>共同筆記（敲敲話）：所有使用者都能新增留言，是留言紀錄的形式，新留言不會蓋掉舊的，每則都能個別刪除，卡片上只顯示最新一則，點開可看全部歷史</p>
+      <p style="color:#f0c040;font-weight:700;margin:0 0 6px">📝 備註與留言</p>
+      <p style="margin:0 0 12px">共同筆記（敲敲話）：所有會員都能留言，新留言不會蓋掉舊的，每則都能個別刪除；卡片上只顯示最新一則，點開可看全部歷史<br>📢 大聲公：不限個股的留言板，所有會員都看得到<br>私人備註：只有管理者看得到<span class="admin-only">；卡片左上角的三角形圖示（藍色代表已有備註）點了才能編輯，點卡片上的備註文字列不會觸發編輯</span></p>
       <p style="color:#f0c040;font-weight:700;margin:0 0 6px">🚫 排除股票清單</p>
-      <p style="margin:0">在「設定」→「排除股票清單」，輸入代碼或名稱（會自動互相帶入另一個）即可加入；加入後載入Excel會自動濾掉，存在共用試算表的「黑名單」分頁，所有使用者都適用，只有管理者能新增或移除</p>
+      <p style="margin:0 0 12px">管理者設定的排除清單會自動套用到所有人，被排除的個股不會出現在卡片中<span class="admin-only"><br>管理者：「設定」→「排除股票清單」，輸入代碼或名稱（會自動帶入另一個）即可加入</span></p>
+      <p style="color:#f0c040;font-weight:700;margin:0 0 6px">📌 資料來源與注意事項</p>
+      <p style="margin:0">股價、漲跌幅、成交值、營收年增率：臺灣證券交易所、證券櫃檯買賣中心公開資訊（盤後資料，非即時）<br>分區、強度、策略標籤為本平台的分析結果<br>請勿將帳號借給他人，或把平台畫面轉傳到群組以外<br><span style="color:var(--text-secondary)">本平台資訊僅供參考與交流，不構成投資建議，投資請自行判斷並承擔風險</span></p>
     </div>
   </div>
 </div>
