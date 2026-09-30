@@ -310,6 +310,8 @@ body.is-admin .member-only{display:none!important}
 @keyframes retrySpin{to{transform:rotate(360deg)}}
 /* 會員版卡片少了8格，右側分區/相機不再固定在第5欄，改成跟著其他格子自動排，卡片才不會留一大塊空白 */
 body:not(.is-admin) .card-grid .cg-side{grid-column:auto!important;grid-row:auto!important}
+/* 會員版卡片剩8格（漲跌幅、成交值、股本、大戶強度／營收增、籌碼分區、營收分區、相機），排成2列×4欄 */
+body:not(.is-admin) .card-grid{grid-template-columns:repeat(4,1fr)}
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -1430,7 +1432,7 @@ function adminRemoveUser(email){
   <button class="sbtn admin-only" data-k="grossmargin" onclick="setSrtToggle(this,'grossmargin','毛利率 ↑','毛利率 ↓')">毛利率 ↑</button>
   <button class="sbtn" data-k="turnval" onclick="setSrtToggle(this,'turnval','成交值 ↑','成交值 ↓')">成交值 ↑</button>
   <button class="sbtn admin-only" data-k="roe" onclick="setSrtToggle(this,'roe','ROE ↑','ROE ↓')">ROE ↑</button>
-  <button class="sbtn" data-k="margin" onclick="setSrtToggle(this,'margin','融資維持 ↑','融資維持 ↓','a')">融資維持 ↑</button>
+  <button class="sbtn admin-only" data-k="margin" onclick="setSrtToggle(this,'margin','融資維持 ↑','融資維持 ↓','a')">融資維持 ↑</button>
   <button class="sbtn" data-k="capital" onclick="setSrtToggle(this,'capital','股本小→大','股本大→小','a')">股本小→大</button>
 </div>
 
@@ -2377,7 +2379,7 @@ function render(){
         +'<div class="cg-item"><div class="cg-lbl">成交值(億)</div><div class="cg-val">'+(s.turnval!==null?s.turnval.toFixed(1):'--')+'</div></div>'
         +'<div class="cg-item"><div class="cg-lbl">股本(億)</div><div class="cg-val">'+(s.capital!==null?s.capital.toFixed(1):'--')+'</div></div>'
         +'<div class="cg-item admin-only"><div class="cg-lbl">每股淨值</div><div class="cg-val">'+(s.bvps!==null?s.bvps.toFixed(1):'--')+'</div></div>'
-        +'<div class="cg-item"><div class="cg-lbl">融資%</div><div class="cg-val '+mc+'">'+(s.margin!==null?s.margin.toFixed(1):'--')+'</div></div>'
+        +'<div class="cg-item admin-only"><div class="cg-lbl">融資%</div><div class="cg-val '+mc+'">'+(s.margin!==null?s.margin.toFixed(1):'--')+'</div></div>'
                 +(function(){var roe=s.roe;var roec=roe!==null?(roe>=3.75?'up':roe<1.25?'dn':''):'';return '<div class="cg-item admin-only"><div class="cg-lbl">單季ROE%</div><div class="cg-val '+roec+'">'+(roe!==null?roe.toFixed(1):'--')+'</div></div>';})()
         +'<div class="cg-item admin-only"><div class="cg-lbl">RS%</div><div class="cg-val">'+(s.rs!==null?s.rs.toFixed(1):'--')+'</div></div>'
         +'<div class="cg-item admin-only"><div class="cg-lbl">毛利率%</div><div class="cg-val '+gmc+'">'+(s.grossmargin!==null?s.grossmargin.toFixed(1):'--')+'</div></div>'
