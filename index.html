@@ -1484,8 +1484,7 @@ function adminRemoveUser(email){
       <rect x="60" y="56" width="8" height="6" rx="3" fill="#1f6feb44" stroke="#58a6ff66" stroke-width="1"/>
     </svg>
     <div id="cards-empty-msg">
-      <div style="font-size:15px;color:var(--text-secondary);margin-bottom:6px;display:inline-flex;align-items:center;gap:8px"><span class="retry-spin"></span>正在載入最新選股資料…</div>
-      <div style="font-size:13px;color:var(--text-dim)">約需 10～20 秒，請稍候</div>
+      <div style="font-size:15px;color:var(--text-secondary);margin-bottom:6px;display:inline-flex;align-items:center;gap:8px"><span class="retry-spin"></span>請稍候，已等待 <span class="load-elapsed">0</span> 秒</div>
     </div>
   </div>
 </div>
@@ -3443,6 +3442,13 @@ function autoLoadLatestStockFile(){
   window._perfLoad = {fetchStart: performance.now()};
   // 載入超過8秒還沒好：不中斷，但先把重試按鈕秀出來，讓使用者不用一直乾等
   var _myLoadId = (window._stockLoadId = (window._stockLoadId||0) + 1);
+  // 等待秒數計時：畫面上所有 .load-elapsed 每秒更新一次，載入結束就停
+  window._loadStart = Date.now();
+  clearInterval(window._loadElapsedTimer);
+  window._loadElapsedTimer = setInterval(function(){
+    var sec = Math.round((Date.now() - window._loadStart) / 1000);
+    document.querySelectorAll('.load-elapsed').forEach(function(el){ el.textContent = sec; });
+  }, 1000);
   clearTimeout(window._slowLoadTimer);
   window._slowLoadTimer = setTimeout(function(){
     if(_myLoadId !== window._stockLoadId) return;
@@ -3450,8 +3456,8 @@ function autoLoadLatestStockFile(){
     var el = document.getElementById('cards-empty-msg');
     if(!el) return;
     el.innerHTML =
-      '<div style="font-size:15px;color:var(--text-secondary);margin-bottom:6px;display:inline-flex;align-items:center;gap:8px"><span class="retry-spin"></span>載入時間比平常久，仍在努力載入中…</div>'
-      +'<div style="font-size:13px;color:var(--text-dim);margin-bottom:4px">可以再等一下，或按重試重新連線</div>'
+      '<div style="font-size:15px;color:var(--text-secondary);margin-bottom:6px;display:inline-flex;align-items:center;gap:8px"><span class="retry-spin"></span>請稍候，已等待 <span class="load-elapsed">'+Math.round((Date.now()-(window._loadStart||Date.now()))/1000)+'</span> 秒</div>'
+      +'<div style="font-size:13px;color:var(--text-dim);margin-bottom:4px">或請按重試</div>'
       +'<button class="retry-btn" onclick="_retryAutoLoad(this)">🔄 重試</button>';
   }, 8000);
   _gasTokenUrl(GAS_URL+'?action=latest').then(function(u){ return fetchWithTimeout(u, 30000); })
@@ -3500,7 +3506,7 @@ function autoLoadLatestStockFile(){
     // 原本是靜默失敗完全不理使用者，現在畫面上（卡片區空白處）直接顯示「重試/啟動」按鈕，
     // 不用再自己想到要點右上角雲端icon
     .catch(function(e){ if(_myLoadId === window._stockLoadId) _showAutoLoadRetry(_friendlyFetchErr(e)); })
-    .finally(function(){ if(_myLoadId === window._stockLoadId) clearTimeout(window._slowLoadTimer); _reportLoadStep('stockfile'); });
+    .finally(function(){ if(_myLoadId === window._stockLoadId){ clearTimeout(window._slowLoadTimer); clearInterval(window._loadElapsedTimer); } _reportLoadStep('stockfile'); });
 }
 // 開機自動載入股票資料失敗/逾時時，把卡片區的空白提示換成清楚的錯誤訊息＋重試按鈕，
 // 如果使用者這段時間已經手動從雲端載入成功過（D_RAW有資料了），就不要蓋掉已經載入好的畫面
@@ -3520,8 +3526,14 @@ function _retryAutoLoad(btn){
     btn.disabled = true;
     btn.classList.add('loading');
     btn.innerHTML = '<span class="retry-spin"></span>載入中…';
-    var msgEl = btn.previousElementSibling;
-    if(msgEl){ msgEl.style.color = 'var(--text-secondary)'; msgEl.textContent = '⏳ 重新連線中，請稍候（約 10～20 秒）'; }
+    // 按了重試：拿掉「或請按重試」那行提示，只留上面那行「請稍候，已等待 N 秒」（秒數從0重新開始），不重複顯示
+    var hintEl = btn.previousElementSibling;
+    if(hintEl && hintEl.textContent.indexOf('或請按重試') >= 0) hintEl.remove();
+    // 從「自動載入失敗」紅字畫面按重試：把紅字換成「請稍候，已等待 N 秒」
+    else if(hintEl && hintEl.textContent.indexOf('自動載入失敗') >= 0){
+      hintEl.style.color = 'var(--text-secondary)';
+      hintEl.innerHTML = '請稍候，已等待 <span class="load-elapsed">0</span> 秒';
+    }
   }
   autoLoadLatestStockFile();
 }
