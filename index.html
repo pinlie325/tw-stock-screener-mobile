@@ -3456,13 +3456,7 @@ function autoLoadLatestStockFile(){
   window._perfLoad = {fetchStart: performance.now()};
   // 載入超過8秒還沒好：不中斷，但先把重試按鈕秀出來，讓使用者不用一直乾等
   var _myLoadId = (window._stockLoadId = (window._stockLoadId||0) + 1);
-  // 等待秒數計時：畫面上所有 .load-elapsed 每秒更新一次，載入結束就停
-  window._loadStart = Date.now();
-  clearInterval(window._loadElapsedTimer);
-  window._loadElapsedTimer = setInterval(function(){
-    var sec = Math.round((Date.now() - window._loadStart) / 1000);
-    document.querySelectorAll('.load-elapsed').forEach(function(el){ el.textContent = sec; });
-  }, 1000);
+  _startLoadElapsed(false); // 繼續沿用從開網頁就開始算的秒數（登入確認的時間也算進去）
   clearTimeout(window._slowLoadTimer);
   window._slowLoadTimer = setTimeout(function(){
     if(_myLoadId !== window._stockLoadId) return;
@@ -3534,7 +3528,19 @@ function _showAutoLoadRetry(msg){
 }
 // 按下重試：按鈕立刻變成「轉圈圈＋載入中」並鎖住，讓使用者知道真的有在執行，也避免連按好幾次
 // 成功就會直接換成卡片；失敗的話 _showAutoLoadRetry 會重新畫出錯誤訊息＋重試按鈕
+// 等待秒數計時器：畫面上所有 .load-elapsed 每秒更新。reset=true 時從0重新算（按重試時）
+function _startLoadElapsed(reset){
+  if(reset || !window._loadStart) window._loadStart = Date.now();
+  clearInterval(window._loadElapsedTimer);
+  var tick = function(){
+    var sec = Math.round((Date.now() - window._loadStart) / 1000);
+    document.querySelectorAll('.load-elapsed').forEach(function(el){ el.textContent = sec; });
+  };
+  tick();
+  window._loadElapsedTimer = setInterval(tick, 1000);
+}
 function _retryAutoLoad(btn){
+  _startLoadElapsed(true);
   if(btn){
     if(btn.disabled) return;
     btn.disabled = true;
@@ -7054,6 +7060,8 @@ function adjustPadding(){
 })();
 
 // 頁面載入時自動載入備註、策略標籤、集團、概念股與最新選股資料
+// 一打開網頁就開始計時，登入確認＋載入資料的時間都會算進「已等待 N 秒」
+_startLoadElapsed(true);
 window.addEventListener('load', function(){
   adjustPadding();
   autoLoadNotes();
