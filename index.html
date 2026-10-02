@@ -619,7 +619,14 @@ function doEmailRegister(){
       return fbAuth.createUserWithEmailAndPassword(email, pass);
     })
     .then(function(cred){
-      // 建立帳號成功，寄出驗證信，接下來要等使用者完成驗證才算註冊完成
+      // 建立帳號成功後「立刻」把申請寫進白名單（待審核、信箱未驗證）。
+      // 原本要等使用者回來按「我已完成驗證，繼續」才寫入，中途關掉網頁的人，Firebase有帳號、管理選單卻看不到
+      return fetchWithTimeout(NOTE_GAS_URL + '?action=requestAccess&email=' + encodeURIComponent(email) + '&username=' + encodeURIComponent(username), 15000)
+        .catch(function(){})
+        .then(function(){ return cred; });
+    })
+    .then(function(cred){
+      // 寄出驗證信，接下來要等使用者完成驗證才算註冊完成
       return cred.user.sendEmailVerification().catch(function(){}).then(function(){
         switchAuthView('verify');
       });
@@ -894,9 +901,16 @@ function adminApproveUser(email){
     .catch(function(){ alert('核准失敗，請檢查網路連線'); });
 }
 function adminRemoveUser(email){
-  if(!confirm(email + ' 確定要移除嗎？（僅移除授權清單，Firebase帳號本身不會被刪除）')) return;
+  if(!confirm(email + ' 確定要刪除嗎？\n會同時刪除審核名單和登入帳號，對方之後可以用同一個Email重新註冊。')) return;
   adminFetch('adminRemove', {email: email})
-    .then(function(){ adminLoadUsers(); })
+    .then(function(res){
+      adminLoadUsers();
+      if(res && res.ok && res.firebaseDeleted === false){
+        alert('已從審核名單移除，但登入帳號刪除失敗：' + (res.firebaseError || '未知原因') + '\n（對方暫時無法用同一個Email重新註冊，可到 Firebase 後台手動刪除）');
+      } else if(res && res.ok){
+        toast('🗑 已刪除 ' + email + '，對方可以重新註冊', '#238636');
+      }
+    })
     .catch(function(){ alert('移除失敗，請檢查網路連線'); });
 }
 </script>
