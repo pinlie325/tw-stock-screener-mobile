@@ -6000,7 +6000,9 @@ function _rsAvg(a){ if(!a.length) return null; var t=0; a.forEach(function(v){t+
 // 把 GAS 回傳的 rows 轉成 RS_DATA，並算出 1~99 排名
 function _buildRsData(d){
   var list = (d.rows||[]).map(function(r){
-    return {code:_rsCode(r[0]), name:r[1]||'', score:r[2], chg:(r[3]===null||r[3]===undefined)?null:r[3], close:r[4], ind:r[5]||''};
+    function nv(v){ return (v===null||v===undefined)?null:v; }
+    return {code:_rsCode(r[0]), name:r[1]||'', score:r[2], chg:nv(r[3]), close:r[4], ind:r[5]||'',
+            f:nv(r[6]), t:nv(r[7]), d:nv(r[8]), f5:nv(r[9]), t5:nv(r[10])};
   }).filter(function(x){ return x.code && typeof x.score==='number' && !isNaN(x.score); });
   var sorted = list.slice().sort(function(a,b){ return a.score-b.score; });
   var n = sorted.length, i = 0;
@@ -6158,6 +6160,9 @@ function _renderRsBoardHtml(b){
     + sigBox(mk.sig)
     + '</div>';
 
+  // 法人今天買什麼＋資金進攻方向
+  html += _renderInstHtml(b);
+
   // 今日選股檔溫度
   var tot = b.rsToday.length;
   var med = _rsMedian(b.rsToday);
@@ -6216,6 +6221,92 @@ function _renderRsBoardHtml(b){
   return html;
 }
 
+
+// ===== 法人今天買什麼（V3_15_328，資料跟 RS 同一份 CSV：外資／投信／自營買賣超，單位張） =====
+var _instTab = 'f';
+var INST_TABS = [
+  {k:'f',  lbl:'外資買', fld:'f',  dir:1},
+  {k:'fs', lbl:'外資賣', fld:'f',  dir:-1},
+  {k:'t',  lbl:'投信買', fld:'t',  dir:1},
+  {k:'ts', lbl:'投信賣', fld:'t',  dir:-1},
+  {k:'f5', lbl:'外資5日', fld:'f5', dir:1},
+  {k:'t5', lbl:'投信5日', fld:'t5', dir:1}
+];
+// 張數 × 股價 → 億元（1張 = 1000股）
+function _instAmt(x, fld){ var v=x[fld]; return (v===null||v===undefined||!x.close) ? null : v*x.close/100000; }
+function _instFmt(v){ if(v===null||v===undefined) return '--'; var a=Math.abs(v); return (v>0?'+':v<0?'−':'')+(a>=10?a.toFixed(0):a>=1?a.toFixed(1):a.toFixed(2)); }
+function _instCol(v){ return v>0?'#f85149':v<0?'#3fb950':'var(--text-secondary)'; }
+function _instHasData(){ return RS_DATA && RS_DATA.list.some(function(x){ return x.f!==null && x.f!==undefined; }); }
+
+function _renderInstHtml(b){
+  var card='background:var(--bg-panel);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:12px;';
+  var h2='font-size:15px;font-weight:700;color:var(--text-primary);margin:0 0 8px;';
+  var dim='font-size:12px;color:var(--text-dim);line-height:1.6;';
+  if(!_instHasData()){
+    return '<div style="'+card+'"><div style="'+h2+'">🏛️ 法人今天買什麼</div><div style="'+dim+'">這份 RS 檔沒有三大法人欄位。XQ「RS加權分數」腳本加上外資／投信／自營買賣超後重新匯出即可。</div></div>';
+  }
+  var L = RS_DATA.list;
+  function sum(fld){ var t=0; L.forEach(function(x){ var a=_instAmt(x,fld); if(a!==null) t+=a; }); return t; }
+  var sf=sum('f'), st=sum('t'), sd=sum('d');
+  var html = '<div style="'+card+'"><div style="'+h2+'">🏛️ 法人今天買什麼</div>'
+    +'<div style="'+dim+'">金額 = 買賣超張數 × 股價，單位億元。資料日同 RS 檔，晚上匯出才是當天法人資料。</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0;">';
+  [['外資',sf],['投信',st],['自營',sd]].forEach(function(p){
+    html += '<div style="background:var(--bg-panel-alt);border-radius:8px;padding:8px;text-align:center;">'
+      +'<div style="font-size:12px;color:var(--text-secondary)">'+p[0]+'合計</div>'
+      +'<div style="font-size:18px;font-weight:700;color:'+_instCol(p[1])+'">'+_instFmt(p[1])+' 億</div></div>';
+  });
+  html += '</div><div id="inst-tabs" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;">';
+  INST_TABS.forEach(function(t){
+    var on = t.k===_instTab;
+    html += '<button class="inst-tab" data-k="'+t.k+'" style="font-size:13px;padding:5px 10px;border-radius:14px;cursor:pointer;border:1px solid '+(on?'#58a6ff':'var(--border)')+';background:'+(on?'#1f6feb33':'var(--bg-panel-alt)')+';color:'+(on?'#58a6ff':'var(--text-secondary)')+';">'+t.lbl+'</button>';
+  });
+  html += '</div><div id="inst-list">'+_renderInstListHtml(b)+'</div></div>';
+
+  // 族群資金流向（外資＋投信）
+  var g={};
+  L.forEach(function(x){
+    if(!x.ind) return;
+    var a=(_instAmt(x,'f')||0)+(_instAmt(x,'t')||0);
+    var o=g[x.ind]||(g[x.ind]={ind:x.ind,amt:0,rs:[],n:0});
+    o.amt+=a; o.rs.push(x.rs); o.n++;
+  });
+  var arr=Object.keys(g).map(function(k){ var o=g[k]; o.med=_rsMedian(o.rs); return o; }).filter(function(o){ return o.amt!==0; });
+  var inflow=arr.slice().sort(function(a,b){return b.amt-a.amt;}).slice(0,10);
+  var outflow=arr.slice().sort(function(a,b){return a.amt-b.amt;}).slice(0,6);
+  function grow(o){
+    var t=_rsTemp(Math.round(o.med));
+    return '<div class="rs-grp" data-ind="'+_rsEsc(o.ind)+'" style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);cursor:pointer;">'
+      +'<span style="flex:1;min-width:0;font-size:14px;color:var(--text-primary)">'+_rsEsc(o.ind)+' <span style="font-size:11.5px;color:var(--text-dim)">'+o.n+' 檔</span></span>'
+      +'<span style="flex:0 0 auto;font-size:12px;font-weight:700;padding:2px 7px;border-radius:5px;background:'+t.bg+';color:'+t.c+'">RS '+Math.round(o.med)+'</span>'
+      +'<span style="flex:0 0 64px;text-align:right;font-size:14px;font-weight:700;color:'+_instCol(o.amt)+'">'+_instFmt(o.amt)+' 億</span></div>';
+  }
+  html += '<div style="'+card+'"><div style="'+h2+'">🧭 資金進攻方向（外資＋投信，依細產業）</div>'
+    +'<div style="'+dim+'">法人買超集中、RS 又在熱區的族群，就是主流資金正在進攻的方向；RS 還冷但法人開始買，可能是下一站。</div>'
+    +'<div style="font-size:13px;font-weight:700;color:#f85149;margin-top:8px;">流入 Top 10</div>';
+  inflow.forEach(function(o){ html+=grow(o); });
+  html += '<div style="font-size:13px;font-weight:700;color:#3fb950;margin-top:12px;">流出 Top 6</div>';
+  outflow.forEach(function(o){ html+=grow(o); });
+  html += '</div>';
+  return html;
+}
+
+function _renderInstListHtml(b){
+  var tab = INST_TABS.filter(function(t){ return t.k===_instTab; })[0] || INST_TABS[0];
+  var rows = RS_DATA.list.filter(function(x){ var a=_instAmt(x,tab.fld); return a!==null && a*tab.dir>0; })
+    .sort(function(a,b){ return (_instAmt(b,tab.fld)-_instAmt(a,tab.fld))*tab.dir; }).slice(0,15);
+  if(!rows.length) return '<div style="padding:16px 0;text-align:center;color:var(--text-dim);font-size:13px;">沒有資料</div>';
+  return rows.map(function(x){
+    var t=_rsTemp(x.rs), a=_instAmt(x,tab.fld), inT=!!(b.inToday&&b.inToday[x.code]);
+    return '<div class="rs-top" data-code="'+_rsEsc(x.code)+'" style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);cursor:pointer;">'
+      +'<span style="flex:0 0 auto;font-size:12px;font-weight:700;padding:2px 6px;border-radius:5px;background:'+t.bg+';color:'+t.c+'">RS '+x.rs+'</span>'
+      +'<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:600;color:var(--text-primary)">'+_rsEsc(x.code)+' '+_rsEsc(x.name)+(inT?' <span style="color:#d29922">★</span>':'')
+        +' <span style="font-size:11.5px;font-weight:400;color:var(--text-dim)">'+_rsEsc(x.ind)+'</span></span>'
+      +'<span style="flex:0 0 auto;text-align:right;"><span style="display:block;font-size:14px;font-weight:700;color:'+_instCol(a)+'">'+_instFmt(a)+' 億</span>'
+        +'<span style="display:block;font-size:11px;color:var(--text-dim)">'+(x[tab.fld]>0?'+':'')+x[tab.fld].toLocaleString()+' 張</span></span></div>';
+  }).join('');
+}
+
 function openRsBoard(){
   ['settings-modal'].forEach(function(id){ var el=document.getElementById(id); if(el) el.style.display='none'; });
   var modal = document.getElementById('rs-board-modal');
@@ -6267,6 +6358,14 @@ function _fillRsBoard(){
       if(!codes.length){ toast('ℹ️ 今天的選股檔裡沒有「'+ind+'」的股票'); return; }
       modal.style.display='none';
       jumpToCardWithFilter(codes[0], codes, '🌡️'+ind);
+    });
+  });
+  body.querySelectorAll('.inst-tab').forEach(function(el){
+    el.addEventListener('click', function(){
+      var st = body.scrollTop;
+      _instTab = el.getAttribute('data-k');
+      _fillRsBoard();
+      body.scrollTop = st;
     });
   });
   body.querySelectorAll('.rs-tier').forEach(function(el){
