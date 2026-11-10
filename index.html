@@ -1046,6 +1046,7 @@ function adminRemoveUser(email){
       <button class="settings-menu-item" onclick="openDisposalReport()">🚨 處置股名單</button>
       <button class="settings-menu-item" onclick="openDahuRotationBoard()">🐋 大戶籌碼趨勢表</button>
       <button class="settings-menu-item" onclick="openRevRotationBoard()">📈 營收成長趨勢表</button>
+      <button class="settings-menu-item admin-only" onclick="openRsBoard()">🌡️ RS 溫度計<span style="display:block;font-size:10.5px;color:var(--text-secondary);margin-top:2px;">（強勢股／族群輪動）</span></button>
     </div>
   </div>
 </div>
@@ -1119,6 +1120,18 @@ function adminRemoveUser(email){
     <button onclick="closeTodayHighlight()" style="background:none;border:none;color:var(--text-secondary);font-size:22px;cursor:pointer">✕</button>
   </div>
   <div id="today-highlight-body" style="flex:1;overflow-y:auto;padding:14px;"></div>
+</div>
+
+<!-- RS THERMOMETER MODAL -->
+<div id="rs-board-modal" style="display:none;position:fixed;inset:0;background:var(--bg-page);z-index:9999;flex-direction:column">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg-panel);flex-shrink:0">
+    <span style="font-size:16px;font-weight:700;color:var(--text-primary)">🌡️ RS 溫度計</span>
+    <span style="display:flex;gap:6px;align-items:center">
+      <button onclick="RS_DATA=null;openRsBoard()" title="重新讀取" style="background:none;border:none;color:var(--text-secondary);font-size:18px;cursor:pointer">🔄</button>
+      <button onclick="closeRsBoard()" style="background:none;border:none;color:var(--text-secondary);font-size:22px;cursor:pointer">✕</button>
+    </span>
+  </div>
+  <div id="rs-board-body" style="flex:1;overflow-y:auto;padding:14px;max-width:760px;width:100%;margin:0 auto;box-sizing:border-box;"></div>
 </div>
 
 <!-- ECONOMIC CALENDAR MODAL -->
@@ -2403,7 +2416,7 @@ function render(){
         +'<div class="cg-item admin-only"><div class="cg-lbl">每股淨值</div><div class="cg-val">'+(s.bvps!==null?s.bvps.toFixed(1):'--')+'</div></div>'
         +'<div class="cg-item admin-only"><div class="cg-lbl">融資%</div><div class="cg-val '+mc+'">'+(s.margin!==null?s.margin.toFixed(1):'--')+'</div></div>'
                 +(function(){var roe=s.roe;var roec=roe!==null?(roe>=3.75?'up':roe<1.25?'dn':''):'';return '<div class="cg-item admin-only"><div class="cg-lbl">單季ROE%</div><div class="cg-val '+roec+'">'+(roe!==null?roe.toFixed(1):'--')+'</div></div>';})()
-        +'<div class="cg-item admin-only"><div class="cg-lbl">RS%</div><div class="cg-val">'+(s.rs!==null?s.rs.toFixed(1):'--')+'</div></div>'
+        +_rsCellHtml(s)
         +'<div class="cg-item admin-only"><div class="cg-lbl">毛利率%</div><div class="cg-val '+gmc+'">'+(s.grossmargin!==null?s.grossmargin.toFixed(1):'--')+'</div></div>'
         // 大戶買賣比%跟營收增%調整順序放在一起，這樣扣掉右邊第5欄後(剩4欄一列)兩格才會排在同一列相鄰，不會被欄位換行拆散
         +(function(){var db=s.dahubuy;if((db===null||db===undefined)&&s.dahuLv){return '<div class="cg-item"><div class="cg-lbl">大戶強度</div><div class="cg-val" style="color:#d29922;font-size:11px;letter-spacing:-1px">'+_dahuLvStars(s.dahuLv)+'</div></div>';}var dbc=db!==null&&db!==undefined?(db>=70?'up':db<30?'dn':''):'';return '<div class="cg-item"><div class="cg-lbl">大戶買賣比%</div><div class="cg-val '+dbc+'">'+(db!==null&&db!==undefined?db.toFixed(1):'--')+'</div></div>';})()
@@ -3460,6 +3473,7 @@ function _hideLoadProgress(){
 setTimeout(_hideLoadProgress, 12000);
 
 function autoLoadLatestStockFile(){
+  if(isAdminUser()) loadRsData(); // RS溫度計資料跟選股檔同時抓，互不等待
   // 效能優化：原本要打兩次API（action=list 找最新檔案 → action=file 讀內容），
   // 現在後端合併成 action=latest 一次執行、一次回傳，省掉一趟網路來回＋Apps Script啟動時間
   window._perfLoad = {fetchStart: performance.now()};
@@ -5950,6 +5964,311 @@ function _copyTodayHighlightSummary(){
     toast('❌ 此裝置不支援複製','#da3633');
   }
 }
+
+
+// ===== RS 溫度計（V3_15_326） =====
+// 資料：雲端資料夾裡最新的「RS加權分數-yyyymmdd.csv」（XQ全市場匯出，每週更新一次即可）
+// RS分數 = 2×近一季漲幅倍數 + 前三季各一季倍數（一年不漲不跌 = 5.0），
+// 網頁把全市場分數排名換算成 1~99（跟歐尼爾 RS Rating 同概念：RS 90 = 贏過 90% 的股票）
+var RS_DATA = null;      // {date, name, list:[{code,name,score,chg,close,ind,rs}], map:{code:rs}, byCode:{code:item}}
+var _rsLoading = null;
+var RS_LEADER_MIN = 90;  // 領頭羊門檻
+var RS_GROUP_MIN_N = 5;  // 族群至少幾檔才列入族群溫度
+
+function _rsTemp(r){
+  if(r===null||r===undefined) return {c:'var(--text-dim)', bg:'var(--bg-panel-alt)', lbl:'--', e:''};
+  if(r>=90) return {c:'#f85149', bg:'#f8514922', lbl:'極熱', e:'🔥'};
+  if(r>=80) return {c:'#ff7b39', bg:'#ff7b3922', lbl:'熱', e:''};
+  if(r>=60) return {c:'#d29922', bg:'#d2992222', lbl:'溫', e:''};
+  if(r>=40) return {c:'var(--text-secondary)', bg:'var(--bg-panel-alt)', lbl:'平', e:''};
+  return {c:'#3fb950', bg:'#3fb95022', lbl:'冷', e:'❄️'};
+}
+function _rsEsc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];}); }
+function _rsCode(v){ var raw=String(v==null?'':v).trim().replace(/\.\w+$/,'').replace(/\.0+$/,''); return /^\d+$/.test(raw)?raw.padStart(4,'0'):raw; }
+function _rsMedian(a){ if(!a.length) return null; var b=a.slice().sort(function(x,y){return x-y;}); var m=Math.floor(b.length/2); return b.length%2?b[m]:(b[m-1]+b[m])/2; }
+function _rsAvg(a){ if(!a.length) return null; var t=0; a.forEach(function(v){t+=v;}); return t/a.length; }
+
+// 把 GAS 回傳的 rows 轉成 RS_DATA，並算出 1~99 排名
+function _buildRsData(d){
+  var list = (d.rows||[]).map(function(r){
+    return {code:_rsCode(r[0]), name:r[1]||'', score:r[2], chg:(r[3]===null||r[3]===undefined)?null:r[3], close:r[4], ind:r[5]||''};
+  }).filter(function(x){ return x.code && typeof x.score==='number' && !isNaN(x.score); });
+  var sorted = list.slice().sort(function(a,b){ return a.score-b.score; });
+  var n = sorted.length, i = 0;
+  while(i<n){ // 同分取平均名次
+    var j=i; while(j+1<n && sorted[j+1].score===sorted[i].score) j++;
+    var pct = ((i+j)/2+1)/n;
+    for(var k=i;k<=j;k++) sorted[k].rs = Math.max(1, Math.min(99, Math.round(pct*99)));
+    i=j+1;
+  }
+  var map={}, byCode={};
+  list.forEach(function(x){ map[x.code]=x.rs; byCode[x.code]=x; });
+  RS_DATA = {date:d.date||'', name:d.name||'', list:list, map:map, byCode:byCode};
+  return RS_DATA;
+}
+
+function loadRsData(force){
+  if(!isAdminUser()) return Promise.resolve(null);
+  if(_rsLoading && !force) return _rsLoading;
+  _rsLoading = _gasTokenUrl(GAS_URL+'?action=rs').then(function(u){ return fetchWithTimeout(u, 30000); })
+    .then(function(r){ return r.text(); })
+    .then(function(t){
+      var d; try{ d=JSON.parse(t); }catch(pe){ throw new Error('伺服器回應異常'); }
+      if(!d.ok) throw new Error(d.error||'讀取失敗');
+      _buildRsData(d);
+      window._rsErr = null;
+      _applyRsToCards();
+      return RS_DATA;
+    })
+    .catch(function(e){ window._rsErr = (e&&e.message)||'讀取失敗'; console.warn('RS load failed:', e); _rsLoading=null; return null; });
+  return _rsLoading;
+}
+
+// 卡片上的「RS溫度」格
+function _rsCellHtml(s){
+  var r = RS_DATA ? RS_DATA.map[s.code] : null;
+  var t = _rsTemp(r);
+  return '<div class="cg-item admin-only cg-rs" data-rs-code="'+_rsEsc(s.code)+'"><div class="cg-lbl">RS溫度</div>'
+    +'<div class="cg-val" style="color:'+t.c+'">'+(r!==null&&r!==undefined?r:'--')
+    +(s.rs!==null&&s.rs!==undefined?'<span style="font-size:10px;font-weight:400;color:var(--text-dim);margin-left:4px">'+s.rs.toFixed(1)+'%</span>':'')
+    +'</div></div>';
+}
+// RS 比卡片晚載入時，直接更新畫面上的格子，不用整頁重畫
+function _applyRsToCards(){
+  if(!RS_DATA) return;
+  var all = (typeof D_RAW!=='undefined' && D_RAW) ? D_RAW : [];
+  var byCode = {}; all.forEach(function(s){ byCode[s.code]=s; });
+  document.querySelectorAll('.cg-rs[data-rs-code]').forEach(function(el){
+    var s = byCode[el.getAttribute('data-rs-code')];
+    if(!s) return;
+    var tmp = document.createElement('div'); tmp.innerHTML = _rsCellHtml(s);
+    el.replaceWith(tmp.firstChild);
+  });
+}
+
+function _computeRsBoard(){
+  if(!RS_DATA) return null;
+  var L = RS_DATA.list;
+  var todays = (typeof D_RAW!=='undefined' && D_RAW) ? D_RAW : [];
+  var inToday = {}; todays.forEach(function(s){ inToday[s.code]=s; });
+
+  // 1) 市場溫度：RS檔當天，領頭羊（RS≥90）vs 全市場
+  var leaders = L.filter(function(x){ return x.rs>=RS_LEADER_MIN && x.chg!==null; });
+  var allChg = L.filter(function(x){ return x.chg!==null; }).map(function(x){ return x.chg; });
+  var mk = {
+    n: leaders.length,
+    leadAvg: _rsAvg(leaders.map(function(x){return x.chg;})),
+    leadUp: leaders.length ? leaders.filter(function(x){return x.chg>0;}).length/leaders.length : null,
+    mktAvg: _rsAvg(allChg),
+    mktUp: allChg.length ? allChg.filter(function(v){return v>0;}).length/allChg.length : null
+  };
+  // 2) 今天選股檔裡有出現的領頭羊，用今天的漲跌（RS檔一週一次，這裡讓警報每天都有反應）
+  var tl = todays.filter(function(s){ var r=RS_DATA.map[s.code]; return r>=RS_LEADER_MIN && s.pct!==null && s.pct!==undefined; });
+  var td = { n: tl.length, avg: _rsAvg(tl.map(function(s){return s.pct;})),
+             up: tl.length ? tl.filter(function(s){return s.pct>0;}).length/tl.length : null };
+
+  function signal(avg, up, base){
+    if(avg===null) return null;
+    if(avg<=-2 || (up!==null && up<0.3)) return {lv:'red', txt:'🔴 警戒：強勢股集體重挫，留意持股與停損'};
+    if((base!==null && avg<base) || (up!==null && up<0.5)) return {lv:'yellow', txt:'🟡 留意：領頭羊轉弱、跑輸大盤'};
+    return {lv:'green', txt:'🟢 健康：領頭羊持續領漲'};
+  }
+  mk.sig = signal(mk.leadAvg, mk.leadUp, mk.mktAvg);
+  td.sig = tl.length>=5 ? signal(td.avg, td.up, null) : null;
+
+  // 3) 今日選股檔的溫度分布
+  var tiers = [{k:'極熱',min:90,n:0},{k:'熱',min:80,n:0},{k:'溫',min:60,n:0},{k:'平',min:40,n:0},{k:'冷',min:1,n:0}];
+  var rsToday = [], noRs = 0;
+  todays.forEach(function(s){
+    var r = RS_DATA.map[s.code];
+    if(r===undefined){ noRs++; return; }
+    rsToday.push(r);
+    for(var i=0;i<tiers.length;i++){ if(r>=tiers[i].min){ tiers[i].n++; break; } }
+  });
+
+  // 4) 族群溫度（全市場、細產業）
+  var g = {};
+  L.forEach(function(x){ if(!x.ind) return; (g[x.ind]=g[x.ind]||[]).push(x); });
+  var groups = Object.keys(g).filter(function(k){ return g[k].length>=RS_GROUP_MIN_N; }).map(function(k){
+    var arr=g[k];
+    return {ind:k, med:_rsMedian(arr.map(function(x){return x.rs;})), n:arr.length,
+            hot:arr.filter(function(x){return x.rs>=80;}).length,
+            codes:arr.map(function(x){return x.code;})};
+  }).sort(function(a,b){ return b.med-a.med || b.hot-a.hot; });
+
+  // 5) 領頭羊清單
+  var top = L.slice().sort(function(a,b){ return b.rs-a.rs || b.score-a.score; }).slice(0,40);
+
+  return {mk:mk, td:td, tiers:tiers, rsToday:rsToday, noRs:noRs, todayN:todays.length,
+          groups:groups, top:top, inToday:inToday};
+}
+
+function _rsDateLabel(){
+  var d = RS_DATA && RS_DATA.date;
+  if(!d || d.length!==8) return {txt:'--', old:false, days:null};
+  var dt = new Date(+d.slice(0,4), +d.slice(4,6)-1, +d.slice(6,8));
+  var days = Math.floor((Date.now()-dt.getTime())/86400000);
+  return {txt:d.slice(0,4)+'/'+d.slice(4,6)+'/'+d.slice(6,8), old:days>8, days:days};
+}
+
+function _rsPct(v){ return v===null||v===undefined?'--':((v>0?'+':'')+v.toFixed(2)+'%'); }
+function _rsPctCls(v){ return v===null||v===undefined?'':(v>0?'color:#f85149':v<0?'color:#3fb950':''); }
+
+function _renderRsBoardHtml(b){
+  var card='background:var(--bg-panel);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:12px;';
+  var h2='font-size:15px;font-weight:700;color:var(--text-primary);margin:0 0 8px;';
+  var dim='font-size:12px;color:var(--text-dim);line-height:1.6;';
+  var dl = _rsDateLabel();
+  var html = '<div style="'+dim+'margin:0 2px 10px;">RS 資料日期 <b style="color:var(--text-secondary)">'+dl.txt+'</b>・全市場 '+RS_DATA.list.length+' 檔'
+    +(dl.old?'<br><span style="color:#d29922">⚠️ RS 資料已 '+dl.days+' 天未更新，記得匯出新的「RS加權分數-日期.csv」</span>':'')+'</div>';
+
+  // 市場溫度
+  function sigBox(sig){
+    if(!sig) return '';
+    var col = sig.lv==='red'?'#f85149':sig.lv==='yellow'?'#d29922':'#3fb950';
+    return '<div style="border-left:3px solid '+col+';background:'+col+'18;padding:7px 10px;border-radius:6px;font-size:13.5px;font-weight:600;color:var(--text-primary);margin-top:8px;">'+sig.txt+'</div>';
+  }
+  function row(lbl, v, extra){ return '<div style="display:flex;justify-content:space-between;font-size:13.5px;padding:3px 0;"><span style="color:var(--text-secondary)">'+lbl+'</span><span style="font-weight:600;'+(extra||'')+'">'+v+'</span></div>'; }
+  var mk=b.mk, td=b.td;
+  html += '<div style="'+card+'"><div style="'+h2+'">🌡️ 市場溫度（領頭羊警報器）</div>'
+    +'<div style="'+dim+'">領頭羊 = RS ≥ '+RS_LEADER_MIN+' 的股票。大盤在漲、領頭羊卻集體重挫，是該提高警覺的訊號。</div>';
+  if(td.n>=5){
+    html += '<div style="font-size:13px;font-weight:700;color:var(--text-primary);margin-top:10px;">今天（選股檔中的 '+td.n+' 檔領頭羊）</div>'
+      + row('平均漲跌', _rsPct(td.avg), _rsPctCls(td.avg))
+      + row('上漲比例', td.up===null?'--':Math.round(td.up*100)+'%')
+      + sigBox(td.sig);
+  }
+  html += '<div style="font-size:13px;font-weight:700;color:var(--text-primary);margin-top:10px;">RS 資料日（全市場 '+mk.n+' 檔領頭羊）</div>'
+    + row('領頭羊平均漲跌', _rsPct(mk.leadAvg), _rsPctCls(mk.leadAvg))
+    + row('全市場平均漲跌', _rsPct(mk.mktAvg), _rsPctCls(mk.mktAvg))
+    + row('領頭羊上漲比例', mk.leadUp===null?'--':Math.round(mk.leadUp*100)+'%')
+    + sigBox(mk.sig)
+    + '</div>';
+
+  // 今日選股檔溫度
+  var tot = b.rsToday.length;
+  var med = _rsMedian(b.rsToday);
+  html += '<div style="'+card+'"><div style="'+h2+'">📋 今日選股檔溫度</div>';
+  if(!tot){
+    html += '<div style="'+dim+'">尚未載入選股檔，或選股檔的股票都不在 RS 資料裡。</div>';
+  } else {
+    var mt=_rsTemp(Math.round(med));
+    html += '<div style="font-size:13.5px;color:var(--text-secondary);margin-bottom:8px;">'+tot+' 檔的 RS 中位數 <b style="font-size:20px;color:'+mt.c+'">'+Math.round(med)+'</b> <span style="color:'+mt.c+'">（'+mt.lbl+'）</span></div>'
+      +'<div style="display:flex;height:14px;border-radius:7px;overflow:hidden;margin-bottom:6px;">';
+    b.tiers.forEach(function(t){ if(!t.n) return; html+='<div title="'+t.k+'" style="width:'+(t.n/tot*100)+'%;background:'+_rsTemp(t.min).c+'"></div>'; });
+    html += '</div><div style="display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;">';
+    b.tiers.forEach(function(t){
+      var tt=_rsTemp(t.min);
+      html += '<span class="rs-tier" data-min="'+t.min+'" style="cursor:pointer;color:var(--text-secondary)"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+tt.c+';margin-right:4px"></span>'
+        +t.k+(t.min>1?' ≥'+t.min:' <40')+' <b style="color:var(--text-primary)">'+t.n+'</b></span>';
+    });
+    html += '</div><div style="'+dim+'margin-top:6px;">點分級可以只看那一級的股票'+(b.noRs?'・'+b.noRs+' 檔沒有 RS 資料（例如新上市）':'')+'</div>';
+  }
+  html += '</div>';
+
+  // 族群溫度
+  function grpRow(gp){
+    var t=_rsTemp(Math.round(gp.med));
+    return '<div class="rs-grp" data-ind="'+_rsEsc(gp.ind)+'" style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);cursor:pointer;">'
+      +'<span style="flex:0 0 34px;text-align:right;font-weight:700;font-size:16px;color:'+t.c+'">'+Math.round(gp.med)+'</span>'
+      +'<span style="flex:1;min-width:0;">'
+        +'<span style="font-size:14px;color:var(--text-primary)">'+_rsEsc(gp.ind)+'</span>'
+        +'<span style="font-size:11.5px;color:var(--text-dim);margin-left:6px">'+gp.n+' 檔・熱 '+gp.hot+'</span>'
+        +'<span style="display:block;height:4px;border-radius:2px;background:var(--bg-panel-alt);margin-top:3px;"><span style="display:block;height:4px;border-radius:2px;width:'+gp.med+'%;background:'+t.c+'"></span></span>'
+      +'</span></div>';
+  }
+  var hotG = b.groups.slice(0,15), coldG = b.groups.slice(-8).reverse();
+  html += '<div style="'+card+'"><div style="'+h2+'">🔥 最熱族群（細產業 RS 中位數）</div>'
+    +'<div style="'+dim+'">至少 '+RS_GROUP_MIN_N+' 檔的細產業才列入。點族群可以篩出今日選股檔中屬於該族群的股票。</div>';
+  hotG.forEach(function(gp){ html+=grpRow(gp); });
+  html += '</div><div style="'+card+'"><div style="'+h2+'">❄️ 最冷族群</div>';
+  coldG.forEach(function(gp){ html+=grpRow(gp); });
+  html += '</div>';
+
+  // 領頭羊清單
+  html += '<div style="'+card+'"><div style="'+h2+'">🏆 RS 領頭羊 Top 40</div>'
+    +'<div style="'+dim+'">★ = 今天的選股檔裡也有這檔，點一下跳到卡片。漲跌為 RS 資料日當天。</div>';
+  b.top.forEach(function(x){
+    var t=_rsTemp(x.rs), inT=!!b.inToday[x.code];
+    html += '<div class="rs-top" data-code="'+_rsEsc(x.code)+'" style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);cursor:pointer;">'
+      +'<span style="flex:0 0 30px;font-weight:700;font-size:16px;color:'+t.c+'">'+x.rs+'</span>'
+      +'<span style="flex:0 0 auto;font-size:14px;font-weight:600;color:var(--text-primary)">'+_rsEsc(x.code)+' '+_rsEsc(x.name)+(inT?' <span style="color:#d29922">★</span>':'')+'</span>'
+      +'<span style="flex:1;min-width:0;font-size:12px;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_rsEsc(x.ind)+'</span>'
+      +'<span style="flex:0 0 auto;font-size:13px;'+_rsPctCls(x.chg)+'">'+_rsPct(x.chg)+'</span></div>';
+  });
+  html += '</div>';
+
+  html += '<div style="'+dim+'padding:0 2px 20px;">RS 分數 = 2×近一季漲幅倍數 + 前三季各一季倍數，全市場排名換算成 1～99。'
+    +'90↑ 極熱、80↑ 熱、60↑ 溫、40↑ 平、40↓ 冷。卡片上「RS溫度」旁的小字是原本 XQ 的 RS%。</div>';
+  return html;
+}
+
+function openRsBoard(){
+  ['settings-modal'].forEach(function(id){ var el=document.getElementById(id); if(el) el.style.display='none'; });
+  var modal = document.getElementById('rs-board-modal');
+  var body = document.getElementById('rs-board-body');
+  modal.style.display = 'flex';
+  modal.style.zIndex = '100000';
+  if(!RS_DATA){
+    body.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:40px 0;"><span class="retry-spin"></span> 讀取 RS 資料中...</div>';
+    loadRsData(true).then(function(){
+      if(modal.style.display==='none') return;
+      if(!RS_DATA){
+        body.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:40px 16px;line-height:1.7;">讀不到 RS 資料：'+_rsEsc(window._rsErr||'')
+          +'<br><span style="font-size:12.5px;color:var(--text-dim)">請確認雲端「選股平台」資料夾有「RS加權分數-日期.csv」，且選股檔案GAS已更新部署</span>'
+          +'<br><button class="retry-btn" style="margin-top:12px" onclick="openRsBoard()">🔄 重試</button></div>';
+        return;
+      }
+      _fillRsBoard();
+    });
+    return;
+  }
+  _fillRsBoard();
+}
+function _fillRsBoard(){
+  var body = document.getElementById('rs-board-body');
+  var modal = document.getElementById('rs-board-modal');
+  try{
+    var b = _computeRsBoard();
+    body.innerHTML = _renderRsBoardHtml(b);
+  }catch(e){
+    body.innerHTML = '<div style="text-align:center;color:#f85149;padding:40px 0;">RS 溫度計發生錯誤：'+_rsEsc(e.message)+'</div>';
+    console.error(e); return;
+  }
+  body.scrollTop = 0;
+  var todays = (typeof D_RAW!=='undefined' && D_RAW) ? D_RAW : [];
+  function todayCodesWhere(fn){ return todays.filter(fn).map(function(s){return s.code;}); }
+  body.querySelectorAll('.rs-top').forEach(function(el){
+    el.addEventListener('click', function(){
+      var code = el.getAttribute('data-code');
+      if(!todays.some(function(s){return s.code===code;})){ toast('ℹ️ '+code+' 不在今天的選股檔裡'); return; }
+      modal.style.display='none';
+      jumpToCardWithFilter(code, null, null);
+    });
+  });
+  body.querySelectorAll('.rs-grp').forEach(function(el){
+    el.addEventListener('click', function(){
+      var ind = el.getAttribute('data-ind');
+      var set = {}; RS_DATA.list.forEach(function(x){ if(x.ind===ind) set[x.code]=1; });
+      var codes = todayCodesWhere(function(s){ return set[s.code]; });
+      if(!codes.length){ toast('ℹ️ 今天的選股檔裡沒有「'+ind+'」的股票'); return; }
+      modal.style.display='none';
+      jumpToCardWithFilter(codes[0], codes, '🌡️'+ind);
+    });
+  });
+  body.querySelectorAll('.rs-tier').forEach(function(el){
+    el.addEventListener('click', function(){
+      var mn = +el.getAttribute('data-min');
+      var mx = mn>=90?100:mn>=80?90:mn>=60?80:mn>=40?60:40;
+      var codes = todayCodesWhere(function(s){ var r=RS_DATA.map[s.code]; return r!==undefined && r>=mn && r<mx; });
+      if(!codes.length){ toast('ℹ️ 這一級沒有股票'); return; }
+      modal.style.display='none';
+      jumpToCardWithFilter(codes[0], codes, '🌡️RS '+(mn>1?mn+'~'+(mx-1):'<40'));
+    });
+  });
+}
+function closeRsBoard(){ document.getElementById('rs-board-modal').style.display='none'; }
+
 
 function openTodayHighlight(){
   try{
