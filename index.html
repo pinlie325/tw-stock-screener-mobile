@@ -4957,6 +4957,14 @@ function _computeDahuRotationGroups(){
 // 個股列表的單列/表頭樣板，列表模式(四區都顯示)、族群檢視新版(點卡片顯示單一象限)共用，避免兩邊各刻一份樣式跑掉
 // 卡片式雙行列樣板：字級跟卡片本體看齊（代碼/商品/現價都比照卡片放大），
 // 一行塞不下這麼多欄位所以拆兩行，上排是代碼+商品+漲跌%，下排是股價/昨收+大戶買賣比/差比徽章
+// 大戶籌碼／營收成長清單每一列的 RS 溫度色塊（只有管理者有 RS 資料，會員不顯示）
+function _rsBadgeHtml(code){
+  if(!RS_DATA) return '';
+  var r = RS_DATA.map[code];
+  if(r===undefined) return '';
+  var t = _rsTemp(r);
+  return '<span style="font-size:12px;font-weight:700;flex-shrink:0;padding:3px 7px;border-radius:5px;background:'+t.bg+';color:'+t.c+';">RS '+r+'</span>';
+}
 function _dahuStockRowHtml(s, showQuadBadge){
   var bc = _dahuValColor(s.dahubuy, 'buy');
   var cc = _dahuValColor(s.dahuchai, 'chai');
@@ -4986,6 +4994,7 @@ function _dahuStockRowHtml(s, showQuadBadge){
       +'<span style="font-size:12px;color:var(--text-dim);flex-shrink:0;">昨收 '+prevCloseStr+'</span>'
       +'<span style="font-size:12px;font-weight:700;flex-shrink:0;color:'+pctColor+';">'+pctStr+'</span>'
       +'<span style="flex:1;"></span>'
+      +_rsBadgeHtml(s.code)
       +((s.dahubuy===null||s.dahubuy===undefined) && s.dahuLv ? '<span style="font-size:12px;font-weight:700;flex-shrink:0;padding:3px 7px;border-radius:5px;background:#d2992222;color:#d29922;">大戶強度 '+_dahuLvStars(s.dahuLv)+'</span>' : '')
       +((s.dahubuy===null||s.dahubuy===undefined) ? '' : '<span style="font-size:12px;font-weight:700;flex-shrink:0;padding:3px 7px;border-radius:5px;background:'+bc.bg+';color:'+bc.fg+';">買賣比 '+(s.dahubuy!==null&&s.dahubuy!==undefined?s.dahubuy.toFixed(0):'--')+'</span>'
       +'<span style="font-size:12px;font-weight:700;flex-shrink:0;padding:3px 7px;border-radius:5px;background:'+cc.bg+';color:'+cc.fg+';">差比 '+(s.dahuchai!==null&&s.dahuchai!==undefined?((s.dahuchai>0?'+':'')+s.dahuchai.toFixed(0)):'--')+'</span>')
@@ -6018,6 +6027,10 @@ function loadRsData(force){
       _buildRsData(d);
       window._rsErr = null;
       _applyRsToCards();
+      try{
+        var dm=document.getElementById('dahu-rotation-modal'); if(dm && dm.style.display!=='none' && typeof _renderDahuGroupView==='function') _renderDahuGroupView();
+        var rm=document.getElementById('rev-rotation-modal'); if(rm && rm.style.display!=='none' && typeof _renderRevGroupView==='function') _renderRevGroupView();
+      }catch(re){}
       return RS_DATA;
     })
     .catch(function(e){ window._rsErr = (e&&e.message)||'讀取失敗'; console.warn('RS load failed:', e); _rsLoading=null; return null; });
@@ -6410,11 +6423,12 @@ function _revStockRowHtml(s, showQuadBadge){
       +(s.position?'<span style="font-size:12px;color:var(--text-altlight);font-weight:500;flex-shrink:1;min-width:0;max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+s.position+'</span>':'')
     +'</div>'
     +(function(){var _stg=strategyMap[s.code]||strategyMap[String(parseInt(s.code))]||[];return _stg.length?('<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">'+_stg.map(function(t){return '<span class="stag">'+t+'</span>';}).join('')+'</div>'):'';})()
-    +'<div style="display:flex;align-items:center;gap:10px;margin-top:5px;">'
+    +'<div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:5px;">'
       +'<span style="font-size:13px;color:'+priceColor+';font-weight:700;flex-shrink:0;">'+priceStr+'</span>'
       +'<span style="font-size:12px;color:var(--text-dim);flex-shrink:0;">昨收 '+prevCloseStr+'</span>'
       +'<span style="font-size:12px;font-weight:700;flex-shrink:0;color:'+pctColor+';">'+pctStr+'</span>'
       +'<span style="flex:1;"></span>'
+      +_rsBadgeHtml(s.code)
       +'<span style="font-size:12px;font-weight:700;flex-shrink:0;padding:3px 7px;border-radius:5px;background:'+rc.bg+';color:'+rc.fg+';">營收年增 '+(s.revgrowth!==null&&s.revgrowth!==undefined?((s.revgrowth>0?'+':'')+s.revgrowth.toFixed(1)+'%'):'--')+'</span>'
       +'<span style="font-size:12px;font-weight:700;flex-shrink:0;padding:3px 7px;border-radius:5px;background:'+cc.bg+';color:'+cc.fg+';">近20日 '+(s.chg20d!==null&&s.chg20d!==undefined?((s.chg20d>0?'+':'')+s.chg20d.toFixed(1)+'%'):'--')+'</span>'
       +(s.chg5d!==null&&s.chg5d!==undefined?'<span style="font-size:12px;font-weight:700;flex-shrink:0;padding:3px 7px;border-radius:5px;background:'+c5.bg+';color:'+c5.fg+';">近5日 '+((s.chg5d>0?'+':'')+s.chg5d.toFixed(1)+'%')+'</span>':'')
