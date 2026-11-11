@@ -209,6 +209,9 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:var(--bg-page)
 .cg-item{background:var(--bg-panel);border-radius:6px;padding:4px 7px;display:flex;flex-direction:column;justify-content:space-between;min-height:40px;min-width:0;overflow:hidden}
 .cg-lbl{font-size:11px;color:var(--text-secondary);text-align:left}
 .cg-val{font-size:15px;font-weight:600;color:var(--text-primary);line-height:1.2;text-align:right}
+.card-inst:empty{display:none}
+.card-inst{padding:0 0 6px;margin-bottom:4px;border-bottom:1px dashed var(--border)}
+.card-inst > div{margin-top:0 !important}
 .cg-val.up{color:#f85149}
 .cg-val.dn{color:#3fb950}
 .cg-val.warn{color:#f85149}
@@ -2396,6 +2399,8 @@ function render(){
           }).join(''):'')
         +'</div>'
       +'</div>'
+      // 三大法人買賣（V3_15_332：放在「即時」列下方、收盤價上方；RS 比卡片晚到時由 _applyRsToCards 補上）
+      +'<div class="card-inst admin-only" data-inst-code="'+s.code+'">'+_instLineHtml(s.code)+'</div>'
       +'<div class="card-price" style="margin-bottom:2px">'
         +'<span class="card-close" style="color:'+(s.volume!==null&&s.close!==null?(s.volume>s.close?'#f85149':s.volume<s.close?'#3fb950':'var(--text-primary)'):'var(--text-primary)')+'">'+(s.volume!==null?s.volume.toLocaleString():'--')+'</span>'
         +(s.news?'<span class="card-news" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0">📰 '+s.news+'</span>':'')
@@ -3002,7 +3007,8 @@ function fetchRealTimePrice(code, cardEl){
     b.className = 'realtime-bar';
     b.style.cssText = 'display:flex;align-items:center;gap:8px;padding:4px 0 6px;border-bottom:1px dashed var(--border);margin-bottom:4px;font-size:12px;color:'+(color||'var(--text-secondary)');
     b.innerHTML = '<span style="background:#1f6feb33;border:1px solid #58a6ff55;border-radius:4px;padding:1px 6px;font-size:11px;color:#58a6ff;white-space:nowrap">📡 即時</span>' + txt;
-    pr.parentNode.insertBefore(b, pr);
+    var anc = cardEl.querySelector('.card-inst') || pr;
+    anc.parentNode.insertBefore(b, anc);
   }
   // 管理者與已核准會員都顯示Fugle即時價（後端會驗證登入身分，未登入/未核准拿不到）
   _rtStatus('抓取中…');
@@ -3037,7 +3043,8 @@ function fetchRealTimePrice(code, cardEl){
         bar.innerHTML = '<span style="background:#1f6feb33;border:1px solid #58a6ff55;border-radius:4px;padding:1px 6px;font-size:11px;color:#58a6ff;white-space:nowrap">📡 即時 '+dateStr+' '+timeStr+'</span>'
           +'<span style="font-size:22px;font-weight:700;color:'+color+'">'+price+'</span>'
           +'<span style="font-size:13px;color:'+color+'">'+changeStr+'&nbsp;('+pctStr+')</span>';
-        priceRow.parentNode.insertBefore(bar, priceRow);
+        var anc2 = cardEl.querySelector('.card-inst') || priceRow;
+        anc2.parentNode.insertBefore(bar, anc2);
       }
     })
     .catch(function(e){ _rtStatus('即時報價取得失敗：'+((e&&e.message)||'連線錯誤'), '#f85149'); });
@@ -4969,18 +4976,18 @@ function _instLineHtml(code){
     var lots = x[fld];
     if(!lots) return ''; // 0張就不顯示，減少雜訊
     return '<span style="white-space:nowrap;">'+lbl+' <b style="color:'+_instCol(lots)+'">'+_instFmt(a)+'億</b>'
-      +'<span style="color:var(--text-dim);font-size:11px;"> '+(lots>0?'+':'')+lots.toLocaleString()+'張</span></span>';
+      +'<span style="color:var(--text-dim);font-size:12.5px;"> '+(lots>0?'+':'')+lots.toLocaleString()+'張</span></span>';
   }
   var parts = [seg('外資','f'), seg('投信','t'), seg('自營','d'), seg('外資5日','f5'), seg('投信5日','t5')].filter(function(s){return s;});
   if(!parts.length) return '';
-  return '<div style="display:flex;flex-wrap:wrap;gap:3px 12px;margin-top:5px;font-size:12px;color:var(--text-secondary);">🏛️ '+parts.join('')+'</div>';
+  return '<div style="display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px;font-size:14.5px;line-height:1.5;color:var(--text-secondary);">🏛️ '+parts.join('')+'</div>';
 }
 function _rsBadgeHtml(code){
   if(!RS_DATA) return '';
   var r = RS_DATA.map[code];
   if(r===undefined) return '';
   var t = _rsTemp(r);
-  return '<span style="font-size:12px;font-weight:700;flex-shrink:0;padding:3px 7px;border-radius:5px;background:'+t.bg+';color:'+t.c+';">RS '+r+'</span>';
+  return '<span style="font-size:13.5px;font-weight:700;flex-shrink:0;padding:3px 8px;border-radius:5px;background:'+t.bg+';color:'+t.c+';">RS '+r+'</span>';
 }
 function _dahuStockRowHtml(s, showQuadBadge){
   var bc = _dahuValColor(s.dahubuy, 'buy');
@@ -6076,6 +6083,9 @@ function _applyRsToCards(){
     if(!s) return;
     var tmp = document.createElement('div'); tmp.innerHTML = _rsCellHtml(s);
     el.replaceWith(tmp.firstChild);
+  });
+  document.querySelectorAll('.card-inst[data-inst-code]').forEach(function(el){
+    el.innerHTML = _instLineHtml(el.getAttribute('data-inst-code'));
   });
 }
 
