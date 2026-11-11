@@ -1368,7 +1368,7 @@ function adminRemoveUser(email){
   <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg-panel);flex-shrink:0">
     <span id="compact-title" style="font-size:16px;font-weight:700;color:var(--text-primary)">📋 個股簡列</span>
     <span style="display:flex;align-items:center;gap:8px;">
-      <button class="admin-only" onclick="copyFilteredCodes()" title="複製代碼（一行一檔，可貼到XQ自選股）" style="font-size:13px;font-weight:600;padding:6px 11px;border-radius:8px;border:1px solid var(--border);background:var(--bg-panel-alt);color:var(--text-primary);cursor:pointer;white-space:nowrap">📋 複製代碼</button>
+      <button class="admin-only" onclick="shareFilteredImage()" title="把目前清單做成一張圖片，可複製、下載或分享到LINE" style="font-size:13px;font-weight:600;padding:6px 11px;border-radius:8px;border:1px solid var(--border);background:var(--bg-panel-alt);color:var(--text-primary);cursor:pointer;white-space:nowrap">🖼️ 分享圖片</button>
       <button class="admin-only" onclick="exportFilteredCsv()" title="匯出目前篩選結果（Excel可開）" style="font-size:13px;font-weight:600;padding:6px 11px;border-radius:8px;border:1px solid #58a6ff88;background:#1f6feb22;color:#58a6ff;cursor:pointer;white-space:nowrap">⬇️ 匯出</button>
       <button onclick="document.getElementById('compact-modal').style.display='none'" style="background:none;border:none;color:var(--text-secondary);font-size:22px;cursor:pointer">✕</button>
     </span>
@@ -4531,6 +4531,155 @@ function exportFilteredCsv(){
   document.body.appendChild(a); a.click();
   setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
   toast('✅ 已匯出 '+data.length+' 檔：'+fname);
+}
+// ===== 篩選結果做成分享圖片（V3_15_336）=====
+var SHARE_IMG_MAX = 80; // 一張圖最多幾檔，太長在手機上看不清楚
+function _buildShareCanvas(data, label){
+  var S = 2, W = 720, rowH = 46, headH = 112, footH = 46;
+  var rows = data.slice(0, SHARE_IMG_MAX);
+  var more = data.length - rows.length;
+  var H = headH + rows.length*rowH + (more>0?40:0) + footH;
+  var cv = document.createElement('canvas');
+  cv.width = W*S; cv.height = H*S;
+  var c = cv.getContext('2d'); c.scale(S,S);
+  var F = '"PingFang TC","Microsoft JhengHei","Noto Sans TC",sans-serif';
+  var RED='#f85149', GRN='#3fb950', DIM='#8b949e', TXT='#e6edf3', BLUE='#58a6ff';
+  c.fillStyle='#0d1117'; c.fillRect(0,0,W,H);
+  // 標題
+  var ups = data.filter(function(s){return s.pct>0;}).length, dns = data.filter(function(s){return s.pct<0;}).length;
+  c.fillStyle=TXT; c.font='700 26px '+F; c.textBaseline='middle';
+  c.fillText(label, 24, 40);
+  var lw = c.measureText(label).width;
+  c.font='400 18px '+F; c.fillStyle=DIM; c.fillText(data.length+' 支', 24+lw+14, 42);
+  var x2 = 24+lw+14+c.measureText(data.length+' 支').width+16;
+  c.fillStyle=RED; c.fillText('▲'+ups, x2, 42); x2 += c.measureText('▲'+ups).width+12;
+  c.fillStyle=GRN; c.fillText('▼'+dns, x2, 42);
+  var d=new Date(), ds=d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate();
+  c.font='400 16px '+F; c.fillStyle=DIM; c.textAlign='right'; c.fillText(ds, W-24, 42); c.textAlign='left';
+  // 欄名
+  c.fillStyle='#161b22'; c.fillRect(0, 72, W, 36);
+  c.font='600 15px '+F; c.fillStyle=DIM;
+  c.fillText('代碼', 24, 90); c.fillText('名稱', 104, 90);
+  c.textAlign='right'; c.fillText('股價', 330, 90); c.fillText('漲跌幅', 436, 90); c.textAlign='left';
+  c.fillText('策略／產業', 462, 90);
+  // 列
+  rows.forEach(function(s, i){
+    var y = headH + i*rowH;
+    if(i%2===1){ c.fillStyle='#11161d'; c.fillRect(0,y,W,rowH); }
+    c.strokeStyle='#21262d'; c.lineWidth=1; c.beginPath(); c.moveTo(0,y+rowH-0.5); c.lineTo(W,y+rowH-0.5); c.stroke();
+    var cy = y+rowH/2, pc = s.pct>0?RED:s.pct<0?GRN:DIM;
+    c.font='700 19px '+F; c.fillStyle=BLUE; c.fillText(s.code, 24, cy);
+    c.font='500 18px '+F; c.fillStyle=TXT;
+    var nm = s.name||''; while(nm.length>1 && c.measureText(nm).width>120) nm = nm.slice(0,-1);
+    c.fillText(nm, 104, cy);
+    c.textAlign='right'; c.fillStyle=pc; c.font='600 18px '+F;
+    c.fillText(s.volume!==null&&s.volume!==undefined?String(s.volume):'--', 330, cy);
+    c.fillText(s.pct!==null&&s.pct!==undefined?((s.pct>0?'+':'')+s.pct.toFixed(2)+'%'):'--', 436, cy);
+    c.textAlign='left';
+    // 策略標籤（沒有就顯示第一個產業）
+    var stags = (typeof strategyMap!=='undefined' && (strategyMap[s.code]||strategyMap[String(parseInt(s.code))])) || [];
+    var tags = stags.length ? stags.slice(0,2) : (s.tags||[]).slice(0,2);
+    var tx = 462;
+    c.font='400 14px '+F;
+    tags.forEach(function(t){
+      var tw = c.measureText(t).width + 14;
+      if(tx+tw > W-16) return;
+      c.fillStyle='#21262d'; _rrect(c, tx, cy-12, tw, 24, 5); c.fill();
+      c.fillStyle=stags.length?'#c9d1d9':DIM; c.fillText(t, tx+7, cy+1);
+      tx += tw + 6;
+    });
+  });
+  var yEnd = headH + rows.length*rowH;
+  if(more>0){ c.font='400 15px '+F; c.fillStyle=DIM; c.textAlign='center'; c.fillText('…還有 '+more+' 檔未列出', W/2, yEnd+20); c.textAlign='left'; yEnd += 40; }
+  c.font='400 13px '+F; c.fillStyle='#484f58'; c.textAlign='right';
+  c.fillText('台股選股平台', W-24, yEnd+footH/2); c.textAlign='left';
+  return cv;
+}
+function _rrect(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
+
+// 先勾選要放進圖片的股票（預設全選），按「產生圖片」才畫圖
+function shareFilteredImage(){
+  if(!isAdminUser()){ toast('此功能僅限管理者','#da3633'); return; }
+  var data = _filteredSortedData();
+  if(!data.length){ toast('ℹ️ 沒有股票可分享'); return; }
+  var label = _filterLabel();
+  var ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:var(--bg-page);z-index:100001;display:flex;flex-direction:column;';
+  var bs = 'font-size:14px;font-weight:600;padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg-panel-alt);color:var(--text-primary);cursor:pointer;white-space:nowrap;';
+  var rows = data.map(function(s, i){
+    var pc = s.pct>0?'#f85149':s.pct<0?'#3fb950':'var(--text-secondary)';
+    var pct = s.pct!==null&&s.pct!==undefined?((s.pct>0?'+':'')+s.pct.toFixed(2)+'%'):'--';
+    return '<label style="display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--border);cursor:pointer;">'
+      +'<input type="checkbox" class="sp-chk" data-i="'+i+'" checked style="width:20px;height:20px;accent-color:#1f6feb;flex-shrink:0;">'
+      +'<span style="color:#58a6ff;font-weight:700;font-size:16px;min-width:48px">'+s.code+'</span>'
+      +'<span style="color:var(--text-primary);font-size:16px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+s.name+'</span>'
+      +'<span style="color:'+pc+';font-size:15px;min-width:56px;text-align:right">'+(s.volume!==null&&s.volume!==undefined?s.volume:'--')+'</span>'
+      +'<span style="color:'+pc+';font-size:15px;min-width:72px;text-align:right">'+pct+'</span></label>';
+  }).join('');
+  ov.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg-panel);flex-shrink:0;flex-wrap:wrap;">'
+      +'<span style="font-size:16px;font-weight:700;color:var(--text-primary)">🖼️ 勾選要分享的股票 <span id="sp-cnt" style="font-size:14px;font-weight:400;color:var(--text-secondary)"></span></span>'
+      +'<span style="display:flex;gap:6px;flex-wrap:wrap;">'
+        +'<button id="sp-all" style="'+bs+'">全選</button>'
+        +'<button id="sp-none" style="'+bs+'">全不選</button>'
+        +'<button id="sp-up" style="'+bs+'color:#f85149;">只選上漲</button>'
+        +'<button id="sp-cancel" style="'+bs+'">✕</button>'
+      +'</span></div>'
+    +'<div style="flex:1;overflow-y:auto;max-width:820px;width:100%;margin:0 auto;">'+rows+'</div>'
+    +'<div style="padding:12px 16px;border-top:1px solid var(--border);background:var(--bg-panel);flex-shrink:0;display:flex;justify-content:center;">'
+      +'<button id="sp-go" style="font-size:16px;font-weight:700;padding:12px 28px;border-radius:10px;border:none;background:#1f6feb;color:#fff;cursor:pointer;">🖼️ 產生圖片</button></div>';
+  document.body.appendChild(ov);
+  var chks = [].slice.call(ov.querySelectorAll('.sp-chk'));
+  function upd(){ var n = chks.filter(function(c){return c.checked;}).length; ov.querySelector('#sp-cnt').textContent = '已選 '+n+' / '+data.length+' 檔'; }
+  chks.forEach(function(c){ c.addEventListener('change', upd); });
+  ov.querySelector('#sp-all').onclick = function(){ chks.forEach(function(c){c.checked=true;}); upd(); };
+  ov.querySelector('#sp-none').onclick = function(){ chks.forEach(function(c){c.checked=false;}); upd(); };
+  ov.querySelector('#sp-up').onclick = function(){ chks.forEach(function(c){ c.checked = data[+c.getAttribute('data-i')].pct>0; }); upd(); };
+  ov.querySelector('#sp-cancel').onclick = function(){ ov.remove(); };
+  ov.querySelector('#sp-go').onclick = function(){
+    var picked = chks.filter(function(c){return c.checked;}).map(function(c){ return data[+c.getAttribute('data-i')]; });
+    if(!picked.length){ toast('ℹ️ 請至少勾選一檔'); return; }
+    ov.remove();
+    _showShareImage(picked, label);
+  };
+  upd();
+}
+function _showShareImage(data, label){
+  var cv = _buildShareCanvas(data, label);
+  var d=new Date(), ymd=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
+  var fname = '選股_'+label+'_'+ymd+'.png';
+  cv.toBlob(function(blob){
+    if(!blob){ toast('❌ 圖片產生失敗','#da3633'); return; }
+    var url = URL.createObjectURL(blob);
+    var ov = document.createElement('div');
+    ov.id = 'share-img-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;background:#000c;z-index:100001;display:flex;flex-direction:column;align-items:center;padding:14px;box-sizing:border-box;gap:12px;';
+    var canShare = !!(navigator.canShare && window.File && navigator.canShare({files:[new File([blob], fname, {type:'image/png'})]}));
+    var canCopy = !!(navigator.clipboard && window.ClipboardItem);
+    var bs = 'font-size:15px;font-weight:700;padding:10px 16px;border-radius:10px;border:none;cursor:pointer;';
+    ov.innerHTML = '<div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;flex-shrink:0;">'
+      + (canCopy ? '<button id="si-copy" style="'+bs+'background:#238636;color:#fff;">📋 複製圖片</button>' : '')
+      + (canShare ? '<button id="si-share" style="'+bs+'background:#1f6feb;color:#fff;">📤 分享</button>' : '')
+      + '<button id="si-dl" style="'+bs+'background:#30363d;color:#e6edf3;">⬇️ 下載</button>'
+      + '<button id="si-close" style="'+bs+'background:#30363d;color:#e6edf3;">✕ 關閉</button></div>'
+      + '<div style="flex:1;overflow:auto;width:100%;display:flex;justify-content:center;"><img src="'+url+'" style="width:100%;max-width:720px;height:auto;border-radius:8px;align-self:flex-start;"></div>';
+    document.body.appendChild(ov);
+    function close(){ ov.remove(); URL.revokeObjectURL(url); }
+    ov.querySelector('#si-close').onclick = close;
+    ov.querySelector('#si-dl').onclick = function(){
+      var a=document.createElement('a'); a.href=url; a.download=fname; document.body.appendChild(a); a.click(); a.remove();
+      toast('✅ 已下載：'+fname);
+    };
+    var cp = ov.querySelector('#si-copy');
+    if(cp) cp.onclick = function(){
+      navigator.clipboard.write([new ClipboardItem({'image/png': blob})])
+        .then(function(){ toast('✅ 已複製圖片，可直接貼到LINE'); })
+        .catch(function(e){ toast('❌ 複製失敗，請改用下載','#da3633'); });
+    };
+    var sh = ov.querySelector('#si-share');
+    if(sh) sh.onclick = function(){
+      navigator.share({files:[new File([blob], fname, {type:'image/png'})], title: label}).catch(function(){});
+    };
+  }, 'image/png');
 }
 function showCompactList(){
   var data = getFilt().slice();
