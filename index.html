@@ -1368,8 +1368,8 @@ function adminRemoveUser(email){
   <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg-panel);flex-shrink:0">
     <span id="compact-title" style="font-size:16px;font-weight:700;color:var(--text-primary)">📋 個股簡列</span>
     <span style="display:flex;align-items:center;gap:8px;">
-      <button onclick="copyFilteredCodes()" title="複製代碼（一行一檔，可貼到XQ自選股）" style="font-size:13px;font-weight:600;padding:6px 11px;border-radius:8px;border:1px solid var(--border);background:var(--bg-panel-alt);color:var(--text-primary);cursor:pointer;white-space:nowrap">📋 複製代碼</button>
-      <button onclick="exportFilteredCsv()" title="匯出目前篩選結果（Excel可開）" style="font-size:13px;font-weight:600;padding:6px 11px;border-radius:8px;border:1px solid #58a6ff88;background:#1f6feb22;color:#58a6ff;cursor:pointer;white-space:nowrap">⬇️ 匯出</button>
+      <button class="admin-only" onclick="copyFilteredCodes()" title="複製代碼（一行一檔，可貼到XQ自選股）" style="font-size:13px;font-weight:600;padding:6px 11px;border-radius:8px;border:1px solid var(--border);background:var(--bg-panel-alt);color:var(--text-primary);cursor:pointer;white-space:nowrap">📋 複製代碼</button>
+      <button class="admin-only" onclick="exportFilteredCsv()" title="匯出目前篩選結果（Excel可開）" style="font-size:13px;font-weight:600;padding:6px 11px;border-radius:8px;border:1px solid #58a6ff88;background:#1f6feb22;color:#58a6ff;cursor:pointer;white-space:nowrap">⬇️ 匯出</button>
       <button onclick="document.getElementById('compact-modal').style.display='none'" style="background:none;border:none;color:var(--text-secondary);font-size:22px;cursor:pointer">✕</button>
     </span>
   </div>
@@ -4490,6 +4490,7 @@ function _filterLabel(){
   return (m||'全部').replace(/[\\/:*?"<>|]/g,'_');
 }
 function copyFilteredCodes(){
+  if(!isAdminUser()){ toast('此功能僅限管理者','#da3633'); return; }
   var data = _filteredSortedData();
   if(!data.length){ toast('ℹ️ 沒有股票可複製'); return; }
   var txt = data.map(function(s){ return s.code; }).join('\n');
@@ -4503,6 +4504,7 @@ function _copyFallbackText(txt){
   document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); }catch(e){} ta.remove();
 }
 function exportFilteredCsv(){
+  if(!isAdminUser()){ toast('此功能僅限管理者','#da3633'); return; }
   var data = _filteredSortedData();
   if(!data.length){ toast('ℹ️ 沒有股票可匯出'); return; }
   var admin = isAdminUser() && RS_DATA;
