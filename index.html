@@ -6291,8 +6291,8 @@ function _rsCellHtml(s){
   var r = RS_DATA ? RS_DATA.map[s.code] : null;
   var t = _rsTemp(r);
   return '<div class="cg-item admin-only cg-rs" data-rs-code="'+_rsEsc(s.code)+'"><div class="cg-lbl">RS溫度</div>'
-    +'<div class="cg-val" style="color:'+t.c+'">'+(r!==null&&r!==undefined?r:'--')
-    +(s.rs!==null&&s.rs!==undefined?'<span style="font-size:10px;font-weight:400;color:var(--text-dim);margin-left:4px">'+s.rs.toFixed(1)+'%</span>':'')
+    +'<div class="cg-val" style="color:'+t.c+';white-space:nowrap;">'+(r!==null&&r!==undefined?r:'--')
+    +(s.rs!==null&&s.rs!==undefined?'<span style="font-size:10px;font-weight:400;color:var(--text-dim);margin-left:3px;white-space:nowrap;">'+s.rs.toFixed(1)+'%</span>':'')
     +'</div></div>';
 }
 // RS 比卡片晚載入時，直接更新畫面上的格子，不用整頁重畫
