@@ -2905,29 +2905,27 @@ function drawKChart(canvas, data){
     }
   }
   if(lastCandle){
+    // V3_15_341：最後一根K棒的高點（紅虛線）＋低點（綠虛線），數字標在左側
     ctx.save();
-    ctx.fillStyle=colDown; ctx.font='bold 16px sans-serif'; ctx.textAlign='right';
-    var txt = lastCandle.h.toFixed(lastCandle.h<10?2:1);
-    var tw = ctx.measureText(txt).width;
+    ctx.font='bold 16px sans-serif';
     var candleX = px(n-1);
-    var candleHiY = py(lastCandle.h);
-    // 數字位置：K棒左側，往左移足夠距離
-    var lx = candleX - barW/2 - 8;
-    var ly = Math.max(PAD.t+18, candleHiY - 4);
-    // 數字位置：左側，虛線上方
-    var lx = PAD.l + 4;
-    var ly = candleHiY - 6;
-    // 半透明背景（依主題切換深/淺）
-    ctx.fillStyle= isLightTheme ? 'rgba(238,240,243,0.92)' : 'rgba(13,17,23,0.85)';
-    ctx.fillRect(lx-4, ly-14, tw+8, 18);
-    // 水平虛線（依主題切換）
-    ctx.strokeStyle= isLightTheme ? 'rgba(31,35,40,0.55)' : 'rgba(255,255,255,0.6)'; ctx.lineWidth=1.5;
-    ctx.setLineDash([4,3]);
-    ctx.beginPath(); ctx.moveTo(PAD.l, candleHiY); ctx.lineTo(candleX, candleHiY); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.textAlign='left';
-    ctx.fillStyle=colDown;
-    ctx.fillText(txt, lx, ly);
+    var lblBg = isLightTheme ? 'rgba(238,240,243,0.92)' : 'rgba(13,17,23,0.85)';
+    function refLine(val, color, labelAbove){
+      var y = py(val);
+      var txt = val.toFixed(val<10?2:1);
+      var tw = ctx.measureText(txt).width;
+      ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.85;
+      ctx.setLineDash([4,3]);
+      ctx.beginPath(); ctx.moveTo(PAD.l, y); ctx.lineTo(candleX, y); ctx.stroke();
+      ctx.setLineDash([]); ctx.globalAlpha = 1;
+      var lx = PAD.l + 4;
+      var ly = labelAbove ? y - 6 : y + 19;   // 高點數字在線上方、低點數字在線下方，兩個不會疊在一起
+      ctx.fillStyle = lblBg; ctx.fillRect(lx-4, ly-14, tw+8, 18);
+      ctx.fillStyle = color; ctx.textAlign = 'left';
+      ctx.fillText(txt, lx, ly);
+    }
+    refLine(lastCandle.h, '#f85149', true);
+    refLine(lastCandle.l, '#3fb950', false);
     ctx.restore();
   }
   // K棒（上漲紅色，下跌用colDown：深色模式白色／淺色模式深色，確保跟底色一定有對比）
