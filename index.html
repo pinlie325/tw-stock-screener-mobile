@@ -2868,7 +2868,7 @@ function calcMA(data, n){
   });
 }
 
-var CHART_H=280;
+var CHART_H=350; // 原本280，加了下方KD指標區(約70px)
 var kBars=60; // 預設顯示60根K棒
 var kOffset=0; // 往左偏移的K棒數（0=最新）
 function drawKChart(canvas, data){
@@ -2899,8 +2899,22 @@ function drawKChart(canvas, data){
   var ma13Show = ma13Full.slice(start, end);
   var ma60Show = ma60Full.slice(start, end);
   var PAD = {t:22, b:18, l:60, r:8};
-  var volH = Math.floor((H-PAD.t-PAD.b)*0.20);
-  var kH = H-PAD.t-PAD.b-volH-6;
+  var KD_H = 62, KD_GAP = 8; // 成交量下方的KD指標區
+  var volH = Math.floor((H-PAD.t-PAD.b-KD_H-KD_GAP)*0.20);
+  var kH = H-PAD.t-PAD.b-volH-6-KD_H-KD_GAP;
+  // KD(9,3,3)：先用完整資料算，再截出畫面範圍，確保左邊第一根就有值
+  var kdKFull = [], kdDFull = [];
+  (function(){
+    var pk = 50, pd = 50;
+    for(var i=0;i<data.length;i++){
+      var hh=-Infinity, ll=Infinity;
+      for(var j=Math.max(0,i-8);j<=i;j++){ if(data[j].h>hh) hh=data[j].h; if(data[j].l<ll) ll=data[j].l; }
+      var rsv = hh>ll ? (data[i].c-ll)/(hh-ll)*100 : 50;
+      pk = pk*2/3 + rsv/3; pd = pd*2/3 + pk/3;
+      kdKFull.push(pk); kdDFull.push(pd);
+    }
+  })();
+  var kdK = kdKFull.slice(start, end), kdD = kdDFull.slice(start, end);
   var hi = Math.max.apply(null, show.map(function(d){return d.h;}));
   var lo = Math.min.apply(null, show.map(function(d){return d.l;}));
   var pad = (hi-lo)*0.06||hi*0.02; hi+=pad; lo-=pad;
@@ -2971,6 +2985,32 @@ function drawKChart(canvas, data){
     ctx.fillStyle=isUp?'rgba(248,81,73,0.55)':'rgba(63,185,80,0.55)';
     ctx.fillRect(x-barW/2, vTop+volH-2-vh, barW, vh);
   });
+  // KD 指標區（成交量下方）
+  var kdTop = vTop+volH+KD_GAP;
+  function kdY(v){ return kdTop + (100-v)/100*KD_H; }
+  ctx.save();
+  ctx.font='9px sans-serif'; ctx.textAlign='right';
+  [20,50,80].forEach(function(v){
+    ctx.strokeStyle = v===50 ? colGrid : (v===80 ? 'rgba(248,81,73,0.45)' : 'rgba(63,185,80,0.45)');
+    ctx.lineWidth=1; ctx.setLineDash(v===50?[]:[3,3]);
+    ctx.beginPath(); ctx.moveTo(PAD.l,kdY(v)); ctx.lineTo(W-PAD.r,kdY(v)); ctx.stroke();
+    ctx.setLineDash([]);
+    if(v!==50){ ctx.fillStyle=colTextDim; ctx.fillText(String(v), PAD.l-3, kdY(v)+3); }
+  });
+  ctx.fillStyle=colTextDim; ctx.textAlign='right'; ctx.fillText('KD', PAD.l-3, kdY(50)+3);
+  [[kdK,'#58a6ff'],[kdD,'#d29922']].forEach(function(s){
+    ctx.strokeStyle=s[1]; ctx.lineWidth=1.4; ctx.beginPath();
+    s[0].forEach(function(v,i){ i? ctx.lineTo(px(i),kdY(v)) : ctx.moveTo(px(i),kdY(v)); });
+    ctx.stroke();
+  });
+  // 黃金交叉／死亡交叉：在交叉那根K棒的位置點一個小圓點
+  for(var ci=1; ci<kdK.length; ci++){
+    var gold = kdK[ci]>kdD[ci] && kdK[ci-1]<=kdD[ci-1], dead = kdK[ci]<kdD[ci] && kdK[ci-1]>=kdD[ci-1];
+    if(!gold && !dead) continue;
+    ctx.fillStyle = gold ? '#f85149' : '#3fb950';
+    ctx.beginPath(); ctx.arc(px(ci), kdY(kdK[ci]), 2.6, 0, Math.PI*2); ctx.fill();
+  }
+  ctx.restore();
   // MA線
   var mas = [[ma13Show,'#00bcd4','MA'+maShortN],[ma60Show,'#f0c040','MA60']];
   mas.forEach(function(m){
@@ -2988,6 +3028,15 @@ function drawKChart(canvas, data){
     if(!last) return '';
     return '<span style="color:'+m[1]+';white-space:nowrap;">'+m[2]+' '+last.toFixed(last<10?2:1)+'</span>';
   }).join('');
+  if(kdK.length){
+    var kl = kdK.length-1, kdNote = '';
+    for(var cj=kl; cj>=Math.max(1,kl-2); cj--){
+      if(kdK[cj]>kdD[cj] && kdK[cj-1]<=kdD[cj-1]){ kdNote = '<span style="color:#f85149">黃金交叉</span>'; break; }
+      if(kdK[cj]<kdD[cj] && kdK[cj-1]>=kdD[cj-1]){ kdNote = '<span style="color:#3fb950">死亡交叉</span>'; break; }
+    }
+    if(!kdNote){ if(kdK[kl]>=80) kdNote = '<span style="color:#f85149">高檔</span>'; else if(kdK[kl]<=20) kdNote = '<span style="color:#3fb950">低檔</span>'; }
+    maLegendHtml += '<span style="white-space:nowrap;"><span style="color:#58a6ff">K '+kdK[kl].toFixed(0)+'</span> <span style="color:#d29922">D '+kdD[kl].toFixed(0)+'</span>'+(kdNote?' '+kdNote:'')+'</span>';
+  }
   var wTxt = '', wCol = 'var(--text-secondary)';
   // 看法：週線看「收盤 vs 20週線」＋20週線方向(比4週前)＝長線；日線看「收盤 vs MA13」＋MA13方向(比3天前)＝短線
   {
