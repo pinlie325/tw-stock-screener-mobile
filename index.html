@@ -1047,7 +1047,7 @@ function adminRemoveUser(email){
       <button class="settings-menu-item" onclick="showAddToHome()">📲 加入主畫面（iOS）</button>
       <button class="settings-menu-item" onclick="openExcludeManager()">🚫 排除股票清單</button>
       <button class="settings-menu-item" onclick="document.getElementById('settings-modal').style.display='none';openCompareModal()">⇄ 個股對照</button>
-      <button class="settings-menu-item" onclick="openMacroBoard()">🌍 市場參考看板<span style="display:block;font-size:10.5px;color:var(--text-secondary);margin-top:2px;">（原油／美元／VIX／美債）</span></button>
+      <button class="settings-menu-item" onclick="openMacroBoard()">🌍 市場參考看板<span style="display:block;font-size:10.5px;color:var(--text-secondary);margin-top:2px;">（原油／美元／台幣／VIX／美債）</span></button>
       <button class="settings-menu-item" onclick="openEconCalendar()">🗓 財經行事曆</button>
       <button class="settings-menu-item admin-only" onclick="openMarginReport()">🏭 各族群融資維持率報表</button>
       <button class="settings-menu-item" onclick="openDisposalReport()">🚨 處置股名單</button>
@@ -1165,7 +1165,7 @@ function adminRemoveUser(email){
   <div style="flex:1;overflow-y:auto;padding:14px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
       <span id="macro-board-updated" style="font-size:11px;color:var(--text-dim);">尚未更新</span>
-      <button id="macro-board-refresh-btn" onclick="fetchMacroBoard()" style="background:#1f6feb22;border:1px solid #58a6ff77;border-radius:14px;color:#58a6ff;font-size:12px;padding:5px 12px;cursor:pointer;">🔄 重新整理</button>
+      <button id="macro-board-refresh-btn" onclick="fetchMacroBoard(true)" style="background:#1f6feb22;border:1px solid #58a6ff77;border-radius:14px;color:#58a6ff;font-size:12px;padding:5px 12px;cursor:pointer;">🔄 重新整理</button>
     </div>
     <div id="macro-board-grid" style="display:grid;grid-template-columns:1fr;gap:10px;"></div>
     <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin-top:14px;">資料來源：Yahoo Finance，僅供參考，可能有延遲，實際交易請以正式報價為準。</p>
@@ -6917,6 +6917,8 @@ var MACRO_LABELS = {
     desc:'全球原油價格指標，反映能源成本與通膨壓力。油價大漲通常代表需求強或供給緊張，可能推升通膨、影響央行升息態度；對航空、塑化、運輸等產業成本衝擊大，對能源／原物料類股偏多。'},
   dxy:   {name:'美元指數',   unit:'',    url:'https://finance.yahoo.com/quote/DX-Y.NYB',
     desc:'衡量美元對一籃子主要貨幣（歐元、日圓等）的強弱。美元轉強，資金傾向回流美元資產，新興市場（含台股）與原物料容易承壓；美元轉弱則相對有利新興市場資金行情。'},
+  twd:   {name:'台幣匯率（美元兌台幣）', unit:'', dec:3, url:'https://finance.yahoo.com/quote/TWD%3DX',
+    desc:'數字是「1 美元可以換多少台幣」，<b style="color:#f85149">往上＝台幣貶值</b>、<b style="color:#3fb950">往下＝台幣升值</b>。台幣升值常伴隨外資匯入買台股；台幣快速貶值則常見外資匯出、台股資金面承壓。匯率也影響出口商的匯兌損益：台幣升值對出口商不利，貶值則有利。'},
   vix:   {name:'VIX恐慌指數', unit:'',    url:'https://invest.cnyes.com/futures/GF/VIX',
     desc:'反映美股(S&P500)未來30天的預期波動率，數字越高代表市場越不安、避險需求越高。一般20以下算平穩，30以上常伴隨股市大幅拉回或恐慌性賣壓，可當市場情緒的溫度計。'},
   us10y: {name:'美10年期公債殖利率', unit:'%', url:'https://finance.yahoo.com/quote/%5ETNX',
@@ -6960,13 +6962,15 @@ function openMacroBoard(){
         +'<div id="macro-val-'+k+'" style="font-size:19px;font-weight:700;color:var(--text-primary);">--</div>'
         +'<div id="macro-chg-'+k+'" style="font-size:12px;margin-top:2px;">--</div>'
         +'</div>'
+        +(MACRO_CHART_KEYS.indexOf(k)>=0 ? _macroChartBlockHtml(k) : '')
         +'<div style="font-size:14px;color:var(--text-primary);line-height:1.85;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">'+MACRO_LABELS[k].desc+'</div>'
       +'</div>';
     }).join('');
   }
   fetchMacroBoard();
 }
-function fetchMacroBoard(){
+function fetchMacroBoard(force){
+  _fetchMacroCharts(force===true);
   var btn = document.getElementById('macro-board-refresh-btn');
   if(btn){ btn.disabled = true; btn.textContent = '抓取中...'; }
   fetch(NOTE_GAS_URL + '?action=macro')
@@ -6983,7 +6987,7 @@ function fetchMacroBoard(){
           return;
         }
         var unit = MACRO_LABELS[k].unit;
-        valEl.textContent = (unit==='US$'?'US$ ':'') + Number(item.price).toFixed(2) + (unit==='%'?'%':'');
+        valEl.textContent = (unit==='US$'?'US$ ':'') + Number(item.price).toFixed(MACRO_LABELS[k].dec||2) + (unit==='%'?'%':'');
         if(item.changePercent!==null && item.changePercent!==undefined){
           var cp = Number(item.changePercent);
           // 台股慣例：漲(正)＝紅、跌(負)＝綠
@@ -7001,6 +7005,257 @@ function fetchMacroBoard(){
     .finally(function(){
       if(btn){ btn.disabled = false; btn.textContent = '🔄 重新整理'; }
     });
+}
+// ── 市場參考看板的技術分析圖（台幣匯率、VIX）：日K＋MA20/MA60＋布林通道＋KD，下方自動判讀型態 ──
+// 資料來源：備註GAS的 action=macroChart（代理 Yahoo Finance 近一年日K，快取15分鐘）
+var MACRO_CHART_KEYS = ['twd','vix'];
+var MACRO_CHART_SHOW = 120; // 畫面上顯示最近120根（約半年），前面的資料拿來算均線
+var _macroChartCache = {};  // key -> {t:抓取時間, bars:[[日期,開,高,低,收],...]}
+var _macroChartLayout = {}; // key -> 繪圖座標，給手指/滑鼠查看某一天用
+function _macroChartBlockHtml(k){
+  return '<div style="margin-top:10px;">'
+    +'<div id="macro-chart-info-'+k+'" style="font-size:11.5px;color:var(--text-secondary);min-height:16px;margin-bottom:4px;font-family:monospace;"></div>'
+    +'<canvas id="macro-chart-'+k+'" style="display:block;width:100%;height:250px;touch-action:pan-y;cursor:crosshair;"></canvas>'
+    +'<div style="display:flex;flex-wrap:wrap;gap:4px 12px;font-size:11px;color:var(--text-secondary);margin-top:4px;">'
+      +'<span><b style="color:#d29922">━</b> MA20(月線)</span><span><b style="color:#a371f7">━</b> MA60(季線)</span>'
+      +'<span><b style="color:#58a6ff">┅</b> 布林通道</span><span>下方：KD(9) <b style="color:#58a6ff">K</b> / <b style="color:#d29922">D</b></span>'
+    +'</div>'
+    +'<div id="macro-ta-'+k+'" style="font-size:13.5px;color:var(--text-primary);line-height:1.8;margin-top:8px;padding:10px;background:var(--bg-page);border:1px solid var(--border);border-radius:8px;">載入技術線圖中...</div>'
+  +'</div>';
+}
+function _fetchMacroCharts(force){
+  MACRO_CHART_KEYS.forEach(function(k){
+    var c = _macroChartCache[k];
+    if(c && !force && Date.now()-c.t < 10*60*1000){ _drawMacroChart(k); return; }
+    var ta = document.getElementById('macro-ta-'+k);
+    if(ta && !c) ta.textContent = '載入技術線圖中...';
+    fetchWithTimeout(NOTE_GAS_URL + '?action=macroChart&key=' + k, 30000)
+      .then(function(r){ return r.text(); })
+      .then(function(txt){
+        var d; try{ d = JSON.parse(txt); }catch(pe){ throw new Error('伺服器回應異常'); }
+        if(!d.ok) throw new Error(d.error||'讀取失敗');
+        if(!d.bars || d.bars.length < 30) throw new Error('資料筆數不足');
+        _macroChartCache[k] = {t:Date.now(), bars:d.bars};
+        _drawMacroChart(k);
+      })
+      .catch(function(e){
+        var el = document.getElementById('macro-ta-'+k);
+        if(el && !_macroChartCache[k]) el.innerHTML = '技術線圖載入失敗：'+((e&&e.name==='AbortError')?'連線逾時':(e&&e.message)||'未知錯誤')+'，請按右上角重新整理';
+      });
+  });
+}
+function _mcSma(arr, n){
+  var out = [], sum = 0;
+  for(var i=0;i<arr.length;i++){
+    sum += arr[i]; if(i>=n) sum -= arr[i-n];
+    out.push(i>=n-1 ? sum/n : null);
+  }
+  return out;
+}
+function _mcIndicators(bars){
+  var C = bars.map(function(b){return b[4];}), H = bars.map(function(b){return b[2];}), L = bars.map(function(b){return b[3];});
+  var ma20 = _mcSma(C,20), ma60 = _mcSma(C,60), up = [], lo = [], K = [], D = [];
+  for(var i=0;i<C.length;i++){
+    if(ma20[i]===null){ up.push(null); lo.push(null); }
+    else {
+      var v=0; for(var j=i-19;j<=i;j++){ v += Math.pow(C[j]-ma20[i],2); }
+      var sd = Math.sqrt(v/20); up.push(ma20[i]+2*sd); lo.push(ma20[i]-2*sd);
+    }
+    var hh=-Infinity, ll=Infinity;
+    for(var m=Math.max(0,i-8);m<=i;m++){ if(H[m]>hh) hh=H[m]; if(L[m]<ll) ll=L[m]; }
+    var rsv = hh>ll ? (C[i]-ll)/(hh-ll)*100 : 50;
+    var pk = i ? K[i-1] : 50, pd = i ? D[i-1] : 50;
+    var k = pk*2/3 + rsv/3; K.push(k); D.push(pd*2/3 + k/3);
+  }
+  return {C:C, H:H, L:L, ma20:ma20, ma60:ma60, up:up, lo:lo, K:K, D:D};
+}
+function _mcCss(name, fb){
+  try{ var v = getComputedStyle(document.documentElement).getPropertyValue(name).trim(); return v||fb; }catch(e){ return fb; }
+}
+function _drawMacroChart(k, hoverIdx){
+  var c = _macroChartCache[k];
+  var canvas = document.getElementById('macro-chart-'+k);
+  if(!c || !canvas) return;
+  var bars = c.bars, ind = _mcIndicators(bars);
+  var n = bars.length, s0 = Math.max(0, n-MACRO_CHART_SHOW), cnt = n-s0;
+  var dpr = window.devicePixelRatio||1;
+  var W = canvas.clientWidth || 340, Hh = 250;
+  canvas.width = W*dpr; canvas.height = Hh*dpr;
+  var ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,W,Hh);
+  var gridC = _mcCss('--border','#30363d'), dimC = _mcCss('--text-dim','#6e7681');
+  var padL = 4, padR = 46, pTop = 6, pH = 160, dateH = 16, kTop = pTop+pH+dateH+4, kH = Hh-kTop-4;
+  var plotW = W-padL-padR, step = plotW/cnt;
+  var X = function(i){ return padL + (i-s0+0.5)*step; };
+  // 價格區的上下範圍（含布林通道）
+  var hi=-Infinity, lo=Infinity;
+  for(var i=s0;i<n;i++){
+    hi = Math.max(hi, ind.H[i], ind.up[i]===null?-Infinity:ind.up[i]);
+    lo = Math.min(lo, ind.L[i], ind.lo[i]===null?Infinity:ind.lo[i]);
+  }
+  var pad = (hi-lo)*0.06||1; hi+=pad; lo-=pad;
+  var Y = function(v){ return pTop + (hi-v)/(hi-lo)*pH; };
+  var dec = k==='twd' ? 3 : 2;
+  // 格線與右側刻度
+  ctx.font = '10px sans-serif'; ctx.textBaseline = 'middle';
+  var lastY = Y(ind.C[n-1]);
+  for(var g=0; g<=4; g++){
+    var gv = lo + (hi-lo)*g/4, gy = Y(gv);
+    ctx.strokeStyle = gridC; ctx.lineWidth = 0.5; ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(padL,gy); ctx.lineTo(padL+plotW,gy); ctx.stroke();
+    if(Math.abs(gy-lastY) >= 13){ ctx.fillStyle = dimC; ctx.fillText(gv.toFixed(k==='twd'?2:1), padL+plotW+4, gy); } // 避免跟最新價標籤重疊
+  }
+  // VIX 參考線：20 警戒、30 恐慌
+  if(k==='vix'){
+    [[20,'#d29922'],[30,'#f85149']].forEach(function(r){
+      if(r[0]<lo || r[0]>hi) return;
+      var ry = Y(r[0]); ctx.strokeStyle = r[1]; ctx.lineWidth = 1; ctx.setLineDash([2,3]);
+      ctx.beginPath(); ctx.moveTo(padL,ry); ctx.lineTo(padL+plotW,ry); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = r[1]; ctx.fillText(String(r[0]), padL+2, ry-7);
+    });
+  }
+  // 布林通道
+  ctx.beginPath(); var started=false;
+  for(var i=s0;i<n;i++){ if(ind.up[i]===null) continue; if(!started){ctx.moveTo(X(i),Y(ind.up[i]));started=true;} else ctx.lineTo(X(i),Y(ind.up[i])); }
+  for(var i=n-1;i>=s0;i--){ if(ind.lo[i]===null) continue; ctx.lineTo(X(i),Y(ind.lo[i])); }
+  ctx.closePath(); ctx.fillStyle = 'rgba(88,166,255,0.08)'; ctx.fill();
+  var line = function(arr, color, width, dash){
+    ctx.strokeStyle = color; ctx.lineWidth = width; ctx.setLineDash(dash||[]);
+    ctx.beginPath(); var st=false;
+    for(var i=s0;i<n;i++){ if(arr[i]===null) continue; if(!st){ctx.moveTo(X(i),Y(arr[i]));st=true;} else ctx.lineTo(X(i),Y(arr[i])); }
+    ctx.stroke(); ctx.setLineDash([]);
+  };
+  line(ind.up,'rgba(88,166,255,0.6)',1,[3,3]); line(ind.lo,'rgba(88,166,255,0.6)',1,[3,3]);
+  // K棒（台股慣例：收紅漲、收綠跌）
+  var bw = Math.max(1, Math.min(8, step*0.65));
+  for(var i=s0;i<n;i++){
+    var b = bars[i], col = b[4]>=b[1] ? '#f85149' : '#3fb950', x = X(i);
+    ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x,Y(b[2])); ctx.lineTo(x,Y(b[3])); ctx.stroke();
+    var y1 = Y(Math.max(b[1],b[4])), y2 = Y(Math.min(b[1],b[4]));
+    ctx.fillRect(x-bw/2, y1, bw, Math.max(1,y2-y1));
+  }
+  line(ind.ma20,'#d29922',1.4); line(ind.ma60,'#a371f7',1.4);
+  // 最新收盤價標籤
+  var last = ind.C[n-1], ly = Y(last);
+  ctx.fillStyle = '#1f6feb'; ctx.fillRect(padL+plotW+1, ly-8, padR-2, 16);
+  ctx.fillStyle = '#fff'; ctx.fillText(last.toFixed(dec), padL+plotW+4, ly);
+  // 日期
+  ctx.fillStyle = dimC; ctx.textBaseline = 'top';
+  [s0, s0+Math.floor(cnt/2), n-1].forEach(function(i, idx){
+    var txt = bars[i][0].slice(5).replace('-','/'), tw = ctx.measureText(txt).width;
+    var tx = idx===0 ? padL : idx===2 ? padL+plotW-tw : X(i)-tw/2;
+    ctx.fillText(txt, tx, pTop+pH+3);
+  });
+  // KD 區
+  var KY = function(v){ return kTop + (100-v)/100*kH; };
+  ctx.textBaseline = 'middle';
+  [20,80].forEach(function(v){
+    ctx.strokeStyle = gridC; ctx.lineWidth = 0.5; ctx.setLineDash([2,3]);
+    ctx.beginPath(); ctx.moveTo(padL,KY(v)); ctx.lineTo(padL+plotW,KY(v)); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = dimC; ctx.fillText(String(v), padL+plotW+4, KY(v));
+  });
+  var kline = function(arr,color){
+    ctx.strokeStyle = color; ctx.lineWidth = 1.2; ctx.beginPath();
+    for(var i=s0;i<n;i++){ if(i===s0) ctx.moveTo(X(i),KY(arr[i])); else ctx.lineTo(X(i),KY(arr[i])); }
+    ctx.stroke();
+  };
+  kline(ind.K,'#58a6ff'); kline(ind.D,'#d29922');
+  // 查看某一天的十字線
+  var hi2 = (hoverIdx!==undefined && hoverIdx!==null) ? hoverIdx : null;
+  if(hi2!==null){
+    ctx.strokeStyle = dimC; ctx.lineWidth = 0.8; ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(X(hi2),pTop); ctx.lineTo(X(hi2),Hh-4); ctx.stroke(); ctx.setLineDash([]);
+  }
+  _macroChartLayout[k] = {s0:s0, n:n, padL:padL, step:step};
+  _macroChartInfo(k, hi2===null ? n-1 : hi2, ind);
+  if(!canvas.dataset.bound){
+    canvas.dataset.bound = '1';
+    var onMove = function(ev){
+      var lay = _macroChartLayout[k]; if(!lay) return;
+      var rect = canvas.getBoundingClientRect();
+      var cx = (ev.touches ? ev.touches[0].clientX : ev.clientX) - rect.left;
+      var idx = Math.floor((cx-lay.padL)/lay.step) + lay.s0;
+      idx = Math.max(lay.s0, Math.min(lay.n-1, idx));
+      _drawMacroChart(k, idx);
+    };
+    canvas.addEventListener('mousemove', onMove);
+    canvas.addEventListener('touchstart', onMove, {passive:true});
+    canvas.addEventListener('touchmove', onMove, {passive:true});
+    canvas.addEventListener('mouseleave', function(){ _drawMacroChart(k); });
+  }
+  if(hi2===null) _macroTaRender(k, ind);
+}
+function _macroChartInfo(k, i, ind){
+  var el = document.getElementById('macro-chart-info-'+k);
+  var b = _macroChartCache[k].bars[i];
+  if(!el || !b) return;
+  var dec = k==='twd' ? 3 : 2, f = function(v){ return v===null||v===undefined ? '--' : v.toFixed(dec); };
+  el.innerHTML = b[0]+'　開 '+f(b[1])+' 高 '+f(b[2])+' 低 '+f(b[3])+' 收 <b style="color:var(--text-primary)">'+f(b[4])+'</b>'
+    +'　<span style="color:#d29922">MA20 '+f(ind.ma20[i])+'</span> <span style="color:#a371f7">MA60 '+f(ind.ma60[i])+'</span>'
+    +'　K '+ind.K[i].toFixed(0)+' D '+ind.D[i].toFixed(0);
+}
+// 型態判讀：趨勢(均線排列)、布林位置與收斂、20日新高新低、KD交叉，再依VIX/台幣各自的意義翻成白話
+function _macroTaRender(k, ind){
+  var el = document.getElementById('macro-ta-'+k);
+  if(!el) return;
+  var n = ind.C.length, i = n-1, c = ind.C[i], m20 = ind.ma20[i], m60 = ind.ma60[i], up = ind.up[i], lo = ind.lo[i];
+  var m20prev = ind.ma20[i-5], rows = [], trend = 'flat';
+  // 1. 趨勢
+  if(m60!==null){
+    if(c>m20 && m20>m60){ trend='up'; rows.push(['趨勢','<b style="color:#f85149">多頭排列</b>：價格在月線、季線之上，月線'+(m20>m20prev?'上彎':'走平')]); }
+    else if(c<m20 && m20<m60){ trend='down'; rows.push(['趨勢','<b style="color:#3fb950">空頭排列</b>：價格在月線、季線之下，月線'+(m20<m20prev?'下彎':'走平')]); }
+    else rows.push(['趨勢','<b>盤整</b>：價格在均線附近來回，方向還不明確']);
+  }
+  // 2. 布林通道
+  var bwArr = [];
+  for(var j=Math.max(19,n-120); j<n; j++){ if(ind.up[j]!==null) bwArr.push((ind.up[j]-ind.lo[j])/ind.ma20[j]); }
+  var bwNow = (up-lo)/m20, sorted = bwArr.slice().sort(function(a,b){return a-b;});
+  var squeeze = sorted.length>20 && bwNow <= sorted[Math.floor(sorted.length*0.2)];
+  var bbPos = (c-lo)/(up-lo)*100, bbTxt;
+  if(c>=up) bbTxt = '<b style="color:#f85149">突破上軌</b>，短線急漲、偏過熱';
+  else if(c<=lo) bbTxt = '<b style="color:#3fb950">跌破下軌</b>，短線急跌、偏超跌';
+  else bbTxt = '位於通道 '+bbPos.toFixed(0)+'% 位置（0%＝下軌、100%＝上軌）';
+  if(squeeze) bbTxt += '；<b style="color:#d29922">通道收斂</b>，波動變小，常是變盤前兆';
+  rows.push(['布林',bbTxt]);
+  // 3. 20日新高新低
+  var h20 = Math.max.apply(null, ind.H.slice(n-21, n-1)), l20 = Math.min.apply(null, ind.L.slice(n-21, n-1));
+  if(c>h20) rows.push(['區間','<b style="color:#f85149">創 20 日新高</b>']);
+  else if(c<l20) rows.push(['區間','<b style="color:#3fb950">創 20 日新低</b>']);
+  // 4. KD
+  var K = ind.K, D = ind.D, cross = null;
+  for(var j=n-1; j>=n-3; j--){
+    if(K[j]>D[j] && K[j-1]<=D[j-1]){ cross='gold'; break; }
+    if(K[j]<D[j] && K[j-1]>=D[j-1]){ cross='dead'; break; }
+  }
+  var kdTxt = 'K '+K[i].toFixed(0)+'／D '+D[i].toFixed(0);
+  if(cross==='gold') kdTxt += '，近3日<b style="color:#f85149">黃金交叉</b>'+(K[i]<30?'（低檔）':'');
+  else if(cross==='dead') kdTxt += '，近3日<b style="color:#3fb950">死亡交叉</b>'+(K[i]>70?'（高檔）':'');
+  else if(K[i]>=80) kdTxt += '，高檔區';
+  else if(K[i]<=20) kdTxt += '，低檔區';
+  rows.push(['KD',kdTxt]);
+  // 白話解讀
+  var meaning = [];
+  if(k==='vix'){
+    var lv = c<15 ? '低於15，市場相當樂觀，要留意過度自滿後的反轉' : c<20 ? '15～20，市場情緒平穩' : c<30 ? '20～30，市場情緒緊張、波動放大' : '30以上，進入恐慌區';
+    meaning.push('VIX 目前 '+c.toFixed(2)+'，'+lv+'。');
+    if(trend==='up') meaning.push('VIX 呈多頭排列，代表恐慌情緒持續升溫，股市偏保守看待。');
+    if(trend==='down') meaning.push('VIX 呈空頭排列，代表恐慌退燒，股市氣氛逐步改善。');
+    if(c>=up) meaning.push('VIX 衝出布林上軌代表恐慌急升，這類急升常是短線情緒高點，但不代表股市一定已經落底。');
+    if(c<=lo) meaning.push('VIX 跌破布林下軌，市場非常放心，短線反而要留意波動重新放大。');
+  } else {
+    if(trend==='up') meaning.push('美元兌台幣走升＝<b style="color:#f85149">台幣貶值趨勢</b>，外資匯出的機率較高，對台股資金面偏不利；出口商則有匯兌利益。');
+    else if(trend==='down') meaning.push('美元兌台幣走低＝<b style="color:#3fb950">台幣升值趨勢</b>，外資匯入的機率較高，對台股資金面偏有利；出口商則有匯兌壓力。');
+    else meaning.push('匯率在區間內整理，外資資金方向尚不明確。');
+    if(c>=up) meaning.push('短線台幣貶得急，留意外資賣超與央行是否進場調節。');
+    if(c<=lo) meaning.push('短線台幣升得急，常伴隨外資大舉匯入。');
+  }
+  el.innerHTML = rows.map(function(r){
+      return '<div style="display:flex;gap:8px;"><span style="flex-shrink:0;color:var(--text-secondary);width:34px;">'+r[0]+'</span><span>'+r[1]+'</span></div>';
+    }).join('')
+    +'<div style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--border);">'+meaning.join('')+'</div>'
+    +'<div style="font-size:11px;color:var(--text-dim);margin-top:4px;">資料：Yahoo Finance 日K（'+_macroChartCache[k].bars[n-1][0]+'）。依技術指標自動判讀，僅供參考，非投資建議。手指按住圖表可查看每一天的數值。</div>';
 }
 function openMarginReport(){
   // 融資維持率是XQ原始資料，只給管理者
