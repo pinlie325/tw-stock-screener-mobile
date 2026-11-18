@@ -2888,7 +2888,10 @@ function drawKChart(canvas, data){
     ctx.fillText('無法取得資料（請確認 API Key 及網路）', W/2, H/2); return;
   }
   // 先對完整資料計算MA，再截切，確保任何kBars下MA都能畫齊
-  var ma13Full = calcMA(data, 13);
+  // 日線看短線：MA13＋MA60；週線看長線：MA20(20週線，約半年)＋MA60
+  var isWeekly = canvas.dataset && canvas.dataset.iv==='W';
+  var maShortN = isWeekly ? 20 : 13;
+  var ma13Full = calcMA(data, maShortN);
   var ma60Full = calcMA(data, 60);
   var end = kOffset>0 ? data.length-kOffset : data.length;
   var start = Math.max(0, end-kBars);
@@ -2969,7 +2972,7 @@ function drawKChart(canvas, data){
     ctx.fillRect(x-barW/2, vTop+volH-2-vh, barW, vh);
   });
   // MA線
-  var mas = [[ma13Show,'#00bcd4','MA13'],[ma60Show,'#f0c040','MA60']];
+  var mas = [[ma13Show,'#00bcd4','MA'+maShortN],[ma60Show,'#f0c040','MA60']];
   mas.forEach(function(m){
     ctx.strokeStyle=m[1]; ctx.lineWidth=1.5; ctx.beginPath();
     var s=false;
@@ -2987,6 +2990,26 @@ function drawKChart(canvas, data){
     ctx.fillStyle=m[1]; ctx.font='bold 9px sans-serif'; ctx.textAlign='left';
     ctx.fillText(m[2]+' '+last.toFixed(last<10?2:1), lx, PAD.t-6); lx+=62;
   });
+  // 看法：週線看「收盤 vs 20週線」＋20週線方向(比4週前)＝長線；日線看「收盤 vs MA13」＋MA13方向(比3天前)＝短線
+  {
+    var wEnd = end-1, lookN = isWeekly ? 4 : 3;
+    var wc = data[wEnd] ? data[wEnd].c : null, w20 = ma13Full[wEnd], w20p = ma13Full[wEnd-lookN];
+    if(wc!==null && w20!==null && w20p!==null && w20p!==undefined){
+      var wUp = w20>w20p, wTxt, wCol;
+      var hz = isWeekly ? '長線' : '短線', ln = isWeekly ? '20週線' : 'MA13', lnS = isWeekly ? '週線' : 'MA13';
+      if(wc>w20 && wUp){ wTxt=hz+'偏多（站上'+ln+'、'+lnS+'上揚）'; wCol='#f85149'; }
+      else if(wc<w20 && !wUp){ wTxt=hz+'偏空（跌破'+ln+'、'+lnS+'下彎）'; wCol='#3fb950'; }
+      else if(wc>w20){ wTxt=hz+'整理（站上'+ln+'，但'+lnS+'仍下彎）'; wCol='#d29922'; }
+      else { wTxt=hz+'整理（跌破'+ln+'，但'+lnS+'仍上揚）'; wCol='#d29922'; }
+      ctx.font='bold 9px sans-serif'; ctx.textAlign='left';
+      var wW = ctx.measureText(wTxt).width;
+      if(lx+4+wW < W-PAD.r-130){ ctx.fillStyle=wCol; ctx.fillText(wTxt, lx+4, PAD.t-6); }
+      else { // 手機太窄放不下，就改放到圖表左上角內側，加底色避免跟K棒糊在一起
+        ctx.fillStyle='rgba(13,17,23,0.75)'; ctx.fillRect(PAD.l, PAD.t+2, wW+8, 14);
+        ctx.fillStyle=wCol; ctx.fillText(wTxt, PAD.l+4, PAD.t+12);
+      }
+    }
+  }
   // X軸日期（底部 PAD.b 區域內）
   ctx.fillStyle=colText2; ctx.font='9px sans-serif'; ctx.textAlign='center';
   var step2=Math.max(1,Math.floor(n/6));
@@ -3106,6 +3129,7 @@ function tvLoad(code, interval, opts){
     canvas.getContext('2d').scale(dpr,dpr);
   }
   initC();
+  canvas.dataset.iv = interval; // 給 drawKChart 判斷日線/週線，套不同均線
   fetchKData(code, interval, function(data){
     var ld=document.getElementById('kl-'+ns);
     if(ld) ld.style.display='none';
