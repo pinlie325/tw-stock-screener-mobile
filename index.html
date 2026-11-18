@@ -2982,33 +2982,38 @@ function drawKChart(canvas, data){
     });
     ctx.stroke();
   });
-  // MA圖例
-  var lx=PAD.l;
-  mas.forEach(function(m){
+  // MA圖例：改放到圖表上方那一行（跟長短線看法同一行，右邊），不畫進canvas，字比較大也不會跟價格標籤重疊
+  var maLegendHtml = mas.map(function(m){
     var last=m[0].filter(function(v){return v!==null;}).slice(-1)[0];
-    if(!last) return;
-    ctx.fillStyle=m[1]; ctx.font='bold 9px sans-serif'; ctx.textAlign='left';
-    ctx.fillText(m[2]+' '+last.toFixed(last<10?2:1), lx, PAD.t-6); lx+=62;
-  });
+    if(!last) return '';
+    return '<span style="color:'+m[1]+';white-space:nowrap;">'+m[2]+' '+last.toFixed(last<10?2:1)+'</span>';
+  }).join('');
+  var wTxt = '', wCol = 'var(--text-secondary)';
   // 看法：週線看「收盤 vs 20週線」＋20週線方向(比4週前)＝長線；日線看「收盤 vs MA13」＋MA13方向(比3天前)＝短線
   {
     var wEnd = end-1, lookN = isWeekly ? 4 : 3;
     var wc = data[wEnd] ? data[wEnd].c : null, w20 = ma13Full[wEnd], w20p = ma13Full[wEnd-lookN];
     if(wc!==null && w20!==null && w20p!==null && w20p!==undefined){
-      var wUp = w20>w20p, wTxt, wCol;
+      var wUp = w20>w20p;
       var hz = isWeekly ? '長線' : '短線', ln = isWeekly ? '20週線' : 'MA13', lnS = isWeekly ? '週線' : 'MA13';
       if(wc>w20 && wUp){ wTxt=hz+'偏多（站上'+ln+'、'+lnS+'上揚）'; wCol='#f85149'; }
       else if(wc<w20 && !wUp){ wTxt=hz+'偏空（跌破'+ln+'、'+lnS+'下彎）'; wCol='#3fb950'; }
       else if(wc>w20){ wTxt=hz+'整理（站上'+ln+'，但'+lnS+'仍下彎）'; wCol='#d29922'; }
       else { wTxt=hz+'整理（跌破'+ln+'，但'+lnS+'仍上揚）'; wCol='#d29922'; }
-      // 看法改放在圖表上方的一行文字（不畫進canvas），字比較大，也不會跟價格標籤重疊
-      var holder = canvas.parentElement, vEl = holder ? holder.querySelector('.k-view') : null;
-      if(holder && !vEl){
-        vEl = document.createElement('div'); vEl.className = 'k-view';
-        vEl.style.cssText = 'font-size:13.5px;font-weight:700;padding:6px 10px 2px;line-height:1.4;';
-        holder.insertBefore(vEl, holder.firstChild);
-      }
-      if(vEl){ vEl.style.color = wCol; vEl.textContent = (wCol==='#f85149'?'▲ ':wCol==='#3fb950'?'▼ ':'◆ ') + wTxt; }
+    }
+  }
+  // 圖表上方資訊列：左邊長短線看法、右邊均線數值
+  {
+    var holder = canvas.parentElement, vEl = holder ? holder.querySelector('.k-view') : null;
+    if(holder && !vEl){
+      vEl = document.createElement('div'); vEl.className = 'k-view';
+      vEl.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 12px;padding:8px 10px 4px;line-height:1.4;';
+      holder.insertBefore(vEl, holder.firstChild);
+    }
+    if(vEl){
+      var icon = wCol==='#f85149'?'▲ ':wCol==='#3fb950'?'▼ ':'◆ ';
+      vEl.innerHTML = (wTxt ? '<span style="font-size:16px;font-weight:700;color:'+wCol+';">'+icon+wTxt+'</span>' : '<span></span>')
+        + '<span style="display:flex;gap:12px;font-size:14px;font-weight:700;">'+maLegendHtml+'</span>';
     }
   }
   // X軸日期（底部 PAD.b 區域內）
