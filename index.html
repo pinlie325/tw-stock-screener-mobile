@@ -3001,13 +3001,14 @@ function drawKChart(canvas, data){
       else if(wc<w20 && !wUp){ wTxt=hz+'偏空（跌破'+ln+'、'+lnS+'下彎）'; wCol='#3fb950'; }
       else if(wc>w20){ wTxt=hz+'整理（站上'+ln+'，但'+lnS+'仍下彎）'; wCol='#d29922'; }
       else { wTxt=hz+'整理（跌破'+ln+'，但'+lnS+'仍上揚）'; wCol='#d29922'; }
-      ctx.font='bold 9px sans-serif'; ctx.textAlign='left';
-      var wW = ctx.measureText(wTxt).width;
-      if(lx+4+wW < W-PAD.r-130){ ctx.fillStyle=wCol; ctx.fillText(wTxt, lx+4, PAD.t-6); }
-      else { // 手機太窄放不下，就改放到圖表左上角內側，加底色避免跟K棒糊在一起
-        ctx.fillStyle='rgba(13,17,23,0.75)'; ctx.fillRect(PAD.l, PAD.t+2, wW+8, 14);
-        ctx.fillStyle=wCol; ctx.fillText(wTxt, PAD.l+4, PAD.t+12);
+      // 看法改放在圖表上方的一行文字（不畫進canvas），字比較大，也不會跟價格標籤重疊
+      var holder = canvas.parentElement, vEl = holder ? holder.querySelector('.k-view') : null;
+      if(holder && !vEl){
+        vEl = document.createElement('div'); vEl.className = 'k-view';
+        vEl.style.cssText = 'font-size:13.5px;font-weight:700;padding:6px 10px 2px;line-height:1.4;';
+        holder.insertBefore(vEl, holder.firstChild);
       }
+      if(vEl){ vEl.style.color = wCol; vEl.textContent = (wCol==='#f85149'?'▲ ':wCol==='#3fb950'?'▼ ':'◆ ') + wTxt; }
     }
   }
   // X軸日期（底部 PAD.b 區域內）
