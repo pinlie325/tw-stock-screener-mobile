@@ -1628,17 +1628,31 @@ function openExcludeManager(){
   document.getElementById('exclude-name-preview').textContent = '';
   renderExcludeList();
   document.getElementById('exclude-modal').style.display = 'flex';
+  // RS檔還沒讀到的話先讀，讀完再重新判斷一次輸入框內容（才能用名稱查到Excel以外的股票）
+  if(admin && !RS_DATA && typeof loadRsData==='function'){
+    loadRsData().then(function(){
+      var inp = document.getElementById('exclude-add-input');
+      if(inp && inp.value) previewExcludeName(inp.value);
+    });
+  }
 }
 // 輸入框同時接受「代碼」或「名稱」，自動判斷是哪一種、雙向查出另一半資訊
 function _lookupStockName(code){
   var nm = EXCLUDE_NAMES[code] || '';
   if(!nm) D.forEach(function(s){ if(s.code===code) nm=s.name; });
+  // 選股Excel裡沒有的股票（例如今天沒被選進來的），再去RS加權分數檔（約1,800多檔）裡找
+  if(!nm && RS_DATA && RS_DATA.byCode[code]) nm = RS_DATA.byCode[code].name || '';
   return nm;
 }
 function _lookupStockByName(query){
   var match = null;
   D.forEach(function(s){ if(!match && s.name === query) match = s; });
   if(!match) D.forEach(function(s){ if(!match && s.name && s.name.indexOf(query) >= 0) match = s; });
+  // 選股Excel裡找不到，就到RS加權分數檔(RS加權分數-日期.csv)的全市場清單裡找
+  if(!match && RS_DATA && RS_DATA.list){
+    RS_DATA.list.forEach(function(s){ if(!match && s.name === query) match = s; });
+    if(!match) RS_DATA.list.forEach(function(s){ if(!match && s.name && s.name.indexOf(query) >= 0) match = s; });
+  }
   return match; // {code, name, ...} 或 null
 }
 // 判斷使用者輸入的是代碼還是名稱，回傳 {code, name, isCode, notFound}
@@ -1673,7 +1687,7 @@ function previewExcludeName(raw){
       previewEl.textContent = '將自動帶入代碼：' + r.code + '（' + r.name + '）';
       previewEl.style.color = '#3fb950';
     } else {
-      previewEl.textContent = '目前清單裡查不到這個名稱對應的代碼，請改輸入股票代碼';
+      previewEl.textContent = (RS_DATA ? '選股清單和RS檔都查不到這個名稱，請改輸入股票代碼' : 'RS檔讀取中或讀取失敗，查不到這個名稱，請改輸入股票代碼');
       previewEl.style.color = '#f0c040';
     }
   }
