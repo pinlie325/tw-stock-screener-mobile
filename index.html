@@ -300,6 +300,8 @@ body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:var(--bg-page)
 .yf-kbars{display:flex;gap:3px}
 .yf-kbar{background:none;border:1px solid var(--border);border-radius:4px;padding:3px 7px;font-size:11px;color:var(--text-secondary);cursor:pointer}
 .yf-kbar.on{border-color:#3fb950;color:#3fb950;background:#3fb95022}
+.yf-trend{background:none;border:1px solid var(--border);border-radius:4px;padding:3px 7px;font-size:11px;color:var(--text-secondary);cursor:pointer;white-space:nowrap}
+.yf-trend.on{border-color:#bc8cff;color:#bc8cff;background:#bc8cff22}
 .yf-close{color:var(--text-secondary);cursor:pointer;font-size:18px;padding:0 4px;line-height:1}
 
 /* ── TOAST ── */
@@ -2723,6 +2725,7 @@ function openChart(e, code, name){
           +'<div class="yf-kbars">'
             +'<button class="yf-kbar" onclick="event.stopPropagation();setKBars(30,this)">30</button>'
             +'<button class="yf-kbar on" onclick="event.stopPropagation();setKBars(60,this)">60</button>'
+            +'<button class="yf-trend'+(kTrendOn?' on':'')+'" onclick="event.stopPropagation();toggleKTrend()" title="自動畫出壓力線／支撐線">趨勢線</button>'
           +'</div>'
           +'<span class="yf-close" onclick="event.stopPropagation();closeChart(\''+code+'\')">✕</span>'
         +'</div>'
@@ -2885,7 +2888,98 @@ function calcMA(data, n){
 var CHART_H=350; // 原本280，加了下方KD指標區(約70px)
 var kBars=60; // 預設顯示60根K棒
 var kOffset=0; // 往左偏移的K棒數（0=最新）
+// ── 自動趨勢線：找出畫面上K棒的轉折高點／低點，用「上緣、下緣的外框線」連成壓力線與支撐線，
+//    再依兩條線的斜率判斷型態（上升通道、下降通道、收斂三角、楔形…），並提示目前是否突破／跌破 ──
+var kTrendOn = true;
+try{ if(localStorage.getItem('twstock_ktrend')==='0') kTrendOn = false; }catch(e){}
+function toggleKTrend(){
+  kTrendOn = !kTrendOn;
+  try{ localStorage.setItem('twstock_ktrend', kTrendOn?'1':'0'); }catch(e){}
+  document.querySelectorAll('.yf-trend').forEach(function(b){ b.classList.toggle('on', kTrendOn); });
+  document.querySelectorAll('canvas[id^="kc-"]').forEach(function(c){ if(c._kdata) drawKChart(c, c._kdata); });
+}
+// 回傳 {upper:{i1,y1,i2,y2}, lower:{...}} 或缺項；座標用畫面上的K棒索引
+function _kTrendLines(show){
+  var n = show.length;
+  if(n < 15) return null;
+  var k = Math.max(2, Math.round(n/18));
+  var ph = [], pl = [];
+  // 轉折點要左右各k根都比較過才算（最新幾根不當轉折點），這樣線不會被最新的K棒硬拉過去，才看得出突破／跌破
+  for(var i=0;i<=n-1-k;i++){
+    var isH = true, isL = true;
+    for(var j=Math.max(0,i-k); j<=Math.min(n-1,i+k); j++){
+      if(j===i) continue;
+      if(show[j].h > show[i].h) isH = false;
+      if(show[j].l < show[i].l) isL = false;
+    }
+    if(isH) ph.push({x:i, y:show[i].h});
+    if(isL) pl.push({x:i, y:show[i].l});
+  }
+  function hull(pts, upper){
+    var h = [];
+    pts.forEach(function(p){
+      while(h.length>=2){
+        var o=h[h.length-2], a=h[h.length-1];
+        var cr = (a.x-o.x)*(p.y-o.y) - (a.y-o.y)*(p.x-o.x);
+        if(upper ? cr>=0 : cr<=0) h.pop(); else break;
+      }
+      h.push(p);
+    });
+    return h;
+  }
+  function pick(h){
+    if(h.length < 2) return null;
+    var minSpan = Math.max(8, Math.round(n/4)), best = null;
+    for(var e=h.length-2; e>=0; e--){
+      var span = h[e+1].x - h[e].x;
+      if(span >= minSpan){ best = e; break; }
+    }
+    if(best===null){ // 都太短就取最長的那一段
+      var longest = -1;
+      for(var e2=0; e2<h.length-1; e2++){ var s2=h[e2+1].x-h[e2].x; if(s2>longest){ longest=s2; best=e2; } }
+    }
+    var a = h[best], b = h[best+1];
+    return {i1:a.x, y1:a.y, i2:b.x, y2:b.y, slope:(b.y-a.y)/(b.x-a.x)};
+  }
+  return {upper:pick(hull(ph,true)), lower:pick(hull(pl,false))};
+}
+function _kTrendValAt(L, i){ return L.y1 + L.slope*(i-L.i1); }
+// 型態與突破判讀文字（回傳HTML）
+function _kTrendSummary(tl, show, isWeekly){
+  if(!tl || (!tl.upper && !tl.lower)) return '';
+  var n = show.length, last = n-1, c = show[last].c, unit = isWeekly ? '週' : '日';
+  var ref = c || 1;
+  var su = tl.upper ? tl.upper.slope/ref*100 : null, sl = tl.lower ? tl.lower.slope/ref*100 : null; // 每根K棒漲跌%
+  var flat = 0.05; // 每根小於0.05%視為走平
+  var shape = '';
+  if(su!==null && sl!==null){
+    var uUp = su>flat, uDn = su<-flat, lUp = sl>flat, lDn = sl<-flat;
+    if(uUp && lUp) shape = (sl > su*1.4) ? '上升楔形（漲勢收斂，留意轉弱）' : '上升通道';
+    else if(uDn && lDn) shape = (su < sl*1.4) ? '下降楔形（跌勢收斂，留意轉強）' : '下降通道';
+    else if(uDn && lUp) shape = '收斂三角（即將表態）';
+    else if(uUp && lDn) shape = '擴散型態（波動加大）';
+    else if(!uUp && !uDn && lUp) shape = '上升三角（底部墊高）';
+    else if(!lUp && !lDn && uDn) shape = '下降三角（高點下移）';
+    else shape = '水平整理';
+  }
+  var parts = [];
+  if(shape) parts.push('<b style="color:#bc8cff">📐 '+shape+'</b>');
+  var status = '';
+  if(tl.upper){
+    var uv = _kTrendValAt(tl.upper, last);
+    parts.push('壓力 '+uv.toFixed(uv<10?2:1)+'<span style="color:var(--text-dim)">（斜率 '+(su>=0?'+':'')+su.toFixed(2)+'%/'+unit+'）</span>');
+    if(c > uv) status = '<b style="color:#f85149">▲ 突破壓力線</b>';
+  }
+  if(tl.lower){
+    var lv = _kTrendValAt(tl.lower, last);
+    parts.push('支撐 '+lv.toFixed(lv<10?2:1)+'<span style="color:var(--text-dim)">（斜率 '+(sl>=0?'+':'')+sl.toFixed(2)+'%/'+unit+'）</span>');
+    if(c < lv) status = '<b style="color:#3fb950">▼ 跌破支撐線</b>';
+  }
+  if(status) parts.push(status);
+  return parts.join('　');
+}
 function drawKChart(canvas, data){
+  canvas._kdata = data; // 給「趨勢線」開關直接重畫，不用重新抓資料
   var dpr = window.devicePixelRatio||1;
   var W = canvas.width/dpr, H = CHART_H;
   var ctx = canvas.getContext('2d');
@@ -2983,6 +3077,26 @@ function drawKChart(canvas, data){
     refLine(lastCandle.l, '#3fb950', false);
     ctx.restore();
   }
+  // 自動趨勢線（壓力線＝上緣、支撐線＝下緣），只畫在K棒區，延伸到最右邊
+  var trendInfoHtml = '';
+  if(kTrendOn){
+    var tl = _kTrendLines(show);
+    if(tl){
+      ctx.save();
+      ctx.beginPath(); ctx.rect(PAD.l, PAD.t, W-PAD.l-PAD.r, kH); ctx.clip();
+      [[tl.upper,'#bc8cff'],[tl.lower,'#bc8cff']].forEach(function(L){
+        if(!L) return;
+        ctx.strokeStyle = L[1]; ctx.lineWidth = 1.8; ctx.globalAlpha = 0.95;
+        var i0 = L[0].i1, i1 = n-1+0.5;
+        ctx.beginPath(); ctx.moveTo(px(i0), py(L[0].y1)); ctx.lineTo(px(i1), py(_kTrendValAt(L[0], i1))); ctx.stroke();
+        // 連線用到的兩個轉折點畫小圓圈
+        ctx.fillStyle = L[1];
+        [[L[0].i1,L[0].y1],[L[0].i2,L[0].y2]].forEach(function(pt){ ctx.beginPath(); ctx.arc(px(pt[0]), py(pt[1]), 2.8, 0, Math.PI*2); ctx.fill(); });
+      });
+      ctx.restore();
+      trendInfoHtml = _kTrendSummary(tl, show, isWeekly);
+    }
+  }
   // K棒（上漲紅色，下跌用colDown：深色模式白色／淺色模式深色，確保跟底色一定有對比）
   show.forEach(function(d,i){
     var x=px(i), isUp=d.c>=d.o, color=isUp?'#f85149':colDown;
@@ -3076,7 +3190,8 @@ function drawKChart(canvas, data){
     if(vEl){
       var icon = wCol==='#f85149'?'▲ ':wCol==='#3fb950'?'▼ ':'◆ ';
       vEl.innerHTML = (wTxt ? '<span style="font-size:16px;font-weight:700;color:'+wCol+';">'+icon+wTxt+'</span>' : '<span></span>')
-        + '<span style="display:flex;gap:12px;font-size:14px;font-weight:700;">'+maLegendHtml+'</span>';
+        + '<span style="display:flex;gap:12px;font-size:14px;font-weight:700;">'+maLegendHtml+'</span>'
+        + (trendInfoHtml ? '<div style="flex-basis:100%;font-size:13px;color:var(--text-secondary);line-height:1.6;">'+trendInfoHtml+'</div>' : '');
     }
   }
   // X軸日期（底部 PAD.b 區域內）
