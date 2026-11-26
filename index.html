@@ -2334,6 +2334,53 @@ function toggleFavFilter(){
   render();
 }
 
+// ── 搜尋時補上「不在今日選股Excel裡」的股票：從RS加權分數檔（上市櫃全部約1,880檔）找出符合的，
+//    做成簡易卡片（只有RS檔有的欄位：成交、漲幅、產業、產業地位、三大法人；其他格子顯示 --）。
+//    RS檔只有管理者讀得到，所以會員不會出現。排除清單裡的股票不補。
+var RS_ONLY_MAX = 20; // 一次最多補幾檔，避免只打一個數字就冒出幾百張卡片
+function _rsOnlyStock(r){
+  if(!RS_DATA) return null;
+  RS_DATA._pseudo = RS_DATA._pseudo || {};
+  if(RS_DATA._pseudo[r.code]) return RS_DATA._pseudo[r.code];
+  var c = (r.close===null||r.close===undefined) ? null : r.close;
+  var prev = (c!==null && r.chg!==null && r.chg!==undefined) ? Math.round(c/(1+r.chg/100)*100)/100 : null;
+  var tagSrc = r.allInd || r.ind || '';
+  var s = {code:r.code, name:r.name||'', close:prev, pct:(r.chg===undefined?null:r.chg), avg:null, volume:c,
+    turnover:null, turnval:null, capital:null, bvps:null, margin:null, position:r.pos||'',
+    tags:tagSrc.split(',').map(function(x){return x.trim();}).filter(function(x){return x;}),
+    rs:null, grossmargin:null, eps:null, dahubuy:null, dahuchai:null, dahuQ:null, dahuLv:null,
+    revgrowth:null, chg5d:null, chg20d:null, pe:null, roe:null, news:'', _rsOnly:true};
+  RS_DATA._pseudo[r.code] = s;
+  return s;
+}
+function _rsOnlySearchExtras(q){
+  if(!q || !RS_DATA || !RS_DATA.list || (typeof isAdminUser==='function' && !isAdminUser())) return [];
+  if(/^\d$/.test(q)) return []; // 只打一個數字太廣，不補
+  var have = {};
+  (D_RAW||[]).forEach(function(s){ have[s.code]=1; });
+  var out = [];
+  for(var i=0; i<RS_DATA.list.length && out.length<RS_ONLY_MAX; i++){
+    var r = RS_DATA.list[i];
+    if(have[r.code] || EXCLUDE_CODES.indexOf(r.code)>=0) continue;
+    if(r.code.toLowerCase().indexOf(q)>=0 || (r.name||'').toLowerCase().indexOf(q)>=0){
+      var s = _rsOnlyStock(r); if(s) out.push(s);
+    }
+  }
+  return out;
+}
+// 「尚未納入選股」的簡易卡片：沒有數據（顯示 -- 或空白）的格子直接拿掉，剩下的格子照順序排成4欄
+function _trimRsOnlyCards(){
+  document.querySelectorAll('.card-grid.rs-only').forEach(function(g){
+    g.querySelectorAll('.cg-item').forEach(function(it){
+      var v = it.querySelector('.cg-val');
+      if(!v) return; // 相機那格沒有數值，保留
+      var txt = (v.textContent||'').replace(/\s+/g,'');
+      if(!txt || /^-+$/.test(txt) || txt==='--' || /^[-–—]+[\d.]*%?$/.test(txt) && txt.indexOf('--')===0) it.remove();
+    });
+    g.querySelectorAll('.cg-side').forEach(function(it){ it.style.gridColumn='auto'; it.style.gridRow='auto'; });
+    g.style.gridTemplateColumns = 'repeat(4,1fr)';
+  });
+}
 function getFilt(){
   var d=D;
   if(window._hcatCodes && window._hcatCodes.length){
@@ -2346,6 +2393,7 @@ function getFilt(){
     d=d.filter(function(s){
       return s.code.toLowerCase().indexOf(q)>=0 || s.name.toLowerCase().indexOf(q)>=0;
     });
+    d=d.concat(_rsOnlySearchExtras(q));
   }
   // 星星（私人備註）／敲敲話（共同筆記）／我的最愛，這三個篩選鈕可以同時開，同時開時是聯集：符合任一種就顯示
   if(noteFilterOn || allNoteFilterOn || favFilterOn){
@@ -2412,6 +2460,7 @@ function render(){
               +'<span class="card-code">'+s.code+'</span>'
               +(function(){var e=getExchLabel(s.code);return '<span class="card-exch '+e.cls+'">'+e.txt+'</span>';})()
               +'<span class="card-name">'+s.name+'</span>'
+              +(s._rsOnly?'<span title="這檔沒有被今天的選股條件篩出來，只有RS檔的基本資料" style="background:#8b949e22;color:var(--text-secondary);border:1px dashed var(--border);border-radius:4px;font-size:11px;padding:1px 6px;white-space:nowrap">尚未納入選股</span>':'')
               +(function(){if(s.disposal){var ft=s.disposal.freq?(s.disposal.freq+'分盤'):'處置中';return '<span title="'+s.disposal.reason.replace(/"/g,'&quot;')+'　期間 '+s.disposal.periodRaw+'" style="background:#f8514933;color:#f85149;border:1px solid #f85149;border-radius:4px;font-size:10px;padding:1px 5px;font-weight:700;">⚠'+ft+'</span>';}if(s.attention){return '<span title="'+s.attention.reason.replace(/"/g,'&quot;')+'　'+s.attention.date+'" style="background:#d2992233;color:#d29922;border:1px solid #d29922;border-radius:4px;font-size:10px;padding:1px 5px;font-weight:700;">注意</span>';}return '';})()
               +'<button class="card-cam" onclick="event.stopPropagation();openNoteEdit(\''+s.code+'\',\''+s.name.replace(/'/g,"\\'")+'\',\'shared\')">'+(sharedNoteMap[s.code]?'💬':'💬+')+'</button>'
             +'</div>'
@@ -2439,7 +2488,7 @@ function render(){
         +(s.close!==null?'<span class="card-avg">昨收 <span>'+s.close.toFixed(1)+'</span></span>':'')
         +(s.avg!==null?'<span class="card-avg">均價 <span>'+s.avg.toFixed(1)+'</span></span>':'')
       +'</div>'
-      +'<div class="card-grid">'
+      +'<div class="card-grid'+(s._rsOnly?' rs-only':'')+'">'
 
         +(function(){var bias=s.pct!==null?s.pct:null;var biasc=bias!==null?(bias>0?'up':bias<0?'dn':''):'';return '<div class="cg-item"><div class="cg-lbl">漲跌幅%</div><div class="cg-val '+biasc+'">'+(bias!==null?((bias>0?'+':'')+bias.toFixed(1)):'--')+'</div></div>';})()
         +'<div class="cg-item"><div class="cg-lbl">成交值(億)</div><div class="cg-val">'+(s.turnval!==null?s.turnval.toFixed(1):'--')+'</div></div>'
@@ -2464,6 +2513,7 @@ function render(){
       +'<div class="yf-wrap" id="yf-'+s.code+'"></div>'
     +'</div>';
   }).join('')+(_hiddenCount>0?'<div style="padding:14px 12px;text-align:center;color:var(--text-secondary);font-size:12px;">已顯示前'+RENDER_CAP+'筆（依目前排序），還有'+_hiddenCount+'筆，請搜尋代碼/名稱或使用篩選縮小範圍</div>':'');
+  _trimRsOnlyCards();
   if(cardsEl) cardsEl.scrollTop = scrollY; // 還原捲動位置
   applyCardExtras(); // performance: combined single-pass version of applyNotes/applyStrategies/applyGroups/applyConcepts for the hot render() path
   _positionColResizeHandle(); // 卡片實際內容/捲軸出現後寬度可能改變，重新量一次位置避免把手偏掉
@@ -6553,7 +6603,8 @@ function _buildRsData(d){
   var list = (d.rows||[]).map(function(r){
     function nv(v){ return (v===null||v===undefined)?null:v; }
     return {code:_rsCode(r[0]), name:r[1]||'', score:r[2], chg:nv(r[3]), close:r[4], ind:r[5]||'',
-            f:nv(r[6]), t:nv(r[7]), d:nv(r[8]), f5:nv(r[9]), t5:nv(r[10])};
+            f:nv(r[6]), t:nv(r[7]), d:nv(r[8]), f5:nv(r[9]), t5:nv(r[10]),
+            allInd:r[11]||'', pos:r[12]||''};
   }).filter(function(x){ return x.code && typeof x.score==='number' && !isNaN(x.score); });
   var sorted = list.slice().sort(function(a,b){ return a.score-b.score; });
   var n = sorted.length, i = 0;
@@ -7857,6 +7908,7 @@ function closeValuationTool(){
 }
 function openValuationTool(code){
   var s = D.find(function(x){ return x.code === code; });
+  if(!s && RS_DATA && RS_DATA._pseudo) s = RS_DATA._pseudo[code]; // 搜尋補上的「非今日選股」卡片
   if(!s) return;
   window.valCurrentCode = code;
   document.getElementById('val-title').textContent = '🎯 '+s.code+' '+s.name+' 合理性評估';
