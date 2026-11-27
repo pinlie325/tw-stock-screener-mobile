@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0d1117">
-<meta name="app-build" content="348"><!-- 網頁版本號：每次上傳新版都要+1，已開啟的網頁才會偵測到新版並自動更新 -->
+<meta name="app-build" content="358"><!-- 網頁版本號：每次上傳新版都要+1，已開啟的網頁才會偵測到新版並自動更新 -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -1125,6 +1125,57 @@ function adminRemoveUser(email){
   </div>
 </div>
 
+<!-- MY FAVORITES / PAPER TRADING BOARD -->
+<div id="fav-board-modal" style="display:none;position:fixed;inset:0;background:var(--bg-page);z-index:100000;flex-direction:column">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg-panel);flex-shrink:0">
+    <span style="font-size:16px;font-weight:700;color:var(--text-primary)">❤️ 我的最愛．模擬交易</span>
+    <span style="display:flex;gap:8px;align-items:center">
+      <button onclick="_favEvalCache={};_favLiveCache={};_renderFavBoard()" title="重新抓即時價並重算" style="background:none;border:none;color:var(--text-secondary);font-size:18px;cursor:pointer">🔄</button>
+      <button onclick="closeFavBoard()" style="background:none;border:none;color:var(--text-secondary);font-size:22px;cursor:pointer">✕</button>
+    </span>
+  </div>
+  <div style="flex:1;overflow-y:auto;padding:14px;">
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div style="position:relative;">
+        <input id="fav-search-input" type="text" placeholder="🔍 搜尋我的最愛（代碼或名稱）..." oninput="_favSearchQ=this.value.trim().toLowerCase();document.getElementById('fav-search-clear').style.display=this.value?'flex':'none';_renderFavBoard()" style="width:100%;background:var(--bg-page);border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:15px;padding:9px 40px 9px 12px;box-sizing:border-box;">
+        <button id="fav-search-clear" onclick="var i=document.getElementById('fav-search-input');i.value='';_favSearchQ='';this.style.display='none';_renderFavBoard();i.focus();" title="清除" style="display:none;position:absolute;right:6px;top:50%;transform:translateY(-50%);width:28px;height:28px;align-items:center;justify-content:center;background:none;border:none;color:var(--text-secondary);font-size:20px;cursor:pointer;">✕</button>
+      </div>
+      <div style="font-size:15px;font-weight:700;color:var(--text-primary);">📈 模擬交易 <span style="font-size:12px;font-weight:400;color:var(--text-secondary);">（有設定進場／目標／停損價的個股）</span></div>
+      <div id="fav-stats" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;"></div>
+      <div id="fav-summary" style="font-size:13px;color:var(--text-secondary);line-height:1.6;"></div>
+      <div id="fav-list" style="background:var(--bg-panel);border:1px solid var(--border);border-radius:8px;padding:10px;overflow-x:hidden;"></div>
+      <div id="fav-watch-title" style="font-size:15px;font-weight:700;color:var(--text-primary);margin-top:8px;">❤️ 我的最愛</div>
+      <div id="fav-watch-list" style="background:var(--bg-panel);border:1px solid var(--border);border-radius:8px;padding:10px;overflow-x:hidden;"></div>
+      <div style="font-size:11.5px;color:var(--text-dim);line-height:1.6;">說明：從進場日隔天的日K開始比對，最高價先碰到目標價＝看對、最低價先碰到停損價＝看錯（同一天兩個都碰到，保守算看錯）；判定後仍繼續持有，要出場請按「以現價結束」。價格資料來自 FinMind 日K（最多回溯半年），僅供練習驗證，非投資建議。</div>
+    </div>
+  </div>
+</div>
+
+<!-- PAPER TRADE SETTING DIALOG -->
+<div id="fav-trade-modal" style="display:none;position:fixed;inset:0;background:#0009;z-index:100001;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:var(--bg-panel);border:1px solid var(--border);border-radius:12px;width:100%;max-width:380px;padding:16px;box-sizing:border-box;">
+    <div id="fav-trade-title" style="font-size:16px;font-weight:700;color:var(--text-primary);margin-bottom:12px;"></div>
+    <div style="display:grid;grid-template-columns:64px 1fr;gap:10px 8px;align-items:center;font-size:14px;color:var(--text-secondary);">
+      <span>進場日</span><div><input id="fav-trade-date" type="date" onchange="_favTradeDateChanged()" style="background:var(--bg-page);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);padding:6px 9px;font-size:15px;width:100%;box-sizing:border-box;color-scheme:dark;">
+        <div id="fav-trade-dhint" style="font-size:12px;color:var(--text-dim);margin-top:4px;">改日期會自動帶入那天的收盤價（最多回溯半年）</div></div>
+      <span>進場價</span><input id="fav-trade-entry" type="number" step="0.01" oninput="_favTradeTouched.entry=true;_favTradeEntryChanged()" style="background:var(--bg-page);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);padding:7px 9px;font-size:15px;width:100%;box-sizing:border-box;">
+      <span style="color:#f85149">目標價</span>
+      <div><input id="fav-trade-target" type="number" step="0.01" oninput="_favTradeTouched.target=true;_favTradeHints()" style="background:var(--bg-page);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);padding:7px 9px;font-size:15px;width:100%;box-sizing:border-box;">
+        <div style="display:flex;gap:6px;margin-top:5px;align-items:center;flex-wrap:wrap;"><span id="fav-trade-thint" style="font-size:12px;color:#f85149;min-width:60px;"></span>
+          <button class="yf-kbar" onclick="_favTradeQuick('target',10)">+10%</button><button class="yf-kbar" onclick="_favTradeQuick('target',20)">+20%</button><button class="yf-kbar" onclick="_favTradeQuick('target',30)">+30%</button><button class="yf-kbar" onclick="_favTradeQuick('target',50)">+50%</button><button class="yf-kbar" onclick="_favTradeQuick('target',100)">+100%</button><button class="yf-kbar" onclick="_favTradeClear('target')" title="不設目標價：只看停損或手動結束">不設</button></div></div>
+      <span style="color:#3fb950">停損價</span>
+      <div><input id="fav-trade-stop" type="number" step="0.01" oninput="_favTradeTouched.stop=true;_favTradeHints()" style="background:var(--bg-page);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);padding:7px 9px;font-size:15px;width:100%;box-sizing:border-box;">
+        <div style="display:flex;gap:6px;margin-top:5px;align-items:center;flex-wrap:wrap;"><span id="fav-trade-shint" style="font-size:12px;color:#3fb950;min-width:60px;"></span>
+          <button class="yf-kbar" onclick="_favTradeQuick('stop',-5)">-5%</button><button class="yf-kbar" onclick="_favTradeQuick('stop',-8)">-8%</button><button class="yf-kbar" onclick="_favTradeQuick('stop',-10)">-10%</button><button class="yf-kbar" onclick="_favTradeQuick('stop',-15)">-15%</button><button class="yf-kbar" onclick="_favTradeQuick('stop',-20)">-20%</button><button class="yf-kbar" onclick="_favTradeClear('stop')" title="不設停損價：只看目標或手動結束">不設</button></div></div>
+    </div>
+    <div id="fav-trade-err" style="display:none;margin-top:12px;font-size:13px;color:#f85149;background:#f8514918;border:1px solid #f8514955;border-radius:6px;padding:6px 10px;"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+      <button onclick="document.getElementById('fav-trade-modal').style.display='none'" style="background:none;border:1px solid var(--border);border-radius:8px;color:var(--text-secondary);padding:8px 16px;font-size:14px;cursor:pointer;">取消</button>
+      <button id="fav-trade-save" onclick="_favTradeSave()" style="background:#1f6feb;border:none;border-radius:8px;color:#fff;padding:8px 18px;font-size:14px;font-weight:700;cursor:pointer;">儲存</button>
+    </div>
+  </div>
+</div>
+
 <!-- TODAY MARKET HIGHLIGHT MODAL -->
 <div id="today-highlight-modal" style="display:none;position:fixed;inset:0;background:var(--bg-page);z-index:9999;flex-direction:column">
   <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg-panel);flex-shrink:0">
@@ -1305,6 +1356,7 @@ function adminRemoveUser(email){
           <div id="val-pb" style="font-size:18px;font-weight:700;">-</div>
         </div>
       </div>
+      <div id="val-scenario-box" style="display:none;background:var(--bg-panel);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px;"></div>
       <div id="val-target-compare" style="display:none;background:var(--bg-panel);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px;">
         <div style="font-size:15px;font-weight:700;color:#58a6ff;margin-bottom:6px;">跟法人目標價比較</div>
         <div id="val-target-text" style="font-size:17px;color:var(--text-primary);"></div>
@@ -1437,7 +1489,7 @@ function adminRemoveUser(email){
   <div class="hdr-r">
     <button class="btn-cloud" onclick="toggleNoteFilter()" id="hdr-note-btn" title="只顯示管理者挑選個股" style="font-size:12px;padding:5px 10px">⭐</button>
     <button class="btn-cloud" onclick="toggleAllNoteFilter()" id="hdr-allnote-btn" title="只顯示有共同筆記（敲敲話）的股票" style="font-size:12px;padding:5px 10px">💬</button>
-    <button class="btn-cloud" onclick="toggleFavFilter()" id="hdr-fav-btn" title="只顯示我的最愛" style="font-size:12px;padding:5px 10px">❤️</button>
+    <button class="btn-cloud" onclick="openFavBoard()" id="hdr-fav-btn" title="我的最愛．模擬交易" style="font-size:12px;padding:5px 10px">❤️</button>
     <input id="fi" type="file" accept=".xlsx,.xls" style="display:none" onchange="loadXL(this)">
   </div>
 </div>
@@ -1586,7 +1638,7 @@ function adminRemoveUser(email){
 <script>
 var D=[];
 var D_RAW=[]; // 完整未過濾清單，黑名單增減時都從這裡重新套用篩選，移除黑名單後才能立刻恢復顯示，不用重新載入Excel
-var noteMap={}, sharedNoteMap={}, sharedNoteHistory={}, favMap={};
+var noteMap={}, sharedNoteMap={}, sharedNoteHistory={}, favMap={}, favInfo={}; // favInfo：模擬交易資料 {addDate, entry, target, stop, closeDate, closePrice}
 var generalNoteHistory=[]; // 留言板：不綁特定股票代碼的獨立留言，陣列，每則 {time, text, name}，新到舊排序
 var gnActiveJumpCode = null; // 記錄目前的搜尋是不是從大聲公點標籤跳過來的，是的話再按一次大聲公鈕就變成清除搜尋
 var _reportReturnPending = false; // 記錄目前搜尋是不是從某個報表(大戶籌碼/融資維持率/處置股)點個股跳過來的，是的話顯示「返回OO」浮檔鈕
@@ -2390,21 +2442,28 @@ var VG_RULES = [
   {k:'pe',   label:'本益比',   test:function(v){ return v!==null && v>0 && v<30; }, fmt:function(v){ return v>0 ? v.toFixed(1)+'倍' : '虧損'; }, std:'<30倍'},
   {k:'cy',   label:'殖利率',   test:function(v){ return v!==null && v>3; },  fmt:function(v){ return v.toFixed(2)+'%'; }, std:'>3%'},
   {k:'revy', label:'累計營收', test:function(v){ return v!==null && v>10; }, fmt:function(v){ return (v>0?'+':'')+v.toFixed(1)+'%'; }, std:'>10%'},
-  {k:'pr',   label:'配息率',   test:function(v){ return v!==null && v>70; }, fmt:function(v){ return v>0 ? v.toFixed(0)+'%' : '--'; }, std:'>70%'}
+  {k:'pr',   label:'配息率',   test:function(v){ return v!==null && v>70; }, fmt:function(v){ return v>0 ? v.toFixed(0)+'%' : '--'; }, std:'>70%'},
+  {k:'up',   label:'潛在漲幅', test:function(v){ return v!==null && v>30; }, fmt:function(v){ return (v>0?'+':'')+v.toFixed(0)+'%'; }, std:'>30%（依近4季EPS與累計營收自動估合理價）'}
 ];
 function _vgCheck(code){
   var r = RS_DATA && RS_DATA.byCode ? RS_DATA.byCode[code] : null;
   if(!r || r.eps4===undefined || r.eps4===null) return null; // 舊版RS檔沒有這些欄位
   var n = 0;
-  var items = VG_RULES.map(function(rule){ var v = r[rule.k]; var ok = rule.test(v); if(ok) n++; return {rule:rule, v:v, ok:ok}; });
+  var auto = null;
+  var items = VG_RULES.map(function(rule){
+    var v;
+    if(rule.k==='up'){ if(auto===null){ auto = _valAutoFair(code) || false; } v = auto ? auto.upside : null; }
+    else v = r[rule.k];
+    var ok = rule.test(v); if(ok) n++; return {rule:rule, v:v, ok:ok}; });
   return {items:items, n:n, all:n===VG_RULES.length};
 }
 function _vgLineHtml(code){
   if(typeof isAdminUser==='function' && !isAdminUser()) return '';
   var c = _vgCheck(code);
   if(!c) return '';
-  var head = c.all ? '<b style="color:#f0c040">💎 績優價值成長股 5/5</b>'
-                   : '<span style="color:var(--text-secondary)">💎 績優價值 <b style="color:'+(c.n>=4?'#f0c040':'var(--text-primary)')+'">'+c.n+'/5</b></span>';
+  var NN = VG_RULES.length;
+  var head = c.all ? '<b style="color:#f0c040">💎 績優價值成長股 '+NN+'/'+NN+'</b>'
+                   : '<span style="color:var(--text-secondary)">💎 績優價值 <b style="color:'+(c.n>=NN-1?'#f0c040':'var(--text-primary)')+'">'+c.n+'/'+NN+'</b></span>';
   var chips = c.items.map(function(it){
     var txt = it.v===null||it.v===undefined ? '--' : it.rule.fmt(it.v);
     return '<span title="標準 '+it.rule.std+'" style="white-space:nowrap;color:'+(it.ok?'#f85149':'var(--text-dim)')+'">'+it.rule.label+' '+txt+(it.ok?' ✓':' ✗')+'</span>';
@@ -3692,7 +3751,9 @@ function processRows(rows,filename){
   if(!rows || !rows.length){ alert('沒有讀到有效資料'); return; }
   var keys=Object.keys(rows[0]);
   function fc(arr){for(var i=0;i<arr.length;i++)for(var j=0;j<keys.length;j++)if(keys[j].indexOf(arr[i])>=0)return keys[j];return null;}
-  var COL={code:fc(['代碼']),name:fc(['商品','名稱']),close:fc(['昨收']),pct:fc(['漲幅']),avg:fc(['均價']),volume:fc(['成交']),turnover:fc(['換手率']),turnval:fc(['成交值']),capital:fc(['股本']),bvps:fc(['每股淨值','淨值']),margin:fc(['融資維持']),ind:fc(['所有細產業','細產業','產業']),pos:fc(['產業地位']),rs:fc(['RS%']),grossmargin:fc(['毛利率']),eps:fc(['盈餘(單)','單季','EPS']),dahubuy:fc(['大戶買賣比']),dahuchai:fc(['大戶差比']),revgrowth:fc(['營收年增率','營收年增']),chg5d:fc(['近5日漲幅','5日漲幅','5日%']),chg20d:fc(['近20日漲幅','20日漲幅','20日%']),pe:fc(['本益比','PE(市盈率)','PE']),roe:fc(['ROE','股東權益報酬率']),news:fc(['公司動態']),dahuq:fc(['大戶分區']),dahulv:fc(['大戶強度'])};
+  // 找欄位但排除含某些字的欄名（例如「營收年增率」不要誤抓到「累計營收年增率」）
+  function fcNot(arr, ex){for(var i=0;i<arr.length;i++)for(var j=0;j<keys.length;j++)if(keys[j].indexOf(arr[i])>=0 && ex.every(function(x){return keys[j].indexOf(x)<0;}))return keys[j];return null;}
+  var COL={code:fc(['代碼']),name:fc(['商品','名稱']),close:fc(['昨收']),pct:fc(['漲幅']),avg:fc(['均價']),volume:fc(['成交']),turnover:fc(['換手率']),turnval:fc(['成交值']),capital:fc(['股本']),bvps:fc(['每股淨值','淨值']),margin:fc(['融資維持']),ind:fc(['所有細產業','細產業','產業']),pos:fc(['產業地位']),rs:fc(['RS%']),grossmargin:fc(['毛利率']),eps:fc(['盈餘(單)','單季','EPS']),dahubuy:fc(['大戶買賣比']),dahuchai:fc(['大戶差比']),revgrowth:fcNot(['營收年增率','營收年增'],['累計']),revytd:fc(['累計營收年增率','累計營收']),bvpsNot:null,chg5d:fc(['近5日漲幅','5日漲幅','5日%']),chg20d:fc(['近20日漲幅','20日漲幅','20日%']),pe:fc(['本益比','PE(市盈率)','PE']),roe:fc(['ROE','股東權益報酬率']),news:fc(['公司動態']),dahuq:fc(['大戶分區']),dahulv:fc(['大戶強度'])};
   function sf(v){if(v===null||v===undefined||v===''||v==='--')return null;var n=parseFloat(v);return isNaN(n)?null:n;}
   // 成交值換算成「億」：XQ 有時輸出純數字(億)，有時輸出帶單位的文字，例如「920億」「8427萬」「1.2兆」
   function sfAmt(v){
@@ -3712,7 +3773,7 @@ function processRows(rows,filename){
     // 代碼欄可能是數字(2302)、帶空格(' 2302 ')或小數('2302.0')，統一正規化為4位字串
     var rawCode=String(r[COL.code]).trim().replace(/\.0+$/,'');
     var cleanCode=/^\d+$/.test(rawCode)?rawCode.padStart(4,'0'):rawCode;
-    nd.push({code:cleanCode,name:COL.name?String(r[COL.name]||'').trim():'',close:COL.close?sf(r[COL.close]):null,pct:COL.pct?sf(r[COL.pct]):null,avg:COL.avg?sf(r[COL.avg]):null,volume:COL.volume?sf(r[COL.volume]):null,turnover:COL.turnover?sf(r[COL.turnover]):null,turnval:COL.turnval?sfAmt(r[COL.turnval]):null,capital:COL.capital?sf(r[COL.capital]):null,bvps:COL.bvps?sf(r[COL.bvps]):null,margin:COL.margin?sf(r[COL.margin]):null,position:COL.pos&&r[COL.pos]?String(r[COL.pos]).trim():'',tags:ts,rs:COL.rs?sf(r[COL.rs]):null,grossmargin:COL.grossmargin?sf(r[COL.grossmargin]):null,eps:COL.eps?sf(r[COL.eps]):null,dahubuy:COL.dahubuy?sf(r[COL.dahubuy]):null,dahuchai:COL.dahuchai?sf(r[COL.dahuchai]):null,dahuQ:COL.dahuq&&r[COL.dahuq]?String(r[COL.dahuq]).trim():null,dahuLv:COL.dahulv?sf(r[COL.dahulv]):null,revgrowth:COL.revgrowth?sf(r[COL.revgrowth]):null,chg5d:COL.chg5d?sf(r[COL.chg5d]):null,chg20d:COL.chg20d?sf(r[COL.chg20d]):null,pe:COL.pe?sf(r[COL.pe]):null,roe:COL.roe?sf(r[COL.roe]):null,news:COL.news&&r[COL.news]?String(r[COL.news]).trim():''});
+    nd.push({code:cleanCode,name:COL.name?String(r[COL.name]||'').trim():'',close:COL.close?sf(r[COL.close]):null,pct:COL.pct?sf(r[COL.pct]):null,avg:COL.avg?sf(r[COL.avg]):null,volume:COL.volume?sf(r[COL.volume]):null,turnover:COL.turnover?sf(r[COL.turnover]):null,turnval:COL.turnval?sfAmt(r[COL.turnval]):null,capital:COL.capital?sf(r[COL.capital]):null,bvps:COL.bvps?sf(r[COL.bvps]):null,margin:COL.margin?sf(r[COL.margin]):null,position:COL.pos&&r[COL.pos]?String(r[COL.pos]).trim():'',tags:ts,rs:COL.rs?sf(r[COL.rs]):null,grossmargin:COL.grossmargin?sf(r[COL.grossmargin]):null,eps:COL.eps?sf(r[COL.eps]):null,dahubuy:COL.dahubuy?sf(r[COL.dahubuy]):null,dahuchai:COL.dahuchai?sf(r[COL.dahuchai]):null,dahuQ:COL.dahuq&&r[COL.dahuq]?String(r[COL.dahuq]).trim():null,dahuLv:COL.dahulv?sf(r[COL.dahulv]):null,revgrowth:COL.revgrowth?sf(r[COL.revgrowth]):null,revytd:COL.revytd?sf(r[COL.revytd]):null,chg5d:COL.chg5d?sf(r[COL.chg5d]):null,chg20d:COL.chg20d?sf(r[COL.chg20d]):null,pe:COL.pe?sf(r[COL.pe]):null,roe:COL.roe?sf(r[COL.roe]):null,news:COL.news&&r[COL.news]?String(r[COL.news]).trim():''});
   });
   if(!nd.length){alert('沒有讀到有效資料');return;}
   D_RAW=nd;
@@ -4174,8 +4235,13 @@ function autoLoadNotes(){
         generalNoteHistory = d.generalNotes || [];
         updateGeneralNoteBtn();
         // 我的最愛：只有登入時後端才會回傳（未登入是空陣列），每個使用者拿到的是自己的清單
-        favMap = {};
-        (d.favorites || []).forEach(function(fv){ if(fv && fv.code) favMap[String(fv.code)] = fv.name || ''; });
+        favMap = {}; favInfo = {};
+        (d.favorites || []).forEach(function(fv){
+          if(!fv || !fv.code) return;
+          var c = String(fv.code);
+          favMap[c] = fv.name || '';
+          favInfo[c] = _favNormInfo(fv);
+        });
         var count = Object.keys(noteMap).length + Object.keys(sharedNoteMap).length;
         if(count > 0){
           applyNotes();
@@ -4303,19 +4369,433 @@ function applyNotes(){
 
 // ══════════ 我的最愛：個人收藏（每個使用者自己的清單，別人看不到） ══════════
 function toggleFavorite(code, name, btnEl){
-  var wasFav = !!favMap[code];
-  // 先樂觀更新畫面，API失敗再復原，操作起來比較順
-  if(wasFav) delete favMap[code]; else favMap[code] = name;
-  if(btnEl) btnEl.textContent = wasFav ? '🤍' : '❤️';
+  if(!favMap[code]){
+    // 按愛心只加入「我的最愛」；要模擬交易再到 ❤️ 清單裡按「📈 模擬交易」設定價格
+    favMap[code] = name; favInfo[code] = _favNormInfo({});
+    if(btnEl) btnEl.textContent = '❤️';
+    if(favFilterOn) render();
+    _favRefreshBoardIfOpen();
+    adminFetch('addFavorite', {code: code, name: name}).then(function(res){
+      if(!res || !res.ok){
+        delete favMap[code]; delete favInfo[code];
+        if(btnEl) btnEl.textContent = '🤍';
+        if(favFilterOn) render();
+        _favRefreshBoardIfOpen();
+        toast((res && res.error === 'not_logged_in') ? '請先登入才能加入最愛' : '操作失敗，請稍後再試','#da3633');
+      }
+    });
+    return;
+  }
+  var fi = favInfo[code];
+  if(fi && fi.entry && !confirm('移除「'+name+'」會一併刪除這筆模擬交易紀錄，確定嗎？')) return;
+  delete favMap[code]; delete favInfo[code];
+  if(btnEl) btnEl.textContent = '🤍';
   if(favFilterOn) render();
-  adminFetch(wasFav ? 'removeFavorite' : 'addFavorite', {code: code, name: name}).then(function(res){
+  _favRefreshBoardIfOpen();
+  adminFetch('removeFavorite', {code: code, name: name}).then(function(res){
     if(!res || !res.ok){
-      if(wasFav) favMap[code] = name; else delete favMap[code];
-      if(btnEl) btnEl.textContent = wasFav ? '❤️' : '🤍';
+      favMap[code] = name; if(fi) favInfo[code] = fi;
+      if(btnEl) btnEl.textContent = '❤️';
       if(favFilterOn) render();
+      _favRefreshBoardIfOpen();
       toast((res && res.error === 'not_logged_in') ? '請先登入才能加入最愛' : '操作失敗，請稍後再試','#da3633');
     }
   });
+}
+
+// ══════════ 我的最愛．模擬交易 ══════════
+function _favNum2(v){ if(v===null||v===undefined||v==='') return null; var n=parseFloat(v); return isNaN(n)?null:n; }
+function _favNormInfo(fv){
+  return {addDate: fv.addDate||'', entry:_favNum2(fv.entry), target:_favNum2(fv.target), stop:_favNum2(fv.stop),
+          closeDate: fv.closeDate||'', closePrice:_favNum2(fv.closePrice)};
+}
+function _favTodayStr(){ return new Date(Date.now()+8*3600*1000).toISOString().slice(0,10); }
+// 目前價格：今天選股Excel的成交價 → RS檔成交價 → K線最後一根收盤
+function _favCurPrice(code, lastClose){
+  var s = (D_RAW||[]).find(function(x){ return x.code===code; });
+  if(s && s.volume!==null && s.volume!==undefined) return s.volume;
+  if(RS_DATA && RS_DATA.byCode[code] && RS_DATA.byCode[code].close) return RS_DATA.byCode[code].close;
+  return lastClose!==undefined ? lastClose : null;
+}
+var _favTradeCtx = null;
+var _favSearchQ = '';
+function _favMatchQ(c){ if(!_favSearchQ) return true; return c.toLowerCase().indexOf(_favSearchQ)>=0 || String(favMap[c]||'').toLowerCase().indexOf(_favSearchQ)>=0; }
+// 改進場日期：抓那天（或之後第一個交易日）的收盤價帶入進場價（進場價沒手動改過才帶）
+function _favTradeDateChanged(){
+  var c = _favTradeCtx; if(!c) return;
+  var d = document.getElementById('fav-trade-date').value;
+  var hint = document.getElementById('fav-trade-dhint');
+  if(!d){ return; }
+  if(d > _favTodayStr()){ _favTradeErr('進場日期不能是未來'); return; }
+  _favTradeErr('');
+  if(_favTradeTouched.entry){ hint.textContent = '進場價已手動輸入，不自動帶入收盤價'; return; }
+  hint.textContent = '讀取 '+d+' 收盤價中…';
+  fetchKData(c.code, 'D', function(data){
+    var bar = (data||[]).filter(function(b){ return b.d >= d; })[0];
+    if(!bar){ hint.textContent = '找不到這天之後的K線（最多回溯半年），請手動輸入進場價'; return; }
+    document.getElementById('fav-trade-entry').value = bar.c;
+    hint.textContent = '已帶入 '+bar.d+' 收盤價 '+bar.c+(bar.d!==d?'（'+d+' 沒有開盤，用下一個交易日）':'');
+    _favTradeEntryChanged();
+  });
+}
+var _favTradeTouched = {target:false, stop:false, entry:false}; // 目標／停損有沒有手動改過；沒改過的話，改進場價時跟著用同樣%重算
+var _favTradePct = {target:20, stop:-10};
+function _favTradeEntryChanged(){
+  var e = parseFloat(document.getElementById('fav-trade-entry').value);
+  if(e>0){
+    if(!_favTradeTouched.target) document.getElementById('fav-trade-target').value = Math.round(e*(1+_favTradePct.target/100)*100)/100;
+    if(!_favTradeTouched.stop) document.getElementById('fav-trade-stop').value = Math.round(e*(1+_favTradePct.stop/100)*100)/100;
+  }
+  _favTradeHints();
+}
+function _favTradeErr(msg){
+  var el = document.getElementById('fav-trade-err');
+  if(!el){ toast(msg,'#da3633'); return; }
+  el.textContent = msg; el.style.display = msg ? 'block' : 'none';
+}
+function _openFavTrade(code, name, mode, btnEl){
+  if(typeof fbAuth!=='undefined' && !fbAuth.currentUser){ toast('請先登入才能加入最愛','#da3633'); return; }
+  _favTradeCtx = {code:code, name:name, mode:mode, btnEl:btnEl};
+  var fi = favInfo[code] || {};
+  var cur = _favCurPrice(code);
+  var entry = (mode==='edit' && fi.entry) ? fi.entry : cur;
+  document.getElementById('fav-trade-title').textContent = (fi.entry?'✏️ 調整價格　':'📈 開始模擬交易　')+code+' '+name;
+  var r2 = function(v){ return v===null||v===undefined ? '' : (Math.round(v*100)/100); };
+  document.getElementById('fav-trade-entry').value = r2(entry);
+  document.getElementById('fav-trade-target').value = r2(mode==='edit' && fi.target ? fi.target : (entry ? entry*1.2 : null));
+  document.getElementById('fav-trade-stop').value = r2(mode==='edit' && fi.stop ? fi.stop : (entry ? entry*0.9 : null));
+  // 新設定時目標／停損跟著進場價走；調整既有的就視為已手動設定過
+  _favTradeTouched = {target: !!(mode==='edit' && fi.target), stop: !!(mode==='edit' && fi.stop), entry: !!fi.entry};
+  var dEl = document.getElementById('fav-trade-date');
+  dEl.value = fi.entry && fi.addDate ? fi.addDate : _favTodayStr();
+  dEl.max = _favTodayStr();
+  document.getElementById('fav-trade-dhint').textContent = '改日期會自動帶入那天的收盤價（最多回溯半年）';
+  _favTradePct = {target:20, stop:-10};
+  _favTradeErr('');
+  _favTradeHints();
+  document.getElementById('fav-trade-modal').style.display = 'flex';
+}
+function _favTradeQuick(which, pct){
+  var e = parseFloat(document.getElementById('fav-trade-entry').value);
+  if(!e) return;
+  document.getElementById('fav-trade-'+which).value = Math.round(e*(1+pct/100)*100)/100;
+  _favTradePct[which] = pct; _favTradeTouched[which] = false; // 按快速鍵＝之後改進場價也照這個%跟著算
+  _favTradeHints();
+}
+// 不設目標／停損：清空欄位，之後改進場價也不會自動補回
+function _favTradeClear(which){
+  document.getElementById('fav-trade-'+which).value = '';
+  _favTradeTouched[which] = true;
+  _favTradeHints();
+}
+function _favTradeHints(){
+  var e = parseFloat(document.getElementById('fav-trade-entry').value);
+  var tg = parseFloat(document.getElementById('fav-trade-target').value);
+  var sp = parseFloat(document.getElementById('fav-trade-stop').value);
+  var f = function(v){ return (v>0?'+':'')+v.toFixed(1)+'%'; };
+  document.getElementById('fav-trade-thint').textContent = (e&&tg) ? f((tg/e-1)*100) : '不設目標';
+  document.getElementById('fav-trade-shint').textContent = (e&&sp) ? f((sp/e-1)*100) : '不設停損';
+}
+function _favTradeSave(){
+  var c = _favTradeCtx; if(!c) return;
+  var e = parseFloat(document.getElementById('fav-trade-entry').value);
+  var tg = parseFloat(document.getElementById('fav-trade-target').value);
+  var sp = parseFloat(document.getElementById('fav-trade-stop').value);
+  if(!(e>0)){ _favTradeErr('請輸入進場價'); return; }
+  if(tg && tg<=e){ _favTradeErr('目標價（'+tg+'）要高於進場價（'+e+'）'); return; }
+  if(sp && sp>=e){ _favTradeErr('停損價（'+sp+'）要低於進場價（'+e+'），請調整或按 -5% / -8% / -10%'); return; }
+  _favTradeErr('');
+  var dsel = document.getElementById('fav-trade-date').value || _favTodayStr();
+  if(dsel > _favTodayStr()){ _favTradeErr('進場日期不能是未來'); return; }
+  var params = {code:c.code, name:c.name, entry:e, target:isNaN(tg)?'':tg, stop:isNaN(sp)?'':sp, addDate:dsel};
+  var old = favInfo[c.code];
+  var wasFav = !!favMap[c.code];
+  favMap[c.code] = c.name;
+  favInfo[c.code] = {addDate: dsel,
+                     entry:e, target:isNaN(tg)?null:tg, stop:isNaN(sp)?null:sp,
+                     closeDate: (old && c.mode==='edit') ? old.closeDate : '', closePrice: (old && c.mode==='edit') ? old.closePrice : null};
+  if(c.btnEl) c.btnEl.textContent = '❤️';
+  document.getElementById('fav-trade-modal').style.display = 'none';
+  delete _favEvalCache[c.code];
+  _favRefreshBoardIfOpen();
+  if(favFilterOn) render();
+  var act = wasFav ? 'updateFavorite' : 'addFavorite';
+  if(wasFav && !(old && old.entry)) params.resetDate = '1'; // 舊的最愛第一次設定價格，從今天開始算
+  adminFetch(act, params).then(function(res){
+    if(!res || !res.ok){
+      if(!wasFav){ delete favMap[c.code]; delete favInfo[c.code]; if(c.btnEl) c.btnEl.textContent = '🤍'; }
+      else favInfo[c.code] = old;
+      _favRefreshBoardIfOpen();
+      toast('儲存失敗，請稍後再試','#da3633');
+    } else toast(wasFav ? '✅ 已更新' : '❤️ 已加入模擬交易','#238636');
+  });
+}
+function _favCloseTrade(code){
+  var fi = favInfo[code]; if(!fi) return;
+  var ev = _favEvalCache[code];
+  var price = ev && ev.cur ? ev.cur : _favCurPrice(code);
+  if(!price){ toast('抓不到目前價格，請稍後再試','#da3633'); return; }
+  if(!confirm('以目前價格 '+price+' 結束這筆模擬交易？')) return;
+  var old = {closeDate:fi.closeDate, closePrice:fi.closePrice};
+  fi.closeDate = _favTodayStr(); fi.closePrice = price;
+  delete _favEvalCache[code]; _renderFavBoard();
+  adminFetch('updateFavorite', {code:code, closePrice:price}).then(function(res){
+    if(!res || !res.ok){ fi.closeDate = old.closeDate; fi.closePrice = old.closePrice; delete _favEvalCache[code]; _renderFavBoard(); toast('操作失敗，請稍後再試','#da3633'); }
+  });
+}
+// 取消模擬交易：清掉價格，個股回到下方「我的最愛」（愛心保留）
+function _favCancelTrade(code){
+  var fi = favInfo[code]; if(!fi) return;
+  if(!confirm('取消這筆模擬交易？價格紀錄會清除，個股留在我的最愛。')) return;
+  var old = JSON.parse(JSON.stringify(fi));
+  favInfo[code] = _favNormInfo({});
+  delete _favEvalCache[code]; _renderFavBoard();
+  adminFetch('updateFavorite', {code:code, entry:'', target:'', stop:'', reopen:'1'}).then(function(res){
+    if(!res || !res.ok){ favInfo[code] = old; _renderFavBoard(); toast('操作失敗，請稍後再試','#da3633'); }
+  });
+}
+function _favReopen(code){
+  var fi = favInfo[code]; if(!fi) return;
+  var old = {closeDate:fi.closeDate, closePrice:fi.closePrice};
+  fi.closeDate = ''; fi.closePrice = null;
+  delete _favEvalCache[code]; _renderFavBoard();
+  adminFetch('updateFavorite', {code:code, reopen:'1'}).then(function(res){
+    if(!res || !res.ok){ fi.closeDate = old.closeDate; fi.closePrice = old.closePrice; delete _favEvalCache[code]; _renderFavBoard(); toast('操作失敗，請稍後再試','#da3633'); }
+  });
+}
+// 判定結果：{status:'unset'|'open'|'win'|'loss'|'closed', ret:%, date, cur, days}
+var _favEvalCache = {};
+function _favDays(a, b){ if(!a) return null; var d1=new Date(a+'T00:00:00'), d2=new Date((b||_favTodayStr())+'T00:00:00'); return Math.max(0, Math.round((d2-d1)/86400000)); }
+function _favEvaluate(code, cb){
+  var fi = favInfo[code] || {};
+  if(!fi.entry){ cb({status:'unset'}); return; }
+  if(fi.closePrice){ cb({status:'closed', ret:(fi.closePrice/fi.entry-1)*100, date:fi.closeDate, cur:fi.closePrice, days:_favDays(fi.addDate, fi.closeDate)}); return; }
+  if(_favEvalCache[code]){ cb(_favEvalCache[code]); return; }
+  fetchKData(code, 'D', function(data){
+    // 碰到目標／停損只「判定看對看錯」，不會自動出場；要出場請按「以現價結束」
+    var verdict = null, hitDate = '', last = data && data.length ? data[data.length-1].c : null;
+    (data||[]).forEach(function(b){
+      if(verdict || !fi.addDate || b.d <= fi.addDate) return; // 進場日隔天才開始比對
+      var hitStop = fi.stop && b.l <= fi.stop, hitTgt = fi.target && b.h >= fi.target;
+      if(hitStop){ verdict = 'loss'; hitDate = b.d; }       // 同一天兩個都碰到，保守算看錯
+      else if(hitTgt){ verdict = 'win'; hitDate = b.d; }
+    });
+    var cur = _favCurPrice(code, last);
+    var res = {status:'open', verdict:verdict, hitDate:hitDate, ret: cur ? (cur/fi.entry-1)*100 : null, cur:cur, date:''};
+    res.days = _favDays(fi.addDate, null);
+    // 再抓 Fugle 即時報價（最新成交價），抓到就用即時價算報酬；6秒內沒回來就先用收盤資料
+    var finished = false;
+    var finish = function(){ if(finished) return; finished = true; _favEvalCache[code] = res; cb(res); };
+    setTimeout(finish, 6000);
+    _favLivePrice(code).then(function(q){
+      if(finished || !q) { finish(); return; }
+      res.cur = q.price; res.ret = (q.price/fi.entry-1)*100; res.live = q.timeStr;
+      // 今天盤中的高低點也算進判定（還沒判定過才看）
+      if(!res.verdict && fi.addDate < _favTodayStr()){
+        if(fi.stop && q.low && q.low <= fi.stop){ res.verdict = 'loss'; res.hitDate = _favTodayStr(); }
+        else if(fi.target && q.high && q.high >= fi.target){ res.verdict = 'win'; res.hitDate = _favTodayStr(); }
+      }
+      finish();
+    });
+    return;
+    _favEvalCache[code] = res;
+    cb(res);
+  });
+}
+// Fugle 即時報價（跟卡片上「📡 即時」同一個來源），1分鐘內重複查同一檔直接用快取
+var _favLiveCache = {};
+function _favLivePrice(code){
+  var c = _favLiveCache[code];
+  if(c && Date.now()-c.t < 60*1000) return Promise.resolve(c.q);
+  return adminFetch('price', {code: code}).then(function(d){
+    if(!d || !d.ok || !d.price) return null;
+    var tm = d.time ? new Date(d.time/1000) : null;
+    var q = {price: parseFloat(d.price), high: parseFloat(d.high)||null, low: parseFloat(d.low)||null,
+             timeStr: tm ? (tm.getMonth()+1)+'/'+tm.getDate()+' '+tm.getHours()+':'+String(tm.getMinutes()).padStart(2,'0') : ''};
+    _favLiveCache[code] = {t: Date.now(), q: q};
+    return q;
+  }).catch(function(){ return null; });
+}
+var _favActiveTab = '持有中';
+var FAV_TAB_DEFS = [
+  {key:'持有中', desc:'追蹤中', color:'#58a6ff', bg:'#1f6feb15'},
+  {key:'看對', desc:'達標／結束賺', color:'#f85149', bg:'#f8514915'},
+  {key:'看錯', desc:'停損／結束賠', color:'#3fb950', bg:'#3fb95015'},
+  {key:'全部', desc:'所有最愛', color:'#d29922', bg:'#d2992215'}
+];
+function _favTabOf(ev){
+  if(!ev || ev.status==='unset') return '持有中';
+  if(ev.status==='closed') return ev.ret>0 ? '看對' : '看錯';
+  if(ev.verdict==='win') return '看對';
+  if(ev.verdict==='loss') return '看錯';
+  return '持有中';
+}
+function openFavBoard(){
+  _hideReportReturnFab();
+  if(typeof fbAuth!=='undefined' && !fbAuth.currentUser){ toast('請先登入才能使用我的最愛','#da3633'); return; }
+  document.getElementById('fav-board-modal').style.display = 'flex';
+  _renderFavBoard();
+}
+function closeFavBoard(){ document.getElementById('fav-board-modal').style.display = 'none'; }
+function _favRefreshBoardIfOpen(){ var m=document.getElementById('fav-board-modal'); if(m && m.style.display!=='none') _renderFavBoard(); }
+function _selectFavTab(k){ _favActiveTab = k; _renderFavBoard(); }
+var _favRenderSeq = 0;
+function _renderFavBoard(){
+  var all = Object.keys(favMap);
+  var tradeCodes = all.filter(function(c){ return favInfo[c] && favInfo[c].entry && _favMatchQ(c); });
+  var watchCodes = all.filter(function(c){ return !(favInfo[c] && favInfo[c].entry) && _favMatchQ(c); });
+  _renderFavWatch(watchCodes);
+  var listEl = document.getElementById('fav-list');
+  var codes = tradeCodes;
+  if(!codes.length){
+    document.getElementById('fav-stats').innerHTML = '';
+    document.getElementById('fav-summary').innerHTML = '';
+    listEl.innerHTML = _favSearchQ ? '<div style="padding:18px 12px;text-align:center;color:var(--text-secondary);font-size:13px;">模擬交易裡沒有符合「'+_favSearchQ+'」的股票</div>' : '<div style="padding:22px 12px;text-align:center;color:var(--text-secondary);font-size:13.5px;line-height:1.8;">還沒有模擬交易<br>在下方「我的最愛」按 📈 模擬交易，設定進場、目標、停損價就會出現在這裡</div>';
+    return;
+  }
+  var seq = ++_favRenderSeq, evs = {}, pending = codes.length;
+  if(listEl.innerHTML.indexOf('fav-row')<0) listEl.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-secondary);font-size:13px;">計算中…</div>';
+  var done = function(){
+    if(seq !== _favRenderSeq) return;
+    var cnt = {'持有中':0,'看對':0,'看錯':0,'全部':codes.length}, sumRes=0, nRes=0, sumOpen=0, nOpen=0;
+    codes.forEach(function(c){
+      var ev = evs[c], tab = _favTabOf(ev); cnt[tab]++;
+      if(ev && ev.ret!==null && ev.ret!==undefined){
+        if(tab==='持有中'){ sumOpen+=ev.ret; nOpen++; } else { sumRes+=ev.ret; nRes++; }
+      }
+    });
+    document.getElementById('fav-stats').innerHTML = FAV_TAB_DEFS.map(function(d){
+      var active = _favActiveTab===d.key;
+      return '<div onclick="_selectFavTab(\''+d.key+'\')" style="cursor:pointer;background:'+d.bg+';border:1.5px solid '+(active?d.color:'var(--border)')+';border-radius:9px;padding:8px 4px;text-align:center;">'
+        +'<div style="font-size:15px;color:'+d.color+';font-weight:700;">'+d.key+'</div>'
+        +'<div style="font-size:20px;font-weight:800;color:'+d.color+';line-height:1.3;margin-top:2px;">'+cnt[d.key]+'</div>'
+        +'<div style="font-size:12px;color:'+d.color+';opacity:0.85;margin-top:3px;line-height:1.4;padding-top:3px;border-top:1px solid '+d.color+'33;">'+d.desc+'</div></div>';
+    }).join('');
+    var resolved = cnt['看對']+cnt['看錯'];
+    var pc = function(v){ return '<b style="color:'+(v>0?'#f85149':v<0?'#3fb950':'var(--text-primary)')+'">'+(v>0?'+':'')+v.toFixed(2)+'%</b>'; };
+    document.getElementById('fav-summary').innerHTML =
+      '🎯 勝率 <b style="color:var(--text-primary)">'+(resolved? (cnt['看對']/resolved*100).toFixed(0)+'%' : '--')+'</b>（'+cnt['看對']+' 對 / '+cnt['看錯']+' 錯）'
+      +'　全部平均報酬 '+((nRes+nOpen)?pc((sumRes+sumOpen)/(nRes+nOpen)):'--')
+      +'　已判定（看對＋看錯）平均 '+(nRes?pc(sumRes/nRes):'--')
+      +'　尚未判定平均 '+(nOpen?pc(sumOpen/nOpen):'--')
+      +'<div style="font-size:11.5px;color:var(--text-dim);">報酬：持有中用現價、已結束用出場價計算；碰到目標／停損只判定看對看錯，不會自動出場</div>';
+    var rows = codes.filter(function(c){ return _favActiveTab==='全部' || _favTabOf(evs[c])===_favActiveTab; });
+    rows.sort(function(a,b){ var ra=evs[a]&&evs[a].ret, rb=evs[b]&&evs[b].ret; return (rb===null||rb===undefined?-1e9:rb)-(ra===null||ra===undefined?-1e9:ra); });
+    listEl.innerHTML = rows.length ? rows.map(function(c){ return _favRowHtml(c, evs[c]); }).join('')
+      : '<div style="padding:22px 12px;text-align:center;color:var(--text-secondary);font-size:13px;">這一區目前沒有股票</div>';
+  };
+  codes.forEach(function(c){ _favEvaluate(c, function(ev){ evs[c] = ev; if(--pending===0) done(); }); });
+}
+// 下方「我的最愛」：還沒設定模擬交易的個股，用簡要資訊列出（排版比照大戶／營收趨勢表）
+function _renderFavWatch(codes){
+  var el = document.getElementById('fav-watch-list');
+  document.getElementById('fav-watch-title').innerHTML = '❤️ 我的最愛 <span style="font-size:12px;font-weight:400;color:var(--text-secondary);">（'+codes.length+' 檔，尚未設定模擬交易）</span>';
+  if(!codes.length){ el.innerHTML = '<div style="padding:22px 12px;text-align:center;color:var(--text-secondary);font-size:13.5px;">'+(_favSearchQ?'我的最愛裡沒有符合「'+_favSearchQ+'」的股票':'在卡片上按 🤍 就能加入我的最愛')+'</div>'; return; }
+  var info = codes.map(function(c){
+    var s = (D_RAW||[]).find(function(x){ return x.code===c; });
+    if(!s && RS_DATA && RS_DATA.byCode[c]) s = _rsOnlyStock(RS_DATA.byCode[c]);
+    return {code:c, s:s};
+  });
+  info.sort(function(a,b){ var pa=a.s&&a.s.pct!==null&&a.s.pct!==undefined?a.s.pct:-1e9, pb=b.s&&b.s.pct!==null&&b.s.pct!==undefined?b.s.pct:-1e9; return pb-pa; });
+  el.innerHTML = info.map(function(x){ return _favBriefRowHtml(x.code, x.s); }).join('');
+}
+function _favBriefRowHtml(code, s){
+  var name = favMap[code] || (s&&s.name) || '';
+  var nm = name.replace(/'/g,"\\'");
+  var price = s && s.volume!==null && s.volume!==undefined ? s.volume : null;
+  var prev = s && s.close!==null && s.close!==undefined ? s.close : null;
+  var pct = s && s.pct!==null && s.pct!==undefined ? s.pct : null;
+  var pc = price!==null&&prev!==null ? (price>prev?'#f85149':price<prev?'#3fb950':'var(--text-primary)') : 'var(--text-primary)';
+  var pctc = pct>0?'#f85149':pct<0?'#3fb950':'var(--text-secondary)';
+  var chip = function(txt, bg, fg){ return '<span style="font-size:12px;font-weight:700;padding:3px 7px;border-radius:5px;background:'+bg+';color:'+fg+';white-space:nowrap;">'+txt+'</span>'; };
+  var chips = '';
+  if(typeof _rsBadgeHtml==='function') chips += _rsBadgeHtml(code);
+  if(s && s.revgrowth!==null && s.revgrowth!==undefined) chips += chip('營收年增 '+(s.revgrowth>0?'+':'')+s.revgrowth.toFixed(1)+'%', s.revgrowth>0?'#f8514933':'#3fb95033', s.revgrowth>0?'#f85149':'#3fb950');
+  if(s){ var q=_dahuStockQuadrant(s.dahubuy, s.dahuchai, s.dahuQ); if(q.label!=='--') chips += chip('籌碼 '+q.label, q.bg, q.fg); }
+  if(s && s.chg20d!==null && s.chg20d!==undefined) chips += chip('近20日 '+(s.chg20d>0?'+':'')+s.chg20d.toFixed(1)+'%', s.chg20d>0?'#f8514933':'#3fb95033', s.chg20d>0?'#f85149':'#3fb950');
+  var notToday = s && s._rsOnly ? '<span style="font-size:11px;color:var(--text-secondary);border:1px dashed var(--border);border-radius:4px;padding:1px 6px;">尚未納入選股</span>' : (!s ? '<span style="font-size:11px;color:var(--text-dim);">今日無資料</span>' : '');
+  var btn = function(label, fn, col){ return '<button onclick="event.stopPropagation();'+fn+'" style="background:none;border:1px solid var(--border);border-radius:6px;color:'+(col||'var(--text-secondary)')+';font-size:12.5px;padding:4px 10px;cursor:pointer;white-space:nowrap;">'+label+'</button>'; };
+  return '<div onclick="jumpFromFavBoard(\''+code+'\')" style="padding:10px 8px;border-bottom:1px solid var(--border);cursor:pointer;">'
+    +'<div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;">'
+      +'<span style="color:#79c0ff;font-family:monospace;font-size:19.5px;font-weight:700;">'+code+'</span>'
+      +'<span style="color:var(--text-primary);font-size:16px;font-weight:700;">'+name+'</span>'+notToday
+      +'<span style="flex:1"></span>'
+      +(s && s.position ? '<span style="font-size:12px;color:var(--text-altlight);max-width:45%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+s.position+'</span>' : '')
+    +'</div>'
+    +'<div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:5px;">'
+      +'<span style="font-size:14px;color:'+pc+';font-weight:700;">'+(price!==null?price:'--')+'</span>'
+      +'<span style="font-size:12px;color:var(--text-dim);">昨收 '+(prev!==null?prev:'--')+'</span>'
+      +'<span style="font-size:12.5px;font-weight:700;color:'+pctc+';">'+(pct!==null?(pct>0?'+':'')+pct.toFixed(1)+'%':'--')+'</span>'
+      +'<span style="flex:1"></span>'+chips
+    +'</div>'
+    +(typeof _instLineHtml==='function' ? _instLineHtml(code) : '')
+    +'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">'
+      +btn('📈 模擬交易', "_openFavTrade('"+code+"','"+nm+"','edit')", '#58a6ff')
+      +btn('🗑 移除', "toggleFavorite('"+code+"','"+nm+"',null)", '#da3633')
+    +'</div>'
+  +'</div>';
+}
+function _favRowHtml(code, ev){
+  var fi = favInfo[code] || {}, name = favMap[code] || '';
+  var s = (D_RAW||[]).find(function(x){ return x.code===code; });
+  var f2 = function(v){ return v===null||v===undefined ? '--' : (v<10?v.toFixed(2):v.toFixed(1)); };
+  var md = function(d){ return d ? d.slice(5).replace('-','/') : ''; };
+  var st = ev ? ev.status : 'unset';
+  var vd = ev && ev.verdict;
+  var badge = st==='open' ? (vd==='win' ? ['🎯 看對・持有中','#f85149'] : vd==='loss' ? ['✋ 看錯・持有中','#3fb950'] : ['持有中','#58a6ff'])
+            : st==='closed' ? (ev.ret>0 ? ['結束・看對','#f85149'] : ['結束・看錯','#3fb950']) : ['未設定價格','#8b949e'];
+  var retHtml = (ev && ev.ret!==null && ev.ret!==undefined)
+    ? '<span style="font-size:16px;font-weight:800;color:'+(ev.ret>0?'#f85149':ev.ret<0?'#3fb950':'var(--text-primary)')+'">'+(ev.ret>0?'+':'')+ev.ret.toFixed(2)+'%</span>' : '';
+  var info = '';
+  if(fi.entry){
+    info = '<span>進場 <b style="color:var(--text-primary)">'+f2(fi.entry)+'</b>'+(fi.addDate?' <span style="color:var(--text-dim)">('+md(fi.addDate)+')</span>':'')+'</span>'
+      +'<span>'+(st==='open'?(ev&&ev.live?'<span style="background:#1f6feb33;border:1px solid #58a6ff55;border-radius:4px;padding:0 5px;font-size:11px;color:#58a6ff;">📡 即時 '+ev.live+'</span> ':'現價'):'出場')+' <b style="color:var(--text-primary)">'+f2(ev?ev.cur:null)+'</b>'+(ev&&ev.date?' <span style="color:var(--text-dim)">('+md(ev.date)+')</span>':'')+'</span>'
+      +(ev&&ev.days!==null&&ev.days!==undefined?'<span>'+(st==='open'?'持有 ':'歷時 ')+ev.days+' 天</span>':'')
+      +(st==='open'&&vd&&ev.hitDate?'<span style="color:'+(vd==='win'?'#f85149':'#3fb950')+'">'+md(ev.hitDate)+' '+(vd==='win'?'碰到目標價':'碰到停損價')+'</span>':'');
+  }
+  var bar = '';
+  if(st==='open' && fi.stop && fi.target && ev.cur){
+    var pos = Math.max(0, Math.min(100, (ev.cur-fi.stop)/(fi.target-fi.stop)*100));
+    var epos = Math.max(0, Math.min(100, (fi.entry-fi.stop)/(fi.target-fi.stop)*100));
+    bar = '<div style="display:flex;align-items:center;gap:8px;margin-top:9px;font-size:12px;">'
+      +'<span style="color:#3fb950;white-space:nowrap;">停損 '+f2(fi.stop)+'</span>'
+      +'<div style="position:relative;flex:1;height:8px;border-radius:4px;background:linear-gradient(90deg,#3fb95066,#8b949e33 50%,#f8514966);">'
+        +'<div title="進場價" style="position:absolute;left:'+epos+'%;top:-3px;width:2px;height:14px;background:var(--text-secondary);"></div>'
+        +'<div title="現價" style="position:absolute;left:calc('+pos+'% - 7px);top:-3px;width:14px;height:14px;box-sizing:border-box;border-radius:50%;background:'+(ev.cur>=fi.entry?'#f85149':'#3fb950')+';border:2px solid var(--bg-panel);"></div>'
+      +'</div>'
+      +'<span style="color:#f85149;white-space:nowrap;">目標 '+f2(fi.target)+'</span></div>';
+  } else if(fi.entry){
+    bar = '<div style="font-size:12px;color:var(--text-dim);margin-top:6px;">目標 '+(fi.target?f2(fi.target):'不設')+'　停損 '+(fi.stop?f2(fi.stop):'不設')+'</div>';
+  }
+  var btn = function(label, fn, col){ return '<button onclick="event.stopPropagation();'+fn+'" style="background:none;border:1px solid var(--border);border-radius:6px;color:'+(col||'var(--text-secondary)')+';font-size:12.5px;padding:4px 10px;cursor:pointer;white-space:nowrap;">'+label+'</button>'; };
+  var nm = name.replace(/'/g,"\\'");
+  var btns = (!fi.entry ? btn('✏️ 設定價格', "_openFavTrade('"+code+"','"+nm+"','edit')", '#58a6ff')
+              : btn('✏️ 調整', "_openFavTrade('"+code+"','"+nm+"','edit')")
+                + (st==='open' ? btn('⏹ 以現價結束', "_favCloseTrade('"+code+"')") : '')
+                + (st==='closed' ? btn('↺ 重新追蹤', "_favReopen('"+code+"')") : ''))
+             + btn('↩ 取消模擬', "_favCancelTrade('"+code+"')")
+             + btn('🗑 移除', "toggleFavorite('"+code+"','"+nm+"',null)", '#da3633');
+  return '<div class="fav-row" onclick="jumpFromFavBoard(\''+code+'\')" style="padding:12px 8px;border-bottom:1px solid var(--border);cursor:pointer;">'
+    +'<div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;">'
+      +'<span style="color:#79c0ff;font-family:monospace;font-size:19.5px;font-weight:700;">'+code+'</span>'
+      +'<span style="color:var(--text-primary);font-size:16px;font-weight:700;">'+name+'</span>'
+      +'<span style="font-size:11.5px;font-weight:700;padding:2px 7px;border-radius:5px;background:'+badge[1]+'22;color:'+badge[1]+';">'+badge[0]+'</span>'
+      +'<span style="flex:1"></span>'+retHtml
+    +'</div>'
+    +(s && s.position ? '<div style="font-size:12px;color:var(--text-altlight);margin-top:2px;">'+s.position+'</div>' : '')
+    +(info ? '<div style="display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px;font-size:13px;color:var(--text-secondary);">'+info+'</div>' : '')
+    +bar
+    +'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">'+btns+'</div>'
+  +'</div>';
+}
+function jumpFromFavBoard(code){
+  closeFavBoard();
+  sel = []; window._hcatCodes = null; renderSelTags();
+  gnActiveJumpCode = code;
+  var searchInput = document.getElementById('fsearch');
+  if(searchInput){ searchInput.value = code; doSearch(code, true); toggleClear(code); }
+  window.scrollTo({top:0, behavior:'smooth'});
+  _showReportReturnFab('返回我的最愛', openFavBoard);
 }
 
 // ══════════ 備註共同編輯：寫回共用Google試算表 ══════════
@@ -8010,7 +8490,152 @@ function openValuationTool(code){
   document.getElementById('val-warn').style.display = 'none';
   var valScrollEl = document.getElementById('val-modal-scroll');
   if(valScrollEl) valScrollEl.scrollTop = 0;
+  var scBox = document.getElementById('val-scenario-box'); if(scBox) scBox.style.display = 'none';
   document.getElementById('valuation-modal').style.display = 'flex';
+  try{ _valEnhance(code, s); }catch(e){ console.warn('valEnhance', e); }
+}
+
+// ══════════ 合理性評估優化（V3_15_357）══════════
+// 共用的 DCF：基準EPS、1–5年成長、6–10年成長、折現率、永續成長（%）
+function _valDcf(base, g1, g2, r, gt){
+  if(!(base>0) || r<=gt) return null;
+  var rr=r/100, cf=base, sum=0;
+  for(var y=1;y<=10;y++){ cf = cf*(1+((y<=5)?g1:g2)/100); sum += cf/Math.pow(1+rr,y); }
+  var tv = cf*(1+gt/100)/(rr-gt/100);
+  return sum + tv/Math.pow(1+rr,10);
+}
+// 依RS檔資料自動估合理價（給績優價值的「潛在漲幅」條件用）：近4季EPS＋累計營收年增率＋系統建議參數
+function _valAutoFair(code){
+  var r = RS_DATA && RS_DATA.byCode ? RS_DATA.byCode[code] : null;
+  if(!r || !(r.eps4>0) || !r.close) return null;
+  var s = (D_RAW||[]).find(function(x){ return x.code===code; }) || {};
+  var pe = r.pe>0 ? r.pe : r.close/r.eps4;
+  var sug = suggestValuationParams({revgrowth: (r.revy!==null&&r.revy!==undefined) ? r.revy : (s.revgrowth!==undefined?s.revgrowth:null), grossmargin: s.grossmargin!==undefined ? s.grossmargin : null}, pe);
+  var fair = _valDcf(r.eps4, sug.g1, sug.g2, sug.r, sug.gt);
+  return fair ? {fair:fair, upside:(fair/r.close-1)*100} : null;
+}
+function _valSetSrc(inputId, html){
+  var inp = document.getElementById(inputId); if(!inp) return;
+  var lab = inp.parentElement && inp.parentElement.querySelector('label'); if(!lab) return;
+  var sp = lab.querySelector('.val-src');
+  if(!sp){ sp = document.createElement('span'); sp.className = 'val-src'; sp.style.cssText = 'margin-left:6px;font-size:11.5px;color:#58a6ff;'; lab.appendChild(sp); }
+  sp.innerHTML = html || '';
+}
+// 打開評估視窗後的加強：近4季EPS、累計營收年增率建議成長率、即時價、SMA/KD/年高低自動帶入
+function _valEnhance(code, s){
+  ['val-price','val-base','val-sma20','val-yearHigh'].forEach(function(id){ _valSetSrc(id, ''); });
+  var rs = RS_DATA && RS_DATA.byCode ? RS_DATA.byCode[code] : null;
+  var price = parseFloat(document.getElementById('val-price').value) || null;
+  var setPe = function(){
+    var p = parseFloat(document.getElementById('val-price').value), b = parseFloat(document.getElementById('val-base').value);
+    if(p>0 && b>0) document.getElementById('val-pe').value = (p/b).toFixed(1);
+  };
+  // 1. 基準EPS改用近4季EPS合計
+  if(rs && rs.eps4>0){
+    document.getElementById('val-base').value = rs.eps4.toFixed(2);
+    _valSetSrc('val-base', '＝近4季EPS合計');
+    setPe();
+  } else if(s.pe>0){
+    _valSetSrc('val-base', '＝股價÷本益比（證交所／櫃買公開本益比，等同近4季EPS）');
+  } else {
+    _valSetSrc('val-base', '<span style="color:#d29922">查無本益比（可能虧損），請自行輸入近4季EPS</span>');
+  }
+  // 成長率建議改參考「累計營收年增率」（比單月穩定）
+  // 管理者用RS檔的累計營收年增率；會員用公開資料的累計營收年增率（選股資料裡的 revytd）
+  var ytd = (rs && rs.revy!==null && rs.revy!==undefined) ? rs.revy : ((s.revytd!==null && s.revytd!==undefined) ? s.revytd : null);
+  if(ytd!==null){
+    var pe = parseFloat(document.getElementById('val-pe').value) || null;
+    var sug = suggestValuationParams(Object.assign({}, s, {revgrowth: ytd}), pe);
+    var fix = function(t){ return (t||'').replace(/營收年增/g, '累計營收年增'); };
+    ['g1','g2','r','gt'].forEach(function(k){
+      document.getElementById('val-'+k).value = sug[k];
+      var h = document.getElementById('val-'+k+'-hint'); if(h) h.textContent = fix(sug.reason[k]);
+    });
+  }
+  // 2. 目前股價改用即時價
+  _favLivePrice(code).then(function(q){
+    if(!q || window.valCurrentCode !== code) return;
+    document.getElementById('val-price').value = q.price;
+    _valSetSrc('val-price', '📡 即時 '+q.timeStr);
+    setPe();
+    if(document.getElementById('val-result').style.display === 'block') valCalc();
+  });
+  // 3. SMA20/SMA60/KD 用日K算、年高低用週K（約2年）算，打開就自動帶入（會員也可以用）
+  fetchKData(code, 'D', function(d){
+    if(window.valCurrentCode !== code || !d || d.length < 20) return;
+    var C = d.map(function(b){return b.c;});
+    var avg = function(n){ if(C.length<n) return null; var s=0; for(var i=C.length-n;i<C.length;i++) s+=C[i]; return s/n; };
+    var m20 = avg(20), m60 = avg(60);
+    var k=50, dd=50;
+    for(var i=0;i<d.length;i++){
+      var hh=-Infinity, ll=Infinity;
+      for(var j=Math.max(0,i-8);j<=i;j++){ if(d[j].h>hh) hh=d[j].h; if(d[j].l<ll) ll=d[j].l; }
+      var rsv = hh>ll ? (d[i].c-ll)/(hh-ll)*100 : 50;
+      k = k*2/3+rsv/3; dd = dd*2/3+k/3;
+    }
+    if(m20) document.getElementById('val-sma20').value = m20.toFixed(2);
+    if(m60) document.getElementById('val-sma60').value = m60.toFixed(2);
+    document.getElementById('val-kdK').value = k.toFixed(2);
+    document.getElementById('val-kdD').value = dd.toFixed(2);
+    _valSetSrc('val-sma20', '已依日K自動計算');
+    if(document.getElementById('val-result').style.display === 'block') valCalc();
+  });
+  fetchKData(code, 'W', function(w){
+    if(window.valCurrentCode !== code || !w || !w.length) return;
+    var last = w.slice(-52);
+    var hi = Math.max.apply(null, last.map(function(b){return b.h;})), lo = Math.min.apply(null, last.map(function(b){return b.l;}));
+    document.getElementById('val-yearHigh').value = hi.toFixed(2);
+    document.getElementById('val-yearLow').value = lo.toFixed(2);
+    _valSetSrc('val-yearHigh', '已依近52週K線自動帶入');
+    if(document.getElementById('val-result').style.display === 'block') valCalc();
+  });
+}
+// 4. 合理價區間：保守／中性／樂觀三種情境
+function _valRenderScenarios(price, base, g1, g2, r, gt){
+  var box = document.getElementById('val-scenario-box'); if(!box) return;
+  var cons = _valDcf(base, Math.max(0,g1-5), Math.max(0,g2-3), r+1, gt);
+  var mid  = _valDcf(base, g1, g2, r, gt);
+  var opt  = _valDcf(base, g1+5, g2+3, Math.max(gt+1, r-1), gt);
+  var cell = function(lbl, v, desc){
+    if(!v) return '<div style="flex:1;min-width:90px;text-align:center;">-</div>';
+    var up = (v/price-1)*100;
+    return '<div style="flex:1;min-width:90px;background:var(--bg-result);border:1px solid var(--border);border-radius:10px;padding:10px 6px;text-align:center;">'
+      +'<div style="font-size:13px;color:var(--text-secondary);">'+lbl+'</div>'
+      +'<div style="font-size:18px;font-weight:700;color:var(--text-primary);margin-top:2px;">NT$ '+valFmt(v)+'</div>'
+      +'<div style="font-size:14px;font-weight:700;color:'+(up>=0?'#f85149':'#3fb950')+';">'+(up>=0?'+':'')+up.toFixed(1)+'%</div>'
+      +'<div style="font-size:11px;color:var(--text-dim);margin-top:2px;">'+desc+'</div></div>';
+  };
+  var midUp = mid ? (mid/price-1)*100 : null;
+  box.innerHTML = '<div style="font-size:15px;font-weight:700;color:#58a6ff;margin-bottom:8px;">合理價區間（三種情境）</div>'
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap;">'
+      +cell('保守', cons, '成長−5%／折現+1%')
+      +cell('中性', mid, '目前參數')
+      +cell('樂觀', opt, '成長+5%／折現−1%')
+    +'</div>'
+    +(midUp!==null ? '<div style="font-size:13.5px;margin-top:8px;color:var(--text-secondary);">潛在漲幅（中性）<b style="color:'+(midUp>=0?'#f85149':'#3fb950')+'">'+(midUp>=0?'+':'')+midUp.toFixed(1)+'%</b>'
+       +(midUp>=30?'　<span style="color:#f0c040">✓ 符合績優價值「潛在漲幅 > 30%」</span>':'　<span style="color:var(--text-dim)">✗ 未達績優價值「潛在漲幅 > 30%」</span>')+'</div>' : '')
+    +'<div style="font-size:11.5px;color:var(--text-dim);margin-top:4px;">DCF 對成長率很敏感，三個情境差很多代表不確定性高，建議看保守值就好。</div>'
+    +'<button onclick="_valToPaperTrade()" style="margin-top:10px;width:100%;padding:10px;border-radius:10px;border:1px solid #58a6ff;background:#1f6feb22;color:#58a6ff;font-size:15px;font-weight:700;cursor:pointer;">📈 用這個評估開始模擬交易</button>';
+  box.style.display = 'block';
+  window._valLast = {code: window.valCurrentCode, price: price, cons: cons, mid: mid, opt: opt};
+}
+// 8. 一鍵設為模擬交易：進場＝目前股價、目標＝中性合理價（低於現價就用樂觀）、停損＝SMA60（在現價下方才用）／近一年低點／−10%
+function _valToPaperTrade(){
+  var L = window._valLast; if(!L || !L.code) return;
+  var code = L.code, name = (favMap[code]) || ((D_RAW||[]).find(function(x){return x.code===code;})||{}).name || (RS_DATA&&RS_DATA.byCode[code]?RS_DATA.byCode[code].name:'') || '';
+  var price = L.price;
+  var target = (L.mid && L.mid>price) ? L.mid : ((L.opt && L.opt>price) ? L.opt : null);
+  var sma60 = parseFloat(document.getElementById('val-sma60').value), ylow = parseFloat(document.getElementById('val-yearLow').value);
+  var stop = (sma60>0 && sma60<price) ? sma60 : ((ylow>0 && ylow<price && ylow>price*0.7) ? ylow : price*0.9);
+  _openFavTrade(code, name, 'edit');
+  var r2 = function(v){ return Math.round(v*100)/100; };
+  document.getElementById('fav-trade-date').value = _favTodayStr();
+  document.getElementById('fav-trade-entry').value = r2(price);
+  document.getElementById('fav-trade-target').value = target ? r2(target) : '';
+  document.getElementById('fav-trade-stop').value = r2(stop);
+  _favTradeTouched = {target:true, stop:true, entry:true};
+  document.getElementById('fav-trade-dhint').textContent = '已帶入評估結果：目標＝'+(target?(target===L.mid?'中性合理價':'樂觀合理價'):'（合理價低於現價，不設）')+'、停損＝'+((sma60>0&&sma60<price)?'SMA60':((ylow>0&&ylow<price&&ylow>price*0.7)?'近一年低點':'−10%'));
+  _favTradeHints();
 }
 
 function fetchValuationTechnical(){
@@ -8084,6 +8709,7 @@ function valCalc(){
   var premiumPct = (fairValue-price)/price*100;
 
   document.getElementById('val-fairValue').textContent = 'NT$ '+valFmt(fairValue);
+  try{ _valRenderScenarios(price, base, g1, g2, r, gt); }catch(e){ console.warn('scenario', e); }
   var premiumEl = document.getElementById('val-premium');
   premiumEl.textContent = (premiumPct>=0?'+':'')+premiumPct.toFixed(1)+'%';
   premiumEl.style.color = premiumPct>=0 ? '#f85149' : '#3fb950';
