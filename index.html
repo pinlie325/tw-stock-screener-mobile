@@ -9,6 +9,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0d1117">
+<meta name="app-build" content="348"><!-- 網頁版本號：每次上傳新版都要+1，已開啟的網頁才會偵測到新版並自動更新 -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -1476,6 +1477,7 @@ function adminRemoveUser(email){
 <div id="fsearch-suggest"></div>
 <!-- SORT BAR -->
 <div class="sbar" id="sbar">
+  <button class="sbtn admin-only" id="vg-filter-btn" onclick="toggleVgFilter()" title="績優價值成長股：近4季EPS>3、本益比<30、現金殖利率>3%、累計營收年增>10%、現金配息率>70%（全市場都會找）">💎 績優價值</button>
   <button class="sbtn on" data-k="pct" onclick="setSrtToggle(this,'pct','漲跌幅 ↑','漲跌幅 ↓')">漲跌幅 ↑</button>
   <button class="sbtn" data-k="close" onclick="setSrtToggle(this,'close','股價高→低','股價低→高')">股價高→低</button>
   <button class="sbtn admin-only" data-k="rs" onclick="setSrtToggle(this,'rs','RS% ↑','RS% ↓')">RS% ↑</button>
@@ -2381,6 +2383,54 @@ function _trimRsOnlyCards(){
     g.style.gridTemplateColumns = 'repeat(4,1fr)';
   });
 }
+// ── 績優價值成長股（資料來自RS加權分數檔，全市場都有）：5個條件，參考今周刊「績優價值成長股」選股SOP ──
+//    潛在漲幅空間需要法人目標價，資料源沒有，暫不納入
+var VG_RULES = [
+  {k:'eps4', label:'近4季EPS', test:function(v){ return v!==null && v>3; },  fmt:function(v){ return v.toFixed(2)+'元'; }, std:'>3元'},
+  {k:'pe',   label:'本益比',   test:function(v){ return v!==null && v>0 && v<30; }, fmt:function(v){ return v>0 ? v.toFixed(1)+'倍' : '虧損'; }, std:'<30倍'},
+  {k:'cy',   label:'殖利率',   test:function(v){ return v!==null && v>3; },  fmt:function(v){ return v.toFixed(2)+'%'; }, std:'>3%'},
+  {k:'revy', label:'累計營收', test:function(v){ return v!==null && v>10; }, fmt:function(v){ return (v>0?'+':'')+v.toFixed(1)+'%'; }, std:'>10%'},
+  {k:'pr',   label:'配息率',   test:function(v){ return v!==null && v>70; }, fmt:function(v){ return v>0 ? v.toFixed(0)+'%' : '--'; }, std:'>70%'}
+];
+function _vgCheck(code){
+  var r = RS_DATA && RS_DATA.byCode ? RS_DATA.byCode[code] : null;
+  if(!r || r.eps4===undefined || r.eps4===null) return null; // 舊版RS檔沒有這些欄位
+  var n = 0;
+  var items = VG_RULES.map(function(rule){ var v = r[rule.k]; var ok = rule.test(v); if(ok) n++; return {rule:rule, v:v, ok:ok}; });
+  return {items:items, n:n, all:n===VG_RULES.length};
+}
+function _vgLineHtml(code){
+  if(typeof isAdminUser==='function' && !isAdminUser()) return '';
+  var c = _vgCheck(code);
+  if(!c) return '';
+  var head = c.all ? '<b style="color:#f0c040">💎 績優價值成長股 5/5</b>'
+                   : '<span style="color:var(--text-secondary)">💎 績優價值 <b style="color:'+(c.n>=4?'#f0c040':'var(--text-primary)')+'">'+c.n+'/5</b></span>';
+  var chips = c.items.map(function(it){
+    var txt = it.v===null||it.v===undefined ? '--' : it.rule.fmt(it.v);
+    return '<span title="標準 '+it.rule.std+'" style="white-space:nowrap;color:'+(it.ok?'#f85149':'var(--text-dim)')+'">'+it.rule.label+' '+txt+(it.ok?' ✓':' ✗')+'</span>';
+  }).join('');
+  return '<div style="display:flex;flex-wrap:wrap;gap:2px 12px;margin-top:4px;font-size:13px;line-height:1.5;">'+head+chips+'</div>';
+}
+var vgFilterOn = false;
+function toggleVgFilter(){
+  vgFilterOn = !vgFilterOn;
+  var b = document.getElementById('vg-filter-btn');
+  if(b){ b.style.borderColor = vgFilterOn?'#f0c040':''; b.style.color = vgFilterOn?'#f0c040':''; b.style.background = vgFilterOn?'#f0c04022':''; }
+  if(vgFilterOn && !RS_DATA && typeof loadRsData==='function'){ toast('⏳ 讀取RS資料中...','#1f6feb'); loadRsData().then(function(){ render(); }); }
+  render();
+}
+// 全市場（RS檔）裡5項全符合、但不在今日選股Excel裡的股票，也做成簡易卡片補進來
+function _vgMarketExtras(){
+  if(!RS_DATA || !RS_DATA.list) return [];
+  var have = {}; (D_RAW||[]).forEach(function(s){ have[s.code]=1; });
+  var out = [];
+  RS_DATA.list.forEach(function(r){
+    if(have[r.code] || EXCLUDE_CODES.indexOf(r.code)>=0) return;
+    var c = _vgCheck(r.code);
+    if(c && c.all){ var s = _rsOnlyStock(r); if(s) out.push(s); }
+  });
+  return out;
+}
 function getFilt(){
   var d=D;
   if(window._hcatCodes && window._hcatCodes.length){
@@ -2394,6 +2444,10 @@ function getFilt(){
       return s.code.toLowerCase().indexOf(q)>=0 || s.name.toLowerCase().indexOf(q)>=0;
     });
     d=d.concat(_rsOnlySearchExtras(q));
+  }
+  if(vgFilterOn){
+    if(!searchQ) d = d.concat(_vgMarketExtras());
+    d = d.filter(function(s){ var c=_vgCheck(s.code); return c && c.all; });
   }
   // 星星（私人備註）／敲敲話（共同筆記）／我的最愛，這三個篩選鈕可以同時開，同時開時是聯集：符合任一種就顯示
   if(noteFilterOn || allNoteFilterOn || favFilterOn){
@@ -2435,7 +2489,7 @@ function render(){
   // 所以在完全沒有篩選條件的預設檢視下，只先渲染前 RENDER_CAP 筆（依目前排序），下面提示還有多少筆；
   // 一旦有搜尋或任何篩選条件，結果集通常就小得多，不受影響、仍然顯示全部符合項目。
   var RENDER_CAP = 200;
-  var _noFilterActive = !searchQ && !sel.length && !groupFilter && !conceptFilter
+  var _noFilterActive = !searchQ && !vgFilterOn && !sel.length && !groupFilter && !conceptFilter
     && !(window._hcatCodes && window._hcatCodes.length) && !noteFilterOn && !allNoteFilterOn && !favFilterOn;
   var renderData = data;
   var _hiddenCount = 0;
@@ -2475,7 +2529,7 @@ function render(){
         +'</div>'
       +'</div>'
       // 三大法人買賣（V3_15_332：放在「即時」列下方、收盤價上方；RS 比卡片晚到時由 _applyRsToCards 補上）
-      +'<div class="card-inst admin-only" data-inst-code="'+s.code+'">'+_instLineHtml(s.code)+'</div>'
+      +'<div class="card-inst admin-only" data-inst-code="'+s.code+'">'+_instLineHtml(s.code)+_vgLineHtml(s.code)+'</div>'
       +'<div class="card-price" style="margin-bottom:2px">'
         +'<span class="card-close" style="color:'+(s.volume!==null&&s.close!==null?(s.volume>s.close?'#f85149':s.volume<s.close?'#3fb950':'var(--text-primary)'):'var(--text-primary)')+'">'+(s.volume!==null?s.volume.toLocaleString():'--')+'</span>'
         +(s.news?'<span class="card-news" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0">📰 '+s.news+'</span>':'')
@@ -6604,7 +6658,8 @@ function _buildRsData(d){
     function nv(v){ return (v===null||v===undefined)?null:v; }
     return {code:_rsCode(r[0]), name:r[1]||'', score:r[2], chg:nv(r[3]), close:r[4], ind:r[5]||'',
             f:nv(r[6]), t:nv(r[7]), d:nv(r[8]), f5:nv(r[9]), t5:nv(r[10]),
-            allInd:r[11]||'', pos:r[12]||''};
+            allInd:r[11]||'', pos:r[12]||'',
+            eps4:nv(r[13]), pe:nv(r[14]), cy:nv(r[15]), pr:nv(r[16]), revy:nv(r[17])};
   }).filter(function(x){ return x.code && typeof x.score==='number' && !isNaN(x.score); });
   var sorted = list.slice().sort(function(a,b){ return a.score-b.score; });
   var n = sorted.length, i = 0;
@@ -6662,7 +6717,7 @@ function _applyRsToCards(){
     el.replaceWith(tmp.firstChild);
   });
   document.querySelectorAll('.card-inst[data-inst-code]').forEach(function(el){
-    el.innerHTML = _instLineHtml(el.getAttribute('data-inst-code'));
+    el.innerHTML = _instLineHtml(el.getAttribute('data-inst-code')) + _vgLineHtml(el.getAttribute('data-inst-code'));
   });
 }
 
@@ -8524,6 +8579,71 @@ function _crGripReset(){
     var _crResizeObserver = new ResizeObserver(function(){ _positionColResizeHandle(); });
     _crResizeObserver.observe(cardsElForSync);
   }
+})();
+</script>
+<script>
+// ── 網頁版本自動更新：每5分鐘（以及切回這個分頁時）抓一次GitHub上的index.html，
+//    比對 <meta name="app-build"> 的版本號，發現比目前新就提示並自動重新整理（不用再按Ctrl+Shift+R） ──
+(function(){
+  if(location.protocol!=='http:' && location.protocol!=='https:') return; // 本機檔案開啟時不檢查
+  var meta = document.querySelector('meta[name="app-build"]');
+  var CUR = meta ? parseInt(meta.getAttribute('content'),10)||0 : 0;
+  var lastCheck = 0, snoozeUntil = 0, bannerShown = false, timer = null;
+  function busy(){ // 正在輸入留言或在彈出視窗裡打字時，先不要重新整理，避免打到一半的字不見
+    var a = document.activeElement;
+    if(!a) return false;
+    if(a.tagName==='TEXTAREA') return true;
+    if(a.tagName==='INPUT' && a.closest && a.closest('[id$="-modal"]') && a.value) return true;
+    return false;
+  }
+  function doReload(){
+    if(busy()){ setTimeout(doReload, 5000); return; }
+    var u = location.href.split('#')[0].replace(/([?&])_v=\d+&?/,'$1').replace(/[?&]$/,'');
+    location.replace(u + (u.indexOf('?')>=0?'&':'?') + '_v=' + Date.now());
+  }
+  function showBanner(newBuild){
+    if(bannerShown) return; bannerShown = true;
+    var b = document.createElement('div');
+    b.id = 'app-update-banner';
+    b.style.cssText = 'position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:200000;background:#1f6feb;color:#fff;border-radius:10px;padding:10px 14px;font-size:14px;font-weight:600;box-shadow:0 4px 16px #0008;display:flex;align-items:center;gap:10px;max-width:92vw;';
+    var sec = 10;
+    b.innerHTML = '<span>🔄 選股平台有新版本，<b id="app-upd-sec">'+sec+'</b> 秒後自動更新</span>'
+      + '<button id="app-upd-now" style="background:#fff;color:#1f6feb;border:none;border-radius:6px;padding:4px 10px;font-weight:700;cursor:pointer">立即更新</button>'
+      + '<button id="app-upd-later" style="background:none;color:#fff;border:1px solid #ffffff88;border-radius:6px;padding:4px 8px;cursor:pointer">稍後</button>';
+    document.body.appendChild(b);
+    var iv = setInterval(function(){
+      sec--; var el = document.getElementById('app-upd-sec'); if(el) el.textContent = Math.max(0,sec);
+      if(sec<=0){ clearInterval(iv); doReload(); }
+    }, 1000);
+    document.getElementById('app-upd-now').onclick = function(){ clearInterval(iv); doReload(); };
+    document.getElementById('app-upd-later').onclick = function(){
+      clearInterval(iv); b.remove(); bannerShown = false; snoozeUntil = Date.now() + 30*60*1000; // 30分鐘後再提醒
+    };
+  }
+  function check(force){
+    var now = Date.now();
+    if(!force && now - lastCheck < 60*1000) return;
+    if(now < snoozeUntil || bannerShown) return;
+    lastCheck = now;
+    var u = location.href.split('#')[0].split('?')[0];
+    fetch(u + '?_check=' + now, {cache:'no-store'})
+      .then(function(r){ return r.ok ? r.text() : ''; })
+      .then(function(txt){
+        var m = txt && txt.match(/<meta name="app-build" content="(\d+)"/);
+        if(!m) return;
+        var nb = parseInt(m[1],10)||0;
+        if(nb > CUR){
+          if(document.hidden) doReload(); // 在背景就直接更新，切回來時已是新版
+          else showBanner(nb);
+        }
+      }).catch(function(){});
+  }
+  setTimeout(function(){ check(true); }, 20000);           // 開網頁20秒後先查一次
+  timer = setInterval(function(){ check(true); }, 5*60*1000); // 之後每5分鐘
+  document.addEventListener('visibilitychange', function(){ if(!document.hidden) check(false); });
+  window.addEventListener('focus', function(){ check(false); });
+  // 清掉網址上的 ?_v=xxx，避免加到書籤或分享出去帶著一串數字
+  try{ if(/[?&]_v=\d+/.test(location.search)) history.replaceState(null,'',location.href.replace(/([?&])_v=\d+&?/,'$1').replace(/[?&](#|$)/,'$1')); }catch(e){}
 })();
 </script>
 </body>
