@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0d1117">
-<meta name="app-build" content="359"><!-- 網頁版本號：每次上傳新版都要+1，已開啟的網頁才會偵測到新版並自動更新 -->
+<meta name="app-build" content="360"><!-- 網頁版本號：每次上傳新版都要+1，已開啟的網頁才會偵測到新版並自動更新 -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -4522,11 +4522,12 @@ function _favTradeSave(){
   var act = wasFav ? 'updateFavorite' : 'addFavorite';
   if(wasFav && !(old && old.entry)) params.resetDate = '1'; // 舊的最愛第一次設定價格，從今天開始算
   adminFetch(act, params).then(function(res){
+    if(res && res.ok && !res.saved){ res = {ok:false, error:'old_backend'}; }
     if(!res || !res.ok){
       if(!wasFav){ delete favMap[c.code]; delete favInfo[c.code]; if(c.btnEl) c.btnEl.textContent = '🤍'; }
       else favInfo[c.code] = old;
       _favRefreshBoardIfOpen();
-      toast('儲存失敗，請稍後再試','#da3633');
+      toast(res && res.error==='old_backend' ? '❌ 沒有存到！GAS「選股平台備註」還沒部署新版本，請先部署' : '儲存失敗，請稍後再試','#da3633');
     } else toast(wasFav ? '✅ 已更新' : '❤️ 已加入模擬交易','#238636');
   });
 }
@@ -4540,6 +4541,7 @@ function _favCloseTrade(code){
   fi.closeDate = _favTodayStr(); fi.closePrice = price;
   delete _favEvalCache[code]; _renderFavBoard();
   adminFetch('updateFavorite', {code:code, closePrice:price}).then(function(res){
+    if(res && res.ok && !res.saved) res = null; // 後端還是舊版：沒有真的存到
     if(!res || !res.ok){ fi.closeDate = old.closeDate; fi.closePrice = old.closePrice; delete _favEvalCache[code]; _renderFavBoard(); toast('操作失敗，請稍後再試','#da3633'); }
   });
 }
@@ -4551,7 +4553,8 @@ function _favCancelTrade(code){
   favInfo[code] = _favNormInfo({});
   delete _favEvalCache[code]; _renderFavBoard();
   adminFetch('updateFavorite', {code:code, entry:'', target:'', stop:'', reopen:'1'}).then(function(res){
-    if(!res || !res.ok){ favInfo[code] = old; _renderFavBoard(); toast('操作失敗，請稍後再試','#da3633'); }
+    if(res && res.ok && !res.saved) res = null;
+    if(!res || !res.ok){ favInfo[code] = old; _renderFavBoard(); toast('操作失敗（GAS 若還沒部署新版本，請先部署）','#da3633'); }
   });
 }
 function _favReopen(code){
@@ -4560,6 +4563,7 @@ function _favReopen(code){
   fi.closeDate = ''; fi.closePrice = null;
   delete _favEvalCache[code]; _renderFavBoard();
   adminFetch('updateFavorite', {code:code, reopen:'1'}).then(function(res){
+    if(res && res.ok && !res.saved) res = null; // 後端還是舊版：沒有真的存到
     if(!res || !res.ok){ fi.closeDate = old.closeDate; fi.closePrice = old.closePrice; delete _favEvalCache[code]; _renderFavBoard(); toast('操作失敗，請稍後再試','#da3633'); }
   });
 }
