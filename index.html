@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0d1117">
-<meta name="app-build" content="358"><!-- 網頁版本號：每次上傳新版都要+1，已開啟的網頁才會偵測到新版並自動更新 -->
+<meta name="app-build" content="359"><!-- 網頁版本號：每次上傳新版都要+1，已開啟的網頁才會偵測到新版並自動更新 -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -4621,7 +4621,7 @@ var FAV_TAB_DEFS = [
   {key:'持有中', desc:'追蹤中', color:'#58a6ff', bg:'#1f6feb15'},
   {key:'看對', desc:'達標／結束賺', color:'#f85149', bg:'#f8514915'},
   {key:'看錯', desc:'停損／結束賠', color:'#3fb950', bg:'#3fb95015'},
-  {key:'全部', desc:'所有最愛', color:'#d29922', bg:'#d2992215'}
+  {key:'全部', label:'勝率', desc:'點我看全部', color:'#d29922', bg:'#d2992215'}
 ];
 function _favTabOf(ev){
   if(!ev || ev.status==='unset') return '持有中';
@@ -4664,20 +4664,21 @@ function _renderFavBoard(){
         if(tab==='持有中'){ sumOpen+=ev.ret; nOpen++; } else { sumRes+=ev.ret; nRes++; }
       }
     });
+    var resolved0 = cnt['看對']+cnt['看錯'];
+    var winTxt = resolved0 ? Math.round(cnt['看對']/resolved0*100)+'%' : '--';
     document.getElementById('fav-stats').innerHTML = FAV_TAB_DEFS.map(function(d){
       var active = _favActiveTab===d.key;
       return '<div onclick="_selectFavTab(\''+d.key+'\')" style="cursor:pointer;background:'+d.bg+';border:1.5px solid '+(active?d.color:'var(--border)')+';border-radius:9px;padding:8px 4px;text-align:center;">'
-        +'<div style="font-size:15px;color:'+d.color+';font-weight:700;">'+d.key+'</div>'
-        +'<div style="font-size:20px;font-weight:800;color:'+d.color+';line-height:1.3;margin-top:2px;">'+cnt[d.key]+'</div>'
+        +'<div style="font-size:15px;color:'+d.color+';font-weight:700;">'+(d.label||d.key)+'</div>'
+        +'<div style="font-size:20px;font-weight:800;color:'+d.color+';line-height:1.3;margin-top:2px;">'+(d.key==='全部'?winTxt:cnt[d.key])+'</div>'
         +'<div style="font-size:12px;color:'+d.color+';opacity:0.85;margin-top:3px;line-height:1.4;padding-top:3px;border-top:1px solid '+d.color+'33;">'+d.desc+'</div></div>';
     }).join('');
     var resolved = cnt['看對']+cnt['看錯'];
     var pc = function(v){ return '<b style="color:'+(v>0?'#f85149':v<0?'#3fb950':'var(--text-primary)')+'">'+(v>0?'+':'')+v.toFixed(2)+'%</b>'; };
     document.getElementById('fav-summary').innerHTML =
-      '🎯 勝率 <b style="color:var(--text-primary)">'+(resolved? (cnt['看對']/resolved*100).toFixed(0)+'%' : '--')+'</b>（'+cnt['看對']+' 對 / '+cnt['看錯']+' 錯）'
-      +'　全部平均報酬 '+((nRes+nOpen)?pc((sumRes+sumOpen)/(nRes+nOpen)):'--')
-      +'　已判定（看對＋看錯）平均 '+(nRes?pc(sumRes/nRes):'--')
-      +'　尚未判定平均 '+(nOpen?pc(sumOpen/nOpen):'--')
+      '平均報酬 '+((nRes+nOpen)?pc((sumRes+sumOpen)/(nRes+nOpen)):'--')+'（共 '+codes.length+' 筆）'
+      +(nRes?'　看對＋看錯平均 '+pc(sumRes/nRes):'')
+      +(nOpen&&nRes?'　尚未判定平均 '+pc(sumOpen/nOpen):'')
       +'<div style="font-size:11.5px;color:var(--text-dim);">報酬：持有中用現價、已結束用出場價計算；碰到目標／停損只判定看對看錯，不會自動出場</div>';
     var rows = codes.filter(function(c){ return _favActiveTab==='全部' || _favTabOf(evs[c])===_favActiveTab; });
     rows.sort(function(a,b){ var ra=evs[a]&&evs[a].ret, rb=evs[b]&&evs[b].ret; return (rb===null||rb===undefined?-1e9:rb)-(ra===null||ra===undefined?-1e9:ra); });
